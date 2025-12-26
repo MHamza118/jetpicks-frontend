@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Camera, Flag, Globe, ChevronDown, X } from 'lucide-react';
 import Button from '../../../components/ui/Button';
 import { ES, US, GB, FR, DE, IT, CA, AU } from 'country-flag-icons/react/3x2';
+import { apiClient } from '../../../services/api';
+import { storage } from '../../../utils';
+import { STORAGE_KEYS } from '../../../constants';
 
 const ProfileSetup = () => {
     const navigate = useNavigate();
@@ -10,6 +13,10 @@ const ProfileSetup = () => {
     const [selectedLanguages, setSelectedLanguages] = useState<string[]>(['Spanish', 'English']);
     const [isNationalityDropdownOpen, setIsNationalityDropdownOpen] = useState(false);
     const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
     const nationalities = [
         { name: 'Spain', code: 'ES', icon: ES },
@@ -33,8 +40,52 @@ const ProfileSetup = () => {
         );
     };
 
-    const handleContinue = () => {
-        navigate('/dashboard');
+    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setAvatarFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setAvatarPreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleContinue = async () => {
+        if (selectedLanguages.length === 0) {
+            setError('Please select at least one language');
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const formData = new FormData();
+            formData.append('country', selectedNationality);
+            formData.append('languages', JSON.stringify(selectedLanguages));
+            
+            if (avatarFile) {
+                formData.append('image', avatarFile);
+            }
+
+            const response = await apiClient.put<any>('/user/profile', formData);
+            
+            if (response) {
+                const user = storage.get(STORAGE_KEYS.USER);
+                storage.set(STORAGE_KEYS.USER, {
+                    ...user,
+                    country: selectedNationality,
+                });
+                navigate('/dashboard');
+            }
+        } catch (err: any) {
+            const errorMessage = err?.message || 'Failed to update profile. Please try again.';
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const SelectedFlag = getNationalityIcon(selectedNationality);
@@ -49,15 +100,32 @@ const ProfileSetup = () => {
                     <h1 className="text-[28px] font-bold text-gray-900 mb-1">Profile Setup</h1>
                 </div>
 
+                {error && (
+                    <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                        {error}
+                    </div>
+                )}
+
                 {/* Avatar Upload */}
                 <div className="flex justify-center mb-4">
                     <div className="relative">
-                        <div className="w-24 h-24 rounded-full bg-gray-300 flex items-center justify-center">
-                            <span className="text-gray-500 text-sm">No image</span>
+                        <div className="w-24 h-24 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
+                            {avatarPreview ? (
+                                <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-gray-500 text-sm">No image</span>
+                            )}
                         </div>
-                        <button className="absolute bottom-0 right-0 bg-yellow-400 rounded-full p-2 hover:bg-yellow-500 transition-colors">
+                        <label htmlFor="avatar-input" className="absolute bottom-0 right-0 bg-yellow-400 rounded-full p-2 hover:bg-yellow-500 transition-colors cursor-pointer">
                             <Camera size={20} className="text-gray-900" />
-                        </button>
+                        </label>
+                        <input
+                            id="avatar-input"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAvatarChange}
+                            className="hidden"
+                        />
                     </div>
                 </div>
 
@@ -176,8 +244,12 @@ const ProfileSetup = () => {
 
                 {/* Continue Button */}
                 <div className="flex justify-center mt-12">
-                    <Button onClick={handleContinue} className="max-w-[260px] w-full py-3 text-base tracking-wide rounded-xl">
-                        Continue
+                    <Button 
+                        onClick={handleContinue} 
+                        className="max-w-[260px] w-full py-3 text-base tracking-wide rounded-xl"
+                        disabled={loading}
+                    >
+                        {loading ? 'Saving...' : 'Continue'}
                     </Button>
                 </div>
             </div>

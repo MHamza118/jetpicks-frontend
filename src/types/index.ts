@@ -15,34 +15,36 @@ export interface ApiError {
 // User Types
 export interface User {
   id: string;
-  username: string;
+  full_name: string;
   email: string;
-  phone: string;
-  role: 'orderer' | 'picker';
-  nationality: string;
-  languages: string[];
-  avatar?: string;
-  createdAt: string;
-  updatedAt: string;
+  phone_number: string;
+  roles: ('ORDERER' | 'PICKER')[];
+  country?: string;
+  avatar_url?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AuthResponse {
-  user: User;
-  token: string;
-  refreshToken?: string;
+  message: string;
+  data: {
+    user: User;
+    token: string;
+  };
 }
 
 export interface LoginPayload {
-  username: string;
+  email: string;
   password: string;
 }
 
 export interface SignupPayload {
-  username: string;
+  full_name: string;
   email: string;
-  phone: string;
+  phone_number: string;
   password: string;
-  role: 'orderer' | 'picker';
+  confirm_password: string;
+  roles: ('ORDERER' | 'PICKER')[];
 }
 
 export interface ProfileSetupPayload {

@@ -1,8 +1,8 @@
 import { Briefcase, Package } from 'lucide-react';
 
 interface RoleSelectorProps {
-    selectedRole: 'orderer' | 'picker' | null;
-    onRoleChange: (role: 'orderer' | 'picker') => void;
+    selectedRole: 'ORDERER' | 'PICKER' | null;
+    onRoleChange: (role: 'ORDERER' | 'PICKER') => void;
 }
 
 const RoleSelector = ({ selectedRole, onRoleChange }: RoleSelectorProps) => {
@@ -11,9 +11,9 @@ const RoleSelector = ({ selectedRole, onRoleChange }: RoleSelectorProps) => {
             <p className="text-gray-900 font-bold text-sm mb-3">Select your role</p>
             <div className="grid grid-cols-2 gap-3">
                 <button
-                    onClick={() => onRoleChange('orderer')}
+                    onClick={() => onRoleChange('ORDERER')}
                     className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${
-                        selectedRole === 'orderer'
+                        selectedRole === 'ORDERER'
                             ? 'border-gray-900 bg-gray-50'
                             : 'border-gray-200 bg-white hover:border-gray-300'
                     }`}
@@ -23,9 +23,9 @@ const RoleSelector = ({ selectedRole, onRoleChange }: RoleSelectorProps) => {
                 </button>
 
                 <button
-                    onClick={() => onRoleChange('picker')}
+                    onClick={() => onRoleChange('PICKER')}
                     className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${
-                        selectedRole === 'picker'
+                        selectedRole === 'PICKER'
                             ? 'border-gray-900 bg-gray-50'
                             : 'border-gray-200 bg-white hover:border-gray-300'
                     }`}
