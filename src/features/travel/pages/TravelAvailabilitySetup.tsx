@@ -2,19 +2,23 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Luggage, Calendar } from 'lucide-react';
 import Button from '../../../components/ui/Button';
+import { travelApi } from '../services/travelApi';
+import type { TravelJourneyPayload } from '../../../types/index';
 
 const TravelAvailabilitySetup = () => {
     const navigate = useNavigate();
     const [useLocation, setUseLocation] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
-        departure_country: '',
-        departure_city: '',
+        departure_country: 'Spain',
+        departure_city: 'Madrid',
         departure_date: '',
-        arrival_country: '',
-        arrival_city: '',
+        arrival_country: 'United States',
+        arrival_city: 'New York',
         arrival_date: '',
-        luggage_weight_capacity: '',
+        luggage_weight_capacity: '5',
     });
 
     const countries = [
@@ -30,8 +34,37 @@ const TravelAvailabilitySetup = () => {
         }));
     };
 
-    const handleContinue = () => {
-        navigate('/dashboard');
+    const handleContinue = async () => {
+        if (!formData.departure_date || !formData.arrival_date) {
+            setError('Please fill in all required fields');
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const payload: TravelJourneyPayload = {
+                departure_country: formData.departure_country,
+                departure_city: formData.departure_city,
+                departure_date: formData.departure_date,
+                arrival_country: formData.arrival_country,
+                arrival_city: formData.arrival_city,
+                arrival_date: formData.arrival_date,
+                luggage_weight_capacity: formData.luggage_weight_capacity,
+            };
+
+            console.log('Sending payload:', payload);
+            const response = await travelApi.createJourney(payload);
+            console.log('Response:', response);
+            navigate('/dashboard');
+        } catch (err: any) {
+            console.error('Error:', err);
+            const errorMessage = err?.message || 'Failed to save travel details. Please try again.';
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSkip = () => {
@@ -48,6 +81,12 @@ const TravelAvailabilitySetup = () => {
                     <h1 className="text-[22px] font-bold text-gray-900 mb-1">Travel Availability Setup</h1>
                     <p className="text-gray-500 text-xs font-medium">Share your travel details to get relevant Jetorders</p>
                 </div>
+
+                {error && (
+                    <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded-lg text-xs">
+                        {error}
+                    </div>
+                )}
 
                 {/* Departure Section */}
                 <div className="mb-4">
@@ -129,6 +168,25 @@ const TravelAvailabilitySetup = () => {
                     </div>
                 </div>
 
+                {/* Departure Date */}
+                <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Calendar size={20} className="text-gray-900" />
+                        <label className="text-gray-900 font-bold text-sm">Departure Date</label>
+                    </div>
+
+                    <div className="flex-1">
+                        <p className="text-gray-700 font-semibold text-xs mb-0.5">Select date</p>
+                        <input
+                            type="date"
+                            name="departure_date"
+                            value={formData.departure_date}
+                            onChange={handleInputChange}
+                            className="w-full bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1"
+                        />
+                    </div>
+                </div>
+
                 {/* Arrival Date */}
                 <div className="mb-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -192,12 +250,14 @@ const TravelAvailabilitySetup = () => {
                     <Button 
                         onClick={handleContinue} 
                         className="w-full py-2 text-sm tracking-wide rounded-xl bg-red-700 hover:bg-red-800 text-white"
+                        disabled={loading}
                     >
-                        Continue
+                        {loading ? 'Saving...' : 'Continue'}
                     </Button>
                     <button
                         onClick={handleSkip}
-                        className="w-full py-2 text-sm font-semibold text-gray-900 hover:text-gray-700 transition-colors"
+                        className="w-full py-2 text-sm font-semibold text-gray-900 hover:text-gray-700 transition-colors disabled:opacity-50"
+                        disabled={loading}
                     >
                         Skip for Now
                     </button>

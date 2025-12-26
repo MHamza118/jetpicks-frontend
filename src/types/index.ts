@@ -34,7 +34,7 @@ export interface AuthResponse {
 }
 
 export interface LoginPayload {
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -51,4 +51,27 @@ export interface ProfileSetupPayload {
   nationality: string;
   languages: string[];
   avatar?: File;
+}
+
+export interface TravelJourneyPayload {
+  departure_country: string;
+  departure_city: string;
+  departure_date: string;
+  arrival_country: string;
+  arrival_city: string;
+  arrival_date: string;
+  luggage_weight_capacity: string;
+}
+
+export interface TravelJourney {
+  id: string;
+  user_id: string;
+  departure_country: string;
+  departure_city: string;
+  departure_date: string;
+  arrival_country: string;
+  arrival_city: string;
+  arrival_date: string;
+  luggage_weight_capacity: string;
+  created_at: string;
 }

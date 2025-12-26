@@ -21,9 +21,19 @@ class ApiClient {
 
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
+      let errorMessage = ERROR_MESSAGES.SERVER_ERROR;
+      let errorData: any = null;
+
+      try {
+        errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || ERROR_MESSAGES.SERVER_ERROR;
+      } catch {
+        // If response is not JSON, use status-based message
+      }
+
       const error: ApiError = {
         status: response.status,
-        message: ERROR_MESSAGES.SERVER_ERROR,
+        message: errorMessage,
       };
 
       switch (response.status) {
@@ -39,7 +49,7 @@ class ApiClient {
           error.message = ERROR_MESSAGES.NOT_FOUND;
           break;
         case 422:
-          error.message = ERROR_MESSAGES.VALIDATION_ERROR;
+          error.message = errorData?.message || ERROR_MESSAGES.VALIDATION_ERROR;
           break;
       }
 
@@ -79,7 +89,10 @@ class ApiClient {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
-      const response = await fetch(`${this.baseURL}${endpoint}`, {
+      const url = `${this.baseURL}${endpoint}`;
+      console.log('POST Request:', { url, data });
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: this.getHeaders(),
         body: data ? JSON.stringify(data) : undefined,
@@ -87,8 +100,11 @@ class ApiClient {
       });
 
       clearTimeout(timeoutId);
+      console.log('POST Response:', { status: response.status, statusText: response.statusText, url: response.url });
+      
       return this.handleResponse<T>(response);
     } catch (error) {
+      console.error('POST Error:', error);
       throw this.handleError(error);
     }
   }
@@ -142,6 +158,13 @@ class ApiClient {
       return {
         status: 0,
         message: 'Request timeout',
+      };
+    }
+
+    if (error?.message) {
+      return {
+        status: error?.status || 500,
+        message: error.message,
       };
     }
 

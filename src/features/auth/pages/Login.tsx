@@ -16,7 +16,7 @@ const Login = () => {
     const [error, setError] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
-        email: '',
+        username: '',
         password: '',
     });
 
@@ -30,8 +30,8 @@ const Login = () => {
     };
 
     const validateForm = (): boolean => {
-        if (!formData.email.trim()) {
-            setError('Email is required');
+        if (!formData.username.trim()) {
+            setError('Username or email is required');
             return false;
         }
         if (!formData.password) {
@@ -47,7 +47,7 @@ const Login = () => {
         setLoading(true);
         try {
             const payload: LoginPayload = {
-                email: formData.email,
+                username: formData.username,
                 password: formData.password,
             };
 
@@ -57,8 +57,12 @@ const Login = () => {
             storage.set(STORAGE_KEYS.AUTH_TOKEN, response.data.token);
             storage.set(STORAGE_KEYS.USER, response.data.user);
 
-            // Navigate to dashboard or profile setup
-            navigate('/dashboard');
+            // Role-based navigation
+            if (response.data.user.roles && response.data.user.roles.includes('PICKER')) {
+                navigate('/travel-availability-setup');
+            } else {
+                navigate('/dashboard');
+            }
         } catch (err: any) {
             const errorMessage = err?.message || 'Login failed. Please try again.';
             setError(errorMessage);
@@ -86,12 +90,11 @@ const Login = () => {
 
                 <div className="grid gap-2">
                     <Input
-                        label="Email Address"
-                        placeholder="bill.sanders@example.com"
+                        label="Username"
+                        placeholder="Esther Howard"
                         icon={Mail}
-                        type="email"
-                        name="email"
-                        value={formData.email}
+                        name="username"
+                        value={formData.username}
                         onChange={handleInputChange}
                     />
 
