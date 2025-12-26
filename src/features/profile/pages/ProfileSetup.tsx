@@ -74,11 +74,18 @@ const ProfileSetup = () => {
             
             if (response) {
                 const user = storage.get(STORAGE_KEYS.USER);
-                storage.set(STORAGE_KEYS.USER, {
+                const updatedUser = {
                     ...user,
                     country: selectedNationality,
-                });
-                navigate('/dashboard');
+                };
+                storage.set(STORAGE_KEYS.USER, updatedUser);
+
+                // Check if user is a picker
+                if (updatedUser.roles && updatedUser.roles.includes('PICKER')) {
+                    navigate('/travel-availability-setup');
+                } else {
+                    navigate('/dashboard');
+                }
             }
         } catch (err: any) {
             const errorMessage = err?.message || 'Failed to update profile. Please try again.';
