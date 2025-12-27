@@ -57,7 +57,7 @@ const TravelAvailabilitySetup = () => {
             console.log('Sending payload:', payload);
             const response = await travelApi.createJourney(payload);
             console.log('Response:', response);
-            navigate('/dashboard');
+            navigate('/picker/dashboard');
         } catch (err: any) {
             console.error('Error:', err);
             const errorMessage = err?.message || 'Failed to save travel details. Please try again.';
@@ -68,7 +68,7 @@ const TravelAvailabilitySetup = () => {
     };
 
     const handleSkip = () => {
-        navigate('/dashboard');
+        navigate('/picker/dashboard');
     };
 
     return (

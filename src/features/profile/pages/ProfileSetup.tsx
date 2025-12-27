@@ -84,7 +84,7 @@ const ProfileSetup = () => {
                 if (updatedUser.roles && updatedUser.roles.includes('PICKER')) {
                     navigate('/travel-availability-setup');
                 } else {
-                    navigate('/dashboard');
+                    navigate('/orderer/dashboard');
                 }
             }
         } catch (err: any) {

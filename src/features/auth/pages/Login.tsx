@@ -61,7 +61,7 @@ const Login = () => {
             if (response.data.user.roles && response.data.user.roles.includes('PICKER')) {
                 navigate('/travel-availability-setup');
             } else {
-                navigate('/dashboard');
+                navigate('/orderer/dashboard');
             }
         } catch (err: any) {
             const errorMessage = err?.message || 'Login failed. Please try again.';
