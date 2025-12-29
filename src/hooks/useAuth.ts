@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authApi } from '../services/authApi';
+import { authApi } from '../api';
 import { storage, errorUtils } from '../utils';
 import { STORAGE_KEYS, ROUTES, SUCCESS_MESSAGES } from '../constants';
-import type { User, LoginPayload, SignupPayload, AuthResponse } from '../types/index';
+import type { User, LoginPayload, SignupPayload } from '../@types';
 
 export const useAuth = () => {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ export const useAuth = () => {
     setError(null);
     try {
       const response = await authApi.login(payload);
-      const { user, token } = response as AuthResponse;
+      const { user, token } = response.data;  // AuthResponse has data property
       
       storage.set(STORAGE_KEYS.AUTH_TOKEN, token);
       storage.set(STORAGE_KEYS.USER, user);
@@ -37,8 +37,8 @@ export const useAuth = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await authApi.signup(payload);
-      const { user, token } = response as AuthResponse;
+      const response = await authApi.register(payload);  // Use 'register' not 'signup'
+      const { user, token } = response.data;  // AuthResponse has data property
       
       storage.set(STORAGE_KEYS.AUTH_TOKEN, token);
       storage.set(STORAGE_KEYS.USER, user);

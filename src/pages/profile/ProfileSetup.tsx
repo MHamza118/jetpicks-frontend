@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Camera, Flag, Globe, ChevronDown, X } from 'lucide-react';
-import axios from 'axios';
 import Button from '../../components/ui/Button';
 import { ES, US, GB, FR, DE, IT, CA, AU } from 'country-flag-icons/react/3x2';
-import { apiClient } from '../../api';
+import { profileApi } from '../../api';
 import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
 
@@ -63,31 +62,26 @@ const ProfileSetup = () => {
         setError(null);
 
         try {
-            const token = storage.get(STORAGE_KEYS.AUTH_TOKEN);
             const formData = new FormData();
-            
+
             formData.append('country', selectedNationality);
             selectedLanguages.forEach((lang, index) => {
                 formData.append(`languages[${index}]`, lang);
             });
-            
+
             // Always append image, even if null (backend will handle it)
             if (avatarFile) {
                 formData.append('image', avatarFile);
             }
-            
-            // Use POST instead of PUT for file uploads (Laravel limitation)
-            const response = await axios.post('http://localhost:8000/api/user/profile', formData, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
 
-            const user = storage.get(STORAGE_KEYS.USER);
-            const updatedUser = {
-                ...user,
-                country: selectedNationality,
-            };
+            // Use profileApi with FormData
+            await profileApi.setupProfile(formData as any);
+
+            // Fetch the updated profile from backend to get the avatar_url
+            const profileResponse = await profileApi.getProfile();
+            const updatedUser = profileResponse.data;
+
+            // Update localStorage with the complete updated user data
             storage.set(STORAGE_KEYS.USER, updatedUser);
 
             if (updatedUser.roles && updatedUser.roles.includes('PICKER')) {
@@ -107,7 +101,7 @@ const ProfileSetup = () => {
 
     return (
         <div className="min-h-screen w-full flex items-center justify-center bg-white overflow-hidden py-6">
-            <div 
+            <div
                 className="w-full max-w-[480px] border border-gray-200 bg-white rounded-[32px] p-8 shadow-lg mx-4 max-h-screen overflow-y-auto"
                 style={{ scrollbarWidth: isLanguageDropdownOpen ? 'none' : 'auto' }}
             >
@@ -152,7 +146,7 @@ const ProfileSetup = () => {
                         <Flag size={20} className="text-gray-900" />
                         <label className="text-gray-700 font-semibold text-base">Your nationality</label>
                     </div>
-                    
+
                     <div className="relative">
                         <button
                             onClick={() => setIsNationalityDropdownOpen(!isNationalityDropdownOpen)}
@@ -175,11 +169,10 @@ const ProfileSetup = () => {
                                                 setSelectedNationality(nat.name);
                                                 setIsNationalityDropdownOpen(false);
                                             }}
-                                            className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${
-                                                selectedNationality === nat.name
+                                            className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${selectedNationality === nat.name
                                                     ? 'bg-yellow-50 text-gray-900'
                                                     : 'text-gray-700 hover:bg-gray-50'
-                                            }`}
+                                                }`}
                                         >
                                             <FlagIcon className="w-6 h-4 rounded" />
                                             {nat.name}
@@ -233,11 +226,10 @@ const ProfileSetup = () => {
                                     <button
                                         key={lang}
                                         onClick={() => toggleLanguage(lang)}
-                                        className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${
-                                            selectedLanguages.includes(lang)
+                                        className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${selectedLanguages.includes(lang)
                                                 ? 'bg-yellow-50 text-gray-900'
                                                 : 'text-gray-700 hover:bg-gray-50'
-                                        }`}
+                                            }`}
                                     >
                                         {selectedLanguages.includes(lang) && (
                                             <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
@@ -259,8 +251,8 @@ const ProfileSetup = () => {
 
                 {/* Continue Button */}
                 <div className="flex justify-center mt-12">
-                    <Button 
-                        onClick={handleContinue} 
+                    <Button
+                        onClick={handleContinue}
                         className="max-w-[260px] w-full py-3 text-base tracking-wide rounded-xl"
                         disabled={loading}
                     >

@@ -1,19 +1,17 @@
 import { apiClient } from './client';
 import type { User, ProfileSetupPayload } from '../@types/index';
 
+interface ProfileResponse {
+  data: User;
+}
+
 export const profileApi = {
   getProfile: () =>
-    apiClient.get<User>('/user/profile'),
+    apiClient.get<ProfileResponse>('/user/profile'),
 
   updateProfile: (payload: Partial<User>) =>
-    apiClient.put<User>('/user/profile', payload),
+    apiClient.put<ProfileResponse>('/user/profile', payload),
 
   setupProfile: (payload: ProfileSetupPayload) =>
-    apiClient.post<User>('/user/profile', payload),
-
-  uploadAvatar: (file: File) => {
-    const formData = new FormData();
-    formData.append('avatar', file);
-    return apiClient.post<{ avatar: string }>('/user/profile/avatar', formData);
-  },
+    apiClient.post<ProfileResponse>('/user/profile', payload),
 };

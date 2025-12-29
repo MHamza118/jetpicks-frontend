@@ -1,16 +1,17 @@
 import axios from 'axios';
 import type { AxiosInstance, AxiosError } from 'axios';
-import { API_BASE_URL, STORAGE_KEYS, ERROR_MESSAGES } from '../constants';
+import { STORAGE_KEYS, ERROR_MESSAGES } from '../constants';
 import { storage, errorUtils } from '../utils';
 import type { ApiError } from '../@types/index';
+import { API_CONFIG } from '../config/api';
 
 class ApiClient {
   private axiosInstance: AxiosInstance;
 
-  constructor(baseURL: string = API_BASE_URL) {
+  constructor(baseURL: string = API_CONFIG.BASE_URL) {
     this.axiosInstance = axios.create({
       baseURL,
-      timeout: 30000,
+      timeout: API_CONFIG.TIMEOUT,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -55,12 +56,11 @@ class ApiClient {
     try {
       const config: any = {};
       
-      // If data is FormData, don't set Content-Type header
+      // If data is FormData, remove Content-Type header so axios sets it with boundary
       if (data instanceof FormData) {
         config.headers = {
-          ...this.axiosInstance.defaults.headers.common,
+          'Content-Type': undefined,
         };
-        delete config.headers['Content-Type'];
       }
       
       const response = await this.axiosInstance.post<T>(endpoint, data, config);

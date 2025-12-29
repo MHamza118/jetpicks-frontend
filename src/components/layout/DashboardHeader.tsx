@@ -1,0 +1,141 @@
+import { useState } from 'react';
+import { Search, Bell, User, LogOut, ArrowLeft, SlidersHorizontal } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { storage } from '../../utils';
+import { STORAGE_KEYS } from '../../constants';
+
+interface DashboardHeaderProps {
+  title: string;
+  showBackButton?: boolean;
+  avatarUrl?: string | null;
+  avatarError?: boolean;
+  onAvatarError?: () => void;
+}
+
+const DashboardHeader = ({
+  title,
+  showBackButton = false,
+  avatarUrl,
+  avatarError,
+  onAvatarError,
+}: DashboardHeaderProps) => {
+  const navigate = useNavigate();
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+
+  const handleLogout = () => {
+    storage.remove(STORAGE_KEYS.AUTH_TOKEN);
+    storage.remove(STORAGE_KEYS.USER);
+    navigate('/login');
+  };
+
+  return (
+    <div className="bg-[#FFDF57] px-6 py-4 md:px-8 md:py-4">
+      {/* Mobile Header - Top Row */}
+      <div className="flex justify-between items-center md:hidden mb-4">
+        <div className="flex items-center gap-4">
+          {showBackButton && (
+            <button onClick={() => navigate(-1)} className="p-1">
+              <ArrowLeft size={24} className="text-gray-900" />
+            </button>
+          )}
+          <div className="relative">
+            <button
+              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+              className="focus:outline-none"
+            >
+              {avatarUrl && !avatarError ? (
+                <img
+                  src={avatarUrl}
+                  alt="Profile"
+                  className="w-12 h-12 rounded-full object-cover border-2 border-white/50"
+                  onError={onAvatarError}
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center border-2 border-white/50">
+                  <User size={24} className="text-gray-600" />
+                </div>
+              )}
+            </button>
+            {showProfileDropdown && (
+              <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                >
+                  <LogOut size={18} />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        <button className="p-2 relative">
+          <Bell size={24} className="text-gray-900" />
+        </button>
+      </div>
+
+      {/* Mobile Search Bar */}
+      <div className="relative md:hidden pb-2">
+        <Search size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search a traveler or route"
+          className="w-full pl-11 pr-10 py-3.5 bg-white rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none shadow-sm"
+        />
+        <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+          <SlidersHorizontal size={20} />
+        </button>
+      </div>
+
+      {/* Desktop Header */}
+      <div className="hidden md:flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
+            <input
+              type="text"
+              placeholder="Search a traveler or route"
+              className="pl-10 pr-4 py-2 bg-white rounded-full text-sm text-gray-700 placeholder-gray-500 focus:outline-none w-64"
+            />
+          </div>
+          <button className="p-2 hover:opacity-80 transition-opacity relative">
+            <Bell size={20} className="text-gray-900" />
+          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+              className="focus:outline-none"
+            >
+              {avatarUrl && !avatarError ? (
+                <img
+                  src={avatarUrl}
+                  alt="Profile"
+                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-900 cursor-pointer hover:opacity-80 transition-opacity"
+                  onError={onAvatarError}
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
+                  <span className="text-gray-600 text-sm font-semibold">U</span>
+                </div>
+              )}
+            </button>
+            {showProfileDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                >
+                  <LogOut size={18} />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DashboardHeader;

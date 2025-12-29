@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, LogOut } from 'lucide-react';
-import axios from 'axios';
-import { storage } from '../../utils';
-import { STORAGE_KEYS } from '../../constants';
+import { profileApi } from '../../api';
+import { API_CONFIG } from '../../config/api';
+import DashboardSidebar from '../../components/layout/DashboardSidebar';
+import DashboardHeader from '../../components/layout/DashboardHeader';
+import MobileFooter from '../../components/layout/MobileFooter';
 import dashboardImage from '../../assets/dashboard.jpeg';
-import logo from '../../assets/logo.jpg';
 
 interface Traveler {
     id: string;
@@ -20,11 +20,11 @@ interface Traveler {
 const OrdererDashboard = () => {
     const navigate = useNavigate();
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-    const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
     const [travelers] = useState<Traveler[]>([
         {
             id: '1',
-            name: 'Mathew M.',
+            name: 'Methew M.',
             rating: 4.8,
             route: 'From London - Madrid',
             date: '25 Nov',
@@ -54,150 +54,104 @@ const OrdererDashboard = () => {
     useEffect(() => {
         const fetchUserProfile = async () => {
             try {
-                const token = storage.get(STORAGE_KEYS.AUTH_TOKEN);
-                const response = await axios.get('http://localhost:8000/api/user/profile', {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                
-                if (response.data?.data?.avatar_url) {
-                    // Prepend backend URL to avatar path
-                    const avatarPath = response.data.data.avatar_url;
-                    const fullUrl = avatarPath.startsWith('http') 
-                        ? avatarPath 
-                        : `http://localhost:8000${avatarPath}`;
+                const response = await profileApi.getProfile();
+                const profile = response.data;
+                if (profile?.avatar_url) {
+                    const avatarPath = profile.avatar_url;
+                    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
+                    const fullUrl = avatarPath.startsWith('http')
+                        ? avatarPath
+                        : `${baseUrl}${avatarPath}`;
                     setAvatarUrl(fullUrl);
+                    setAvatarError(false);
                 }
             } catch (error) {
                 console.error('Failed to fetch profile:', error);
             }
         };
-        
+
         fetchUserProfile();
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') fetchUserProfile();
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
 
-    const handleLogout = () => {
-        storage.remove(STORAGE_KEYS.AUTH_TOKEN);
-        storage.remove(STORAGE_KEYS.USER);
-        navigate('/login');
+    const handleAvatarError = () => {
+        setAvatarError(true);
+        setAvatarUrl(null);
     };
 
     return (
-        <div className="flex h-screen bg-white">
-            {/* Sidebar */}
-            <div className="w-48 bg-[#FFDF57] p-6 flex flex-col">
-                <div className="mb-8">
-                    <img src={logo} alt="Logo" className="w-12 h-12 object-cover rounded-lg" />
-                </div>
+        <div className="flex h-screen bg-white flex-col md:flex-row">
+            <DashboardSidebar activeTab="dashboard" />
 
-                <nav className="space-y-4 flex-1">
-                    <button className="w-full text-left px-4 py-2 bg-gray-900 text-[#FFDF57] rounded-full font-semibold text-sm">
-                        Dashboard
-                    </button>
-                    <button className="w-full text-left px-4 py-2 text-gray-900 font-semibold text-sm hover:opacity-80 transition-opacity">
-                        Messages
-                    </button>
-                    <button className="w-full text-left px-4 py-2 text-gray-900 font-semibold text-sm hover:opacity-80 transition-opacity">
-                        My Orders
-                    </button>
-                    <button className="w-full text-left px-4 py-2 text-gray-900 font-semibold text-sm hover:opacity-80 transition-opacity">
-                        Profile
-                    </button>
-                </nav>
-            </div>
+            <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+                <DashboardHeader
+                    title="Dashboard"
+                    avatarUrl={avatarUrl}
+                    avatarError={avatarError}
+                    onAvatarError={handleAvatarError}
+                />
 
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col">
-                {/* Header */}
-                <div className="bg-[#FFDF57] px-8 py-4 flex items-center justify-between">
-                    <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-                    <div className="flex items-center gap-4">
-                        <div className="relative">
-                            <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
-                            <input
-                                type="text"
-                                placeholder="Search a traveler or route"
-                                className="pl-10 pr-4 py-2 bg-white rounded-full text-sm text-gray-700 placeholder-gray-500 focus:outline-none"
-                            />
-                        </div>
-                        <button className="p-2 hover:opacity-80 transition-opacity">
-                            <Bell size={20} className="text-gray-900" />
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white">
+                    {/* Hero Section */}
+                    <div className="mb-8 rounded-3xl overflow-hidden h-40 md:h-56 relative flex items-end justify-center pb-6 md:pb-8">
+                        <img src={dashboardImage} alt="Dashboard" className="w-full h-full object-cover absolute inset-0" />
+                        <button className="relative bg-[#FFDF57] text-gray-900 px-6 py-2 rounded-full font-bold text-sm md:text-base hover:bg-yellow-500 transition-colors shadow-lg">
+                            Create An Order
                         </button>
-                        <div className="relative">
-                            <button 
-                                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                                className="focus:outline-none"
-                            >
-                                {avatarUrl ? (
-                                    <img 
-                                        src={avatarUrl} 
-                                        alt="Profile" 
-                                        className="w-10 h-10 rounded-full object-cover border-2 border-gray-900 cursor-pointer hover:opacity-80 transition-opacity"
-                                    />
-                                ) : (
-                                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
-                                        <span className="text-gray-600 text-sm font-semibold">U</span>
+                    </div>
+
+                    {/* Available Pickers Section */}
+                    <div className="mb-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg md:text-xl font-bold text-gray-900">Available jet pickers near you</h2>
+                            <button className="bg-[#FFDF57] px-4 py-1.5 rounded-full text-xs font-bold text-gray-900">See all</button>
+                        </div>
+
+                        {/* Travelers Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {travelers.map(traveler => (
+                                <div key={traveler.id} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-[0_2px_20px_rgba(0,0,0,0.04)]">
+                                    <div className="flex items-start gap-3 mb-4">
+                                        <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-gray-100">
+                                            <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80" alt={traveler.name} className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="font-bold text-gray-900 text-base">{traveler.name}</h3>
+                                            <div className="flex items-center text-sm">
+                                                <span className="font-bold text-gray-900 mr-1">{traveler.rating}</span>
+                                                <span className="text-orange-400">★</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                )}
-                            </button>
-                            
-                            {showProfileDropdown && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+
+                                    <div className="bg-[#FFF8D6] rounded-xl p-3 mb-4 text-center">
+                                        <p className="text-sm font-bold text-gray-900 mb-0.5">{traveler.route}</p>
+                                        <p className="text-xs font-medium text-gray-600">{traveler.date}</p>
+                                    </div>
+
+                                    <div className="flex justify-between text-xs mb-4 font-semibold">
+                                        <span className="text-gray-900">Available space: {traveler.space}</span>
+                                        <span className="text-gray-900">Fee: {traveler.fee}</span>
+                                    </div>
+
                                     <button
-                                        onClick={handleLogout}
-                                        className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                                        onClick={() => navigate('/orderer/jetpicker-details', { state: { traveler } })}
+                                        className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-xl font-bold text-sm hover:bg-yellow-500 transition-colors shadow-sm"
                                     >
-                                        <LogOut size={18} />
-                                        <span>Logout</span>
+                                        View Details
                                     </button>
                                 </div>
-                            )}
+                            ))}
                         </div>
                     </div>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-auto p-8">
-                    {/* Hero Section */}
-                    <div className="mb-8 rounded-3xl overflow-hidden h-56 relative flex items-end justify-center pb-8">
-                        <img src={dashboardImage} alt="Dashboard" className="w-full h-full object-cover absolute inset-0" />
-                        <button className="relative bg-[#FFDF57] text-gray-900 px-6 py-2 rounded-full font-bold text-base hover:bg-yellow-500 transition-colors shadow-lg">
-                            Create an Order
-                        </button>
-                    </div>
-
-                    {/* Travelers Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {travelers.map(traveler => (
-                            <div key={traveler.id} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-                                        <User size={24} className="text-gray-600" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900">{traveler.name}</h3>
-                                        <p className="text-sm text-yellow-500 font-semibold">{traveler.rating} ⭐</p>
-                                    </div>
-                                </div>
-
-                                <div className="bg-yellow-50 rounded-lg p-3 mb-4">
-                                    <p className="text-sm font-semibold text-gray-900">{traveler.route}</p>
-                                    <p className="text-xs text-gray-600">{traveler.date}</p>
-                                </div>
-
-                                <div className="flex justify-between text-sm mb-4">
-                                    <span className="text-gray-600">Available space: <span className="font-semibold text-gray-900">{traveler.space}</span></span>
-                                    <span className="text-gray-600">Fee: <span className="font-semibold text-gray-900">{traveler.fee}</span></span>
-                                </div>
-
-                                <button className="w-full bg-[#FFDF57] text-gray-900 py-2 rounded-lg font-semibold hover:bg-yellow-500 transition-colors">
-                                    View Details
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                <MobileFooter activeTab="home" />
             </div>
         </div>
     );

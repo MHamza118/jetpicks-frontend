@@ -5,6 +5,7 @@ import ProfileSetup from '../pages/profile/ProfileSetup';
 import TravelAvailabilitySetup from '../pages/travel/TravelAvailabilitySetup';
 import OrdererDashboard from '../pages/orderer/Dashboard';
 import PickerDashboard from '../pages/picker/Dashboard';
+import JetPickerDetails from '../pages/orderer/JetPickerDetails';
 
 const AppRoutes = () => {
     return (
@@ -15,6 +16,7 @@ const AppRoutes = () => {
             <Route path="/profile-setup" element={<ProfileSetup />} />
             <Route path="/travel-availability-setup" element={<TravelAvailabilitySetup />} />
             <Route path="/orderer/dashboard" element={<OrdererDashboard />} />
+            <Route path="/orderer/jetpicker-details" element={<JetPickerDetails />} />
             <Route path="/picker/dashboard" element={<PickerDashboard />} />
         </Routes>
     );

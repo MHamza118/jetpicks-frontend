@@ -38,6 +38,12 @@ const Signup = () => {
         setError(null);
     };
 
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && !loading) {
+            handleSignup();
+        }
+    };
+
     const validateForm = (): boolean => {
         if (!formData.full_name.trim()) {
             setError('Full name is required');
@@ -131,6 +137,7 @@ const Signup = () => {
                         name="full_name"
                         value={formData.full_name}
                         onChange={handleInputChange}
+                        onKeyPress={handleKeyPress}
                     />
 
                     <Input
@@ -141,6 +148,7 @@ const Signup = () => {
                         name="phone_number"
                         value={formData.phone_number}
                         onChange={handleInputChange}
+                        onKeyPress={handleKeyPress}
                     />
 
                     <Input
@@ -151,6 +159,7 @@ const Signup = () => {
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
+                        onKeyPress={handleKeyPress}
                     />
 
                     <Input
@@ -161,6 +170,7 @@ const Signup = () => {
                         name="password"
                         value={formData.password}
                         onChange={handleInputChange}
+                        onKeyPress={handleKeyPress}
                         rightIcon={
                             <button onClick={() => setShowPassword(!showPassword)} className="text-gray-500 hover:text-gray-700">
                                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -176,6 +186,7 @@ const Signup = () => {
                         name="confirm_password"
                         value={formData.confirm_password}
                         onChange={handleInputChange}
+                        onKeyPress={handleKeyPress}
                         rightIcon={
                             <button onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="text-gray-500 hover:text-gray-700">
                                 {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
