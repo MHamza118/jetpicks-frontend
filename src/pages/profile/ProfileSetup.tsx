@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Camera, Flag, Globe, ChevronDown, X } from 'lucide-react';
+import axios from 'axios';
 import Button from '../../components/ui/Button';
 import { ES, US, GB, FR, DE, IT, CA, AU } from 'country-flag-icons/react/3x2';
 import { apiClient } from '../../api';
@@ -62,33 +63,40 @@ const ProfileSetup = () => {
         setError(null);
 
         try {
+            const token = storage.get(STORAGE_KEYS.AUTH_TOKEN);
             const formData = new FormData();
-            formData.append('country', selectedNationality);
-            formData.append('languages', JSON.stringify(selectedLanguages));
             
+            formData.append('country', selectedNationality);
+            selectedLanguages.forEach((lang, index) => {
+                formData.append(`languages[${index}]`, lang);
+            });
+            
+            // Always append image, even if null (backend will handle it)
             if (avatarFile) {
                 formData.append('image', avatarFile);
             }
-
-            const response = await apiClient.put<any>('/user/profile', formData);
             
-            if (response) {
-                const user = storage.get(STORAGE_KEYS.USER);
-                const updatedUser = {
-                    ...user,
-                    country: selectedNationality,
-                };
-                storage.set(STORAGE_KEYS.USER, updatedUser);
+            // Use POST instead of PUT for file uploads (Laravel limitation)
+            const response = await axios.post('http://localhost:8000/api/user/profile', formData, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
 
-                // Check if user is a picker
-                if (updatedUser.roles && updatedUser.roles.includes('PICKER')) {
-                    navigate('/travel-availability-setup');
-                } else {
-                    navigate('/orderer/dashboard');
-                }
+            const user = storage.get(STORAGE_KEYS.USER);
+            const updatedUser = {
+                ...user,
+                country: selectedNationality,
+            };
+            storage.set(STORAGE_KEYS.USER, updatedUser);
+
+            if (updatedUser.roles && updatedUser.roles.includes('PICKER')) {
+                navigate('/travel-availability-setup');
+            } else {
+                navigate('/orderer/dashboard');
             }
         } catch (err: any) {
-            const errorMessage = err?.message || 'Failed to update profile. Please try again.';
+            const errorMessage = err?.response?.data?.message || err?.message || 'Failed to update profile. Please try again.';
             setError(errorMessage);
         } finally {
             setLoading(false);

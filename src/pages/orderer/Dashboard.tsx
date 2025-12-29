@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Bell, User, LogOut } from 'lucide-react';
+import axios from 'axios';
 import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
 import dashboardImage from '../../assets/dashboard.jpeg';
@@ -18,6 +19,8 @@ interface Traveler {
 
 const OrdererDashboard = () => {
     const navigate = useNavigate();
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+    const [showProfileDropdown, setShowProfileDropdown] = useState(false);
     const [travelers] = useState<Traveler[]>([
         {
             id: '1',
@@ -47,6 +50,32 @@ const OrdererDashboard = () => {
             fee: '$10/kg',
         },
     ]);
+
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            try {
+                const token = storage.get(STORAGE_KEYS.AUTH_TOKEN);
+                const response = await axios.get('http://localhost:8000/api/user/profile', {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                
+                if (response.data?.data?.avatar_url) {
+                    // Prepend backend URL to avatar path
+                    const avatarPath = response.data.data.avatar_url;
+                    const fullUrl = avatarPath.startsWith('http') 
+                        ? avatarPath 
+                        : `http://localhost:8000${avatarPath}`;
+                    setAvatarUrl(fullUrl);
+                }
+            } catch (error) {
+                console.error('Failed to fetch profile:', error);
+            }
+        };
+        
+        fetchUserProfile();
+    }, []);
 
     const handleLogout = () => {
         storage.remove(STORAGE_KEYS.AUTH_TOKEN);
@@ -95,9 +124,36 @@ const OrdererDashboard = () => {
                         <button className="p-2 hover:opacity-80 transition-opacity">
                             <Bell size={20} className="text-gray-900" />
                         </button>
-                        <button className="p-2 hover:opacity-80 transition-opacity">
-                            <User size={20} className="text-gray-900" />
-                        </button>
+                        <div className="relative">
+                            <button 
+                                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                                className="focus:outline-none"
+                            >
+                                {avatarUrl ? (
+                                    <img 
+                                        src={avatarUrl} 
+                                        alt="Profile" 
+                                        className="w-10 h-10 rounded-full object-cover border-2 border-gray-900 cursor-pointer hover:opacity-80 transition-opacity"
+                                    />
+                                ) : (
+                                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
+                                        <span className="text-gray-600 text-sm font-semibold">U</span>
+                                    </div>
+                                )}
+                            </button>
+                            
+                            {showProfileDropdown && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                                    >
+                                        <LogOut size={18} />
+                                        <span>Logout</span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 

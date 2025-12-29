@@ -29,6 +29,12 @@ const Login = () => {
         setError(null);
     };
 
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && !loading) {
+            handleLogin();
+        }
+    };
+
     const validateForm = (): boolean => {
         if (!formData.username.trim()) {
             setError('Username or email is required');
@@ -57,9 +63,9 @@ const Login = () => {
             storage.set(STORAGE_KEYS.AUTH_TOKEN, response.data.token);
             storage.set(STORAGE_KEYS.USER, response.data.user);
 
-            // Role-based navigation
+            // Navigate to appropriate dashboard based on role
             if (response.data.user.roles && response.data.user.roles.includes('PICKER')) {
-                navigate('/travel-availability-setup');
+                navigate('/picker/dashboard');
             } else {
                 navigate('/orderer/dashboard');
             }
@@ -96,6 +102,7 @@ const Login = () => {
                         name="username"
                         value={formData.username}
                         onChange={handleInputChange}
+                        onKeyPress={handleKeyPress}
                     />
 
                     <Input
@@ -106,6 +113,7 @@ const Login = () => {
                         name="password"
                         value={formData.password}
                         onChange={handleInputChange}
+                        onKeyPress={handleKeyPress}
                         rightIcon={
                             <button onClick={() => setShowPassword(!showPassword)} className="text-gray-500 hover:text-gray-700">
                                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
