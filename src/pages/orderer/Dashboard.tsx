@@ -100,7 +100,10 @@ const OrdererDashboard = () => {
                     {/* Hero Section */}
                     <div className="mb-8 rounded-3xl overflow-hidden h-40 md:h-56 relative flex items-end justify-center pb-6 md:pb-8">
                         <img src={dashboardImage} alt="Dashboard" className="w-full h-full object-cover absolute inset-0" />
-                        <button className="relative bg-[#FFDF57] text-gray-900 px-6 py-2 rounded-full font-bold text-sm md:text-base hover:bg-yellow-500 transition-colors shadow-lg">
+                        <button 
+                            onClick={() => navigate('/orderer/create-order')}
+                            className="relative bg-[#FFDF57] text-gray-900 px-6 py-2 rounded-full font-bold text-sm md:text-base hover:bg-yellow-500 transition-colors shadow-lg"
+                        >
                             Create An Order
                         </button>
                     </div>

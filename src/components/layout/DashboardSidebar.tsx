@@ -17,8 +17,8 @@ const DashboardSidebar = ({ activeTab = 'dashboard' }: DashboardSidebarProps) =>
 
   return (
     <div className="hidden md:flex w-48 bg-[#FFDF57] p-6 flex-col">
-      <div className="mb-8">
-        <img src={logo} alt="Logo" className="w-12 h-12 object-cover rounded-lg" />
+      <div className="mb-8 flex justify-center">
+        <img src={logo} alt="Logo" className="w-16 h-16 object-cover rounded-lg" />
       </div>
 
       <nav className="space-y-4 flex-1">

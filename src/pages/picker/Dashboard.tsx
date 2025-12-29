@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, Luggage } from 'lucide-react';
 import { profileApi } from '../../api';
 import { API_CONFIG } from '../../config/api';
@@ -18,7 +17,6 @@ interface Order {
 }
 
 const PickerDashboard = () => {
-    const navigate = useNavigate();
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [avatarError, setAvatarError] = useState(false);
     const [orders] = useState<Order[]>([
