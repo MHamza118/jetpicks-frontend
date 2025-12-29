@@ -109,14 +109,14 @@ const Signup = () => {
             className="min-h-screen w-full flex items-center justify-center bg-cover bg-no-repeat overflow-auto py-6"
             style={{ backgroundImage: `url(${signupBg})`, backgroundPosition: 'center 70%' }}
         >
-            <div className="w-full max-w-[480px] border border-white/20 bg-white/30 backdrop-blur-[40px] rounded-[32px] p-8 shadow-[0_0_50px_rgba(255,255,255,0.3)] mx-4">
-                <div className="text-center mb-6">
-                    <h1 className="text-[28px] font-bold text-gray-900 mb-1">Sign Up</h1>
+            <div className="w-full max-w-[480px] border border-white/20 bg-white/30 backdrop-blur-[40px] rounded-[32px] p-6 shadow-[0_0_50px_rgba(255,255,255,0.3)] mx-4">
+                <div className="text-center mb-4">
+                    <h1 className="text-[24px] font-bold text-gray-900 mb-0.5">Sign Up</h1>
                     <p className="text-gray-500 font-medium text-xs">Create your jetpicker account</p>
                 </div>
 
                 {error && (
-                    <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                    <div className="mb-3 p-2 bg-red-100 border border-red-400 text-red-700 rounded-lg text-xs">
                         {error}
                     </div>
                 )}
@@ -184,41 +184,41 @@ const Signup = () => {
                     />
                 </div>
 
-                <div className="mt-5 space-y-3">
+                <div className="mt-4 space-y-2">
                     <div className="flex items-center justify-between">
-                        <span className="text-gray-600 font-medium text-sm">Remember me</span>
+                        <span className="text-gray-600 font-medium text-xs">Remember me</span>
                         <Toggle enabled={rememberMe} onChange={setRememberMe} />
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                         <button
                             onClick={() => setAgreed(!agreed)}
-                            className={`w-5 h-5 rounded-[4px] flex items-center justify-center border-2 transition-all ${agreed ? 'bg-gray-900 border-gray-900' : 'bg-transparent border-gray-400'
+                            className={`w-4 h-4 rounded-[3px] flex items-center justify-center border-2 transition-all flex-shrink-0 ${agreed ? 'bg-gray-900 border-gray-900' : 'bg-transparent border-gray-400'
                                 }`}
                         >
                             {agreed && (
-                                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
                                 </svg>
                             )}
                         </button>
-                        <span className="text-gray-900 font-bold text-sm">
+                        <span className="text-gray-900 font-bold text-xs">
                             I agree to terms and conditions
                         </span>
                     </div>
                 </div>
 
-                <div className="mt-6 flex justify-center">
+                <div className="mt-4 flex justify-center">
                     <Button 
                         onClick={handleSignup} 
-                        className="max-w-[260px] w-full py-3 text-base tracking-wide rounded-xl"
+                        className="max-w-[260px] w-full py-2 text-sm tracking-wide rounded-xl"
                         disabled={loading}
                     >
                         {loading ? 'Signing Up...' : 'Sign Up'}
                     </Button>
                 </div>
 
-                <div className="mt-4 text-center text-xs text-gray-600">
+                <div className="mt-3 text-center text-xs text-gray-600">
                     <span>Already have an account? </span>
                     <button
                         onClick={() => navigate('/login')}
