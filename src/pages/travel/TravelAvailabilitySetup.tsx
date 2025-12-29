@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Luggage, Calendar } from 'lucide-react';
-import Button from '../../../components/ui/Button';
-import { travelApi } from '../services/travelApi';
-import type { TravelJourneyPayload } from '../../../types/index';
+import Button from '../../components/ui/Button';
+import { travelApi } from '../../api';
+import type { TravelJourneyPayload } from '../../@types/index';
 
 const TravelAvailabilitySetup = () => {
     const navigate = useNavigate();

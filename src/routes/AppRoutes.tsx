@@ -1,10 +1,10 @@
 import { Routes, Route } from 'react-router-dom';
-import Login from '../features/auth/pages/Login';
-import Signup from '../features/auth/pages/Signup';
-import ProfileSetup from '../features/profile/pages/ProfileSetup';
-import TravelAvailabilitySetup from '../features/travel/pages/TravelAvailabilitySetup';
-import OrdererDashboard from '../features/orderer/pages/Dashboard';
-import PickerDashboard from '../features/picker/pages/Dashboard';
+import Login from '../pages/auth/Login';
+import Signup from '../pages/auth/Signup';
+import ProfileSetup from '../pages/profile/ProfileSetup';
+import TravelAvailabilitySetup from '../pages/travel/TravelAvailabilitySetup';
+import OrdererDashboard from '../pages/orderer/Dashboard';
+import PickerDashboard from '../pages/picker/Dashboard';
 
 const AppRoutes = () => {
     return (

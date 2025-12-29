@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Camera, Flag, Globe, ChevronDown, X } from 'lucide-react';
-import Button from '../../../components/ui/Button';
+import Button from '../../components/ui/Button';
 import { ES, US, GB, FR, DE, IT, CA, AU } from 'country-flag-icons/react/3x2';
-import { apiClient } from '../../../services/api';
-import { storage } from '../../../utils';
-import { STORAGE_KEYS } from '../../../constants';
+import { apiClient } from '../../api';
+import { storage } from '../../utils';
+import { STORAGE_KEYS } from '../../constants';
 
 const ProfileSetup = () => {
     const navigate = useNavigate();

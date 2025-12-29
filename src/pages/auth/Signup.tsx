@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Phone, Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import Input from '../../../components/ui/Input';
-import Button from '../../../components/ui/Button';
-import Toggle from '../../../components/ui/Toggle';
-import RoleSelector from '../components/RoleSelector';
-import signupBg from '../../../assets/signupbg.jpg';
-import { authApi } from '../../../services/authApi';
-import { storage } from '../../../utils';
-import { STORAGE_KEYS } from '../../../constants';
-import type { SignupPayload } from '../../../types';
+import Input from '../../components/ui/Input';
+import Button from '../../components/ui/Button';
+import Toggle from '../../components/ui/Toggle';
+import RoleSelector from '../../components/auth/RoleSelector';
+import signupBg from '../../assets/signupbg.jpg';
+import { authApi } from '../../api';
+import { storage } from '../../utils';
+import { STORAGE_KEYS } from '../../constants';
+import type { SignupPayload } from '../../@types';
 
 const Signup = () => {
     const navigate = useNavigate();

@@ -1,50 +1,49 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, LogOut } from 'lucide-react';
-import { storage } from '../../../utils';
-import { STORAGE_KEYS } from '../../../constants';
-import dashboardImage from '../../../assets/dashboard.jpeg';
-import logo from '../../../assets/logo.jpg';
+import { Search, Bell, User, LogOut, MapPin, Calendar, Luggage } from 'lucide-react';
+import { storage } from '../../utils';
+import { STORAGE_KEYS } from '../../constants';
+import logo from '../../assets/logo.jpg';
 
-interface Traveler {
+interface Order {
     id: string;
-    name: string;
+    ordererName: string;
     rating: number;
     route: string;
     date: string;
-    space: string;
-    fee: string;
+    luggage: string;
+    reward: string;
 }
 
-const OrdererDashboard = () => {
+const PickerDashboard = () => {
     const navigate = useNavigate();
-    const [travelers] = useState<Traveler[]>([
+    const [orders] = useState<Order[]>([
         {
             id: '1',
-            name: 'Farah Shammen',
-            rating: 4.8,
-            route: 'From London - Madrid',
-            date: '25 Nov',
-            space: '10kg',
-            fee: '$10/kg',
+            ordererName: 'Sarah J.',
+            rating: 4.9,
+            route: 'Madrid - New York',
+            date: '28 Nov',
+            luggage: '5kg',
+            reward: '$50',
         },
         {
             id: '2',
-            name: 'M Hamza',
-            rating: 4.8,
-            route: 'From London - Madrid',
-            date: '25 Nov',
-            space: '10kg',
-            fee: '$10/kg',
+            ordererName: 'John D.',
+            rating: 4.7,
+            route: 'Barcelona - London',
+            date: '30 Nov',
+            luggage: '8kg',
+            reward: '$75',
         },
         {
             id: '3',
-            name: 'Mathew M.',
+            ordererName: 'Emma L.',
             rating: 4.8,
-            route: 'From London - Madrid',
-            date: '25 Nov',
-            space: '10kg',
-            fee: '$10/kg',
+            route: 'Valencia - Paris',
+            date: '02 Dec',
+            luggage: '6kg',
+            reward: '$60',
         },
     ]);
 
@@ -70,7 +69,7 @@ const OrdererDashboard = () => {
                         Messages
                     </button>
                     <button className="w-full text-left px-4 py-2 text-gray-900 font-semibold text-sm hover:opacity-80 transition-opacity">
-                        My Orders
+                        My Journeys
                     </button>
                     <button className="w-full text-left px-4 py-2 text-gray-900 font-semibold text-sm hover:opacity-80 transition-opacity">
                         Profile
@@ -88,7 +87,7 @@ const OrdererDashboard = () => {
                             <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
                             <input
                                 type="text"
-                                placeholder="Search a traveler or route"
+                                placeholder="Search an order or route"
                                 className="pl-10 pr-4 py-2 bg-white rounded-full text-sm text-gray-700 placeholder-gray-500 focus:outline-none"
                             />
                         </div>
@@ -104,35 +103,48 @@ const OrdererDashboard = () => {
                 {/* Content */}
                 <div className="flex-1 overflow-auto p-8">
                     {/* Hero Section */}
-                    <div className="mb-8 rounded-3xl overflow-hidden h-56 relative flex items-end justify-center pb-8">
-                        <img src={dashboardImage} alt="Dashboard" className="w-full h-full object-cover absolute inset-0" />
-                        <button className="relative bg-[#FFDF57] text-gray-900 px-6 py-2 rounded-full font-bold text-base hover:bg-yellow-500 transition-colors shadow-lg">
-                            Create an Order
-                        </button>
+                    <div className="bg-blue-100 rounded-3xl p-8 mb-8">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-900 mb-2">Available Orders</h2>
+                                <p className="text-gray-700">Browse and accept orders that match your travel plans</p>
+                            </div>
+                            <div className="text-5xl">📦</div>
+                        </div>
                     </div>
 
-                    {/* Travelers Grid */}
+                    {/* Orders Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {travelers.map(traveler => (
-                            <div key={traveler.id} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                        {orders.map(order => (
+                            <div key={order.id} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
                                 <div className="flex items-center gap-3 mb-4">
                                     <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
                                         <User size={24} className="text-gray-600" />
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-gray-900">{traveler.name}</h3>
-                                        <p className="text-sm text-yellow-500 font-semibold">{traveler.rating} ⭐</p>
+                                        <h3 className="font-semibold text-gray-900">{order.ordererName}</h3>
+                                        <p className="text-sm text-yellow-500 font-semibold">{order.rating} ⭐</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3 mb-4">
+                                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                                        <MapPin size={16} className="text-gray-600" />
+                                        <span>{order.route}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                                        <Calendar size={16} className="text-gray-600" />
+                                        <span>{order.date}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                                        <Luggage size={16} className="text-gray-600" />
+                                        <span>{order.luggage}</span>
                                     </div>
                                 </div>
 
                                 <div className="bg-yellow-50 rounded-lg p-3 mb-4">
-                                    <p className="text-sm font-semibold text-gray-900">{traveler.route}</p>
-                                    <p className="text-xs text-gray-600">{traveler.date}</p>
-                                </div>
-
-                                <div className="flex justify-between text-sm mb-4">
-                                    <span className="text-gray-600">Available space: <span className="font-semibold text-gray-900">{traveler.space}</span></span>
-                                    <span className="text-gray-600">Fee: <span className="font-semibold text-gray-900">{traveler.fee}</span></span>
+                                    <p className="text-sm text-gray-600">Reward</p>
+                                    <p className="text-lg font-bold text-gray-900">{order.reward}</p>
                                 </div>
 
                                 <button className="w-full bg-[#FFDF57] text-gray-900 py-2 rounded-lg font-semibold hover:bg-yellow-500 transition-colors">
@@ -147,4 +159,4 @@ const OrdererDashboard = () => {
     );
 };
 
-export default OrdererDashboard;
+export default PickerDashboard;

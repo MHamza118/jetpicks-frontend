@@ -1,6 +1,6 @@
 import { API_BASE_URL, API_TIMEOUT, STORAGE_KEYS, ERROR_MESSAGES } from '../constants';
 import { storage, errorUtils } from '../utils';
-import type { ApiError } from '../types/index';
+import type { ApiError } from '../@types/index';
 
 class ApiClient {
   private baseURL: string;

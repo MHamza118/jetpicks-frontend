@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import Input from '../../../components/ui/Input';
-import Button from '../../../components/ui/Button';
-import signupBg from '../../../assets/signupbg.jpg';
-import { authApi } from '../../../services/authApi';
-import { storage } from '../../../utils';
-import { STORAGE_KEYS } from '../../../constants';
-import type { LoginPayload } from '../../../types';
+import Input from '../../components/ui/Input';
+import Button from '../../components/ui/Button';
+import signupBg from '../../assets/signupbg.jpg';
+import { authApi } from '../../api';
+import { storage } from '../../utils';
+import { STORAGE_KEYS } from '../../constants';
+import type { LoginPayload } from '../../@types';
 
 const Login = () => {
     const navigate = useNavigate();

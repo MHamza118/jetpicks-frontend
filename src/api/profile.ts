@@ -1,5 +1,5 @@
-import { apiClient } from './api';
-import type { User, ProfileSetupPayload } from '../types/index';
+import { apiClient } from './client';
+import type { User, ProfileSetupPayload } from '../@types/index';
 
 export const profileApi = {
   getProfile: () =>
