@@ -1,23 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, ArrowLeft } from 'lucide-react';
-import { profileApi } from '../../api';
+import { profileApi, ordersApi } from '../../api';
 import { API_CONFIG } from '../../config/api';
+import { useOrder } from '../../context/OrderContext';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 
 const CreateOrder = () => {
     const navigate = useNavigate();
+    const { orderData, updateOrderData } = useOrder();
     const [currentStep, setCurrentStep] = useState(1);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [avatarError, setAvatarError] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
-        originCountry: '',
-        originCity: '',
-        destinationCountry: '',
-        destinationCity: '',
+        originCountry: orderData.originCountry || '',
+        originCity: orderData.originCity || '',
+        destinationCountry: orderData.destinationCountry || '',
+        destinationCity: orderData.destinationCity || '',
         useLocation: false,
-        specialNotes: '',
+        specialNotes: orderData.specialNotes || '',
     });
 
     useEffect(() => {
@@ -49,10 +52,36 @@ const CreateOrder = () => {
         }));
     };
 
-    const handleNext = () => {
+    const handleNext = async () => {
         if (currentStep < 3) {
             if (currentStep === 1) {
-                navigate('/orderer/create-order-step2');
+                setLoading(true);
+                try {
+                    // Save order to backend immediately
+                    const res = await ordersApi.createOrder({
+                        origin_country: formData.originCountry,
+                        origin_city: formData.originCity,
+                        destination_country: formData.destinationCountry,
+                        destination_city: formData.destinationCity,
+                        special_notes: formData.specialNotes,
+                    });
+
+                    const orderId = (res as any).data.id;
+                    updateOrderData({
+                        originCountry: formData.originCountry,
+                        originCity: formData.originCity,
+                        destinationCountry: formData.destinationCountry,
+                        destinationCity: formData.destinationCity,
+                        specialNotes: formData.specialNotes,
+                        orderId,
+                    });
+                    navigate('/orderer/create-order-step2');
+                } catch (error) {
+                    console.error('Failed to create order:', error);
+                    alert('Failed to create order. Please try again.');
+                } finally {
+                    setLoading(false);
+                }
             } else {
                 setCurrentStep(currentStep + 1);
             }
@@ -257,9 +286,10 @@ const CreateOrder = () => {
                         <div className="mt-8 md:mt-8">
                             <button
                                 onClick={handleNext}
-                                className="w-full px-6 py-3 md:py-3 bg-[#FFDF57] text-gray-900 font-bold rounded-lg hover:bg-yellow-500 transition-colors text-base md:text-base"
+                                disabled={loading}
+                                className="w-full px-6 py-3 md:py-3 bg-[#FFDF57] text-gray-900 font-bold rounded-lg hover:bg-yellow-500 transition-colors text-base md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {currentStep === 3 ? 'Submit' : 'Next'}
+                                {loading ? 'Loading...' : (currentStep === 3 ? 'Submit' : 'Next')}
                             </button>
                         </div>
                     </div>

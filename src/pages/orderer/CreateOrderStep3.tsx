@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { profileApi } from '../../api';
+import { profileApi, ordersApi } from '../../api';
 import { API_CONFIG } from '../../config/api';
+import { useOrder } from '../../context/OrderContext';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 
 const CreateOrderStep3 = () => {
   const navigate = useNavigate();
-  const [reward, setReward] = useState('');
+  const { orderData, updateOrderData } = useOrder();
+  const [reward, setReward] = useState(orderData.reward || '');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -34,9 +37,31 @@ const CreateOrderStep3 = () => {
     fetchUserProfile();
   }, []);
 
-  const handleNext = () => {
-    if (reward.trim()) {
+  const handleNext = async () => {
+    if (!reward.trim()) {
+      alert('Please enter a reward amount');
+      return;
+    }
+
+    if (!orderData.orderId) {
+      alert('Order ID not found. Please start from step 1.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Save reward to backend
+      await ordersApi.setReward(orderData.orderId, {
+        reward_amount: parseFloat(reward),
+      });
+
+      updateOrderData({ reward });
       navigate('/orderer/create-order-step4');
+    } catch (error) {
+      console.error('Failed to set reward:', error);
+      alert('Failed to set reward. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -102,10 +127,10 @@ const CreateOrderStep3 = () => {
 
           <button
             onClick={handleNext}
-            disabled={!reward.trim()}
+            disabled={!reward.trim() || loading}
             className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-auto"
           >
-            Next
+            {loading ? 'Loading...' : 'Next'}
           </button>
         </div>
 
@@ -126,10 +151,10 @@ const CreateOrderStep3 = () => {
 
             <button
               onClick={handleNext}
-              disabled={!reward.trim()}
+              disabled={!reward.trim() || loading}
               className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Next
+              {loading ? 'Loading...' : 'Next'}
             </button>
           </div>
         </div>

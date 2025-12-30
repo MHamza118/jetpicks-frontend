@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, Plus } from 'lucide-react';
-import { profileApi } from '../../api';
+import { ordersApi, profileApi } from '../../api';
 import { API_CONFIG } from '../../config/api';
+import { useOrder } from '../../context/OrderContext';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 
@@ -14,25 +15,29 @@ interface OrderItem {
     price: string;
     quantity: string;
     notes: string;
-    images: string[];
+    images: File[];
 }
 
 const CreateOrderStep2 = () => {
     const navigate = useNavigate();
+    const { orderData, updateOrderData } = useOrder();
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [avatarError, setAvatarError] = useState(false);
-    const [items, setItems] = useState<OrderItem[]>([
-        {
-            id: '1',
-            name: 'Watch',
-            storeLink: '',
-            weight: '1/4 Kg',
-            price: '$ 50',
-            quantity: '01',
-            notes: '',
-            images: [],
-        },
-    ]);
+    const [loading, setLoading] = useState(false);
+    const [items, setItems] = useState<OrderItem[]>(
+        orderData.items.length > 0 ? orderData.items : [
+            {
+                id: '1',
+                name: '',
+                storeLink: '',
+                weight: '',
+                price: '',
+                quantity: '',
+                notes: '',
+                images: [],
+            },
+        ]
+    );
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -78,9 +83,9 @@ const CreateOrderStep2 = () => {
     const handleImageUpload = (itemId: string, e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files) {
-            const newImages = Array.from(files).map(file => URL.createObjectURL(file));
+            const newFiles = Array.from(files);
             setItems(items.map(item =>
-                item.id === itemId ? { ...item, images: [...item.images, ...newImages] } : item
+                item.id === itemId ? { ...item, images: [...item.images, ...newFiles] } : item
             ));
         }
     };
@@ -89,8 +94,44 @@ const CreateOrderStep2 = () => {
         navigate(-1);
     };
 
-    const handleNext = () => {
-        navigate('/orderer/create-order-step3');
+    const handleNext = async () => {
+        if (!orderData.orderId) {
+            alert('Order ID not found. Please start from step 1.');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // Save all items to backend
+            for (const item of items) {
+                const formData = new FormData();
+                formData.append('item_name', item.name);
+                formData.append('weight', item.weight);
+                formData.append('price', item.price);
+                formData.append('quantity', (parseInt(item.quantity) || 1).toString());
+                formData.append('special_notes', item.notes);
+
+                if (item.storeLink?.trim()) {
+                    formData.append('store_link', item.storeLink.trim());
+                }
+
+                if (item.images && item.images.length > 0) {
+                    item.images.forEach(image => {
+                        formData.append('product_images[]', image);
+                    });
+                }
+
+                await ordersApi.addOrderItem(orderData.orderId, formData);
+            }
+
+            updateOrderData({ items });
+            navigate('/orderer/create-order-step3');
+        } catch (error) {
+            console.error('Failed to save items:', error);
+            alert('Failed to save items. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleAvatarError = () => {
@@ -115,9 +156,8 @@ const CreateOrderStep2 = () => {
                         {[1, 2, 3].map(step => (
                             <div
                                 key={step}
-                                className={`w-2 h-2 rounded-full ${
-                                    step === 2 ? 'bg-[#FFDF57]' : step < 2 ? 'bg-gray-400' : 'bg-gray-200'
-                                }`}
+                                className={`w-2 h-2 rounded-full ${step === 2 ? 'bg-[#FFDF57]' : step < 2 ? 'bg-gray-400' : 'bg-gray-200'
+                                    }`}
                             />
                         ))}
                     </div>
@@ -126,8 +166,8 @@ const CreateOrderStep2 = () => {
 
                 {/* Desktop Header */}
                 <div className="hidden md:block">
-                    <DashboardHeader 
-                        title="Dashboard" 
+                    <DashboardHeader
+                        title="Dashboard"
                         avatarUrl={avatarUrl}
                         avatarError={avatarError}
                         onAvatarError={handleAvatarError}
@@ -146,7 +186,7 @@ const CreateOrderStep2 = () => {
                                     <div className="flex gap-3 mb-6 flex-wrap">
                                         {item.images.map((image, idx) => (
                                             <div key={idx} className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200 flex-shrink-0">
-                                                <img src={image} alt={`Product ${idx + 1}`} className="w-full h-full object-cover rounded-lg" />
+                                                <img src={URL.createObjectURL(image)} alt={`Product ${idx + 1}`} className="w-full h-full object-cover rounded-lg" />
                                             </div>
                                         ))}
                                         <label className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:bg-gray-50 transition-colors flex-shrink-0 cursor-pointer">
@@ -245,9 +285,10 @@ const CreateOrderStep2 = () => {
 
                         <button
                             onClick={handleNext}
-                            className="w-full mt-8 px-6 py-3 bg-[#FFDF57] text-gray-900 font-bold rounded-lg hover:bg-yellow-500 transition-colors text-base"
+                            disabled={loading}
+                            className={`w-full mt-8 px-6 py-3 bg-[#FFDF57] text-gray-900 font-bold rounded-lg hover:bg-yellow-500 transition-colors text-base ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                            Next
+                            {loading ? 'Saving...' : 'Next'}
                         </button>
                     </div>
                 </div>

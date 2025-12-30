@@ -1,19 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { profileApi } from '../../api';
+import { profileApi, ordersApi } from '../../api';
 import { API_CONFIG } from '../../config/api';
+import { useOrder } from '../../context/OrderContext';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 import placeOrderImage from '../../assets/placeorder.png';
 
 const CreateOrderStep4 = () => {
   const navigate = useNavigate();
+  const { orderData, resetOrderData } = useOrder();
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [lawsAgreed, setLawsAgreed] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [orderDetails, setOrderDetails] = useState<any>(null);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -38,6 +42,20 @@ const CreateOrderStep4 = () => {
   }, []);
 
   useEffect(() => {
+    if (orderData.orderId) {
+      const fetchOrderDetails = async () => {
+        try {
+          const res = await ordersApi.getOrderDetails(orderData.orderId!);
+          setOrderDetails((res as any).data);
+        } catch (error) {
+          console.error('Failed to fetch order details:', error);
+        }
+      };
+      fetchOrderDetails();
+    }
+  }, [orderData.orderId]);
+
+  useEffect(() => {
     if (orderPlaced) {
       const timer = setTimeout(() => {
         navigate('/orderer/dashboard');
@@ -50,9 +68,19 @@ const CreateOrderStep4 = () => {
     navigate(-1);
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (termsAgreed && lawsAgreed) {
-      setOrderPlaced(true);
+      setLoading(true);
+      try {
+        // Order is already saved in all steps, just show success
+        setOrderPlaced(true);
+        resetOrderData();
+      } catch (error) {
+        console.error('Failed to complete order:', error);
+        alert('Failed to complete order. Please try again.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -72,8 +100,8 @@ const CreateOrderStep4 = () => {
 
         <div className="flex-1 flex flex-col h-dvh md:h-screen overflow-hidden relative">
           <div className="hidden md:block">
-            <DashboardHeader 
-              title="Dashboard" 
+            <DashboardHeader
+              title="Dashboard"
               avatarUrl={avatarUrl}
               avatarError={avatarError}
               onAvatarError={handleAvatarError}
@@ -88,32 +116,44 @@ const CreateOrderStep4 = () => {
               <div className="bg-gray-50 rounded-xl p-6 mb-6 space-y-4">
                 <div className="flex justify-between">
                   <span className="text-gray-600 font-medium">Route</span>
-                  <span className="text-gray-900 font-semibold">From London to Madrid</span>
+                  <span className="text-gray-900 font-semibold">From {orderDetails?.origin_city} to {orderDetails?.destination_city}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 font-medium">Item list</span>
-                  <span className="text-gray-900 font-semibold">Watch</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 font-medium">Store</span>
-                  <span className="text-gray-900 font-semibold">Amazone</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 font-medium">Weight</span>
-                  <span className="text-gray-900 font-semibold">1/4kg</span>
-                </div>
+                {orderDetails?.items && orderDetails.items.length > 0 && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 font-medium">Item list</span>
+                      <span className="text-gray-900 font-semibold">{orderDetails.items[0].item_name}</span>
+                    </div>
+                    {orderDetails.items[0].store_link && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 font-medium">Store</span>
+                        <span className="text-gray-900 font-semibold">{orderDetails.items[0].store_link}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 font-medium">Weight</span>
+                      <span className="text-gray-900 font-semibold">{orderDetails.items[0].weight}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-600 font-medium">Reward</span>
-                  <span className="text-gray-900 font-semibold">$10</span>
+                  <span className="text-gray-900 font-semibold">${orderDetails?.reward_amount}</span>
                 </div>
               </div>
 
-              {/* Product Image */}
-              <div className="flex justify-center mb-8">
-                <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <img src="https://images.unsplash.com/photo-1523170335258-f5ed11844a49?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80" alt="Product" className="w-full h-full object-cover rounded-lg" />
+              {/* Product Images */}
+              {orderDetails?.items && orderDetails.items[0]?.product_images && orderDetails.items[0].product_images.length > 0 && (
+                <div className="flex justify-center mb-8">
+                  <div className="flex gap-3 flex-wrap justify-center">
+                    {orderDetails.items[0].product_images.map((imageName: string, idx: number) => (
+                      <div key={idx} className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                        <span className="text-xs text-gray-500 text-center p-2">{imageName}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -152,9 +192,8 @@ const CreateOrderStep4 = () => {
             {[1, 2, 3, 4].map(step => (
               <div
                 key={step}
-                className={`w-2 h-2 rounded-full ${
-                  step === 4 ? 'bg-[#FFDF57]' : step < 4 ? 'bg-gray-400' : 'bg-gray-200'
-                }`}
+                className={`w-2 h-2 rounded-full ${step === 4 ? 'bg-[#FFDF57]' : step < 4 ? 'bg-gray-400' : 'bg-gray-200'
+                  }`}
               />
             ))}
           </div>
@@ -173,34 +212,58 @@ const CreateOrderStep4 = () => {
 
             {/* Summary Card */}
             <div className="bg-gray-50 rounded-xl p-6 mb-6 space-y-4">
-              <div className="flex justify-between">
-                <span className="text-gray-600 font-medium">Route</span>
-                <span className="text-gray-900 font-semibold">From London to Madrid</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 font-medium">Item list</span>
-                <span className="text-gray-900 font-semibold">Watch</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 font-medium">Store</span>
-                <span className="text-gray-900 font-semibold">Amazone</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 font-medium">Weight</span>
-                <span className="text-gray-900 font-semibold">1/4kg</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 font-medium">Reward</span>
-                <span className="text-gray-900 font-semibold">$10</span>
-              </div>
+              {!orderDetails ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-600">Loading order details...</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 font-medium">Route</span>
+                    <span className="text-gray-900 font-semibold">From {orderDetails?.origin_city} to {orderDetails?.destination_city}</span>
+                  </div>
+                  {orderDetails?.items && orderDetails.items.length > 0 && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 font-medium">Item list</span>
+                        <span className="text-gray-900 font-semibold">{orderDetails.items[0].item_name}</span>
+                      </div>
+                      {orderDetails.items[0].store_link && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 font-medium">Store</span>
+                          <span className="text-gray-900 font-semibold">{orderDetails.items[0].store_link}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 font-medium">Weight</span>
+                        <span className="text-gray-900 font-semibold">{orderDetails.items[0].weight}</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 font-medium">Reward</span>
+                    <span className="text-gray-900 font-semibold">${orderDetails?.reward_amount}</span>
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* Product Image */}
-            <div className="flex justify-center mb-8">
-              <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
-                <img src="https://images.unsplash.com/photo-1523170335258-f5ed11844a49?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80" alt="Product" className="w-full h-full object-cover rounded-lg" />
+            {/* Product Images */}
+            {orderDetails?.items && orderDetails.items[0]?.product_images && orderDetails.items[0].product_images.length > 0 && (
+              <div className="flex justify-center mb-8">
+                <div className="flex gap-3 flex-wrap justify-center">
+                  {orderDetails.items[0].product_images.map((imagePath: string, idx: number) => {
+                    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
+                    const fullUrl = imagePath.startsWith('http') ? imagePath : `${baseUrl}${imagePath}`;
+                    return (
+                      <div key={idx} className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200">
+                        <img src={fullUrl} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Checkboxes */}
             <div className="space-y-3 mb-8">
@@ -227,10 +290,10 @@ const CreateOrderStep4 = () => {
             {/* Place Order Button */}
             <button
               onClick={handlePlaceOrder}
-              disabled={!termsAgreed || !lawsAgreed}
+              disabled={!termsAgreed || !lawsAgreed || loading}
               className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Place Order
+              {loading ? 'Placing Order...' : 'Place Order'}
             </button>
           </div>
         </div>
