@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ordersApi } from '../../api/orders';
 import { API_CONFIG } from '../../config/api';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
@@ -41,6 +41,7 @@ interface OrderDetails {
 
 const PickerOrderDetails = () => {
   const { orderId } = useParams<{ orderId: string }>();
+  const navigate = useNavigate();
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -304,6 +305,7 @@ const PickerOrderDetails = () => {
                 Accept Delivery
               </button>
               <button
+                onClick={() => navigate(`/picker/orders/${orderId}/counter-offer`)}
                 className="flex-1 border-2 border-gray-300 text-gray-900 py-3 rounded-lg font-bold hover:bg-gray-50 transition-colors text-base"
               >
                 Send Counter Offer
