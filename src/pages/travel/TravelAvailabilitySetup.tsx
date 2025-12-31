@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, Luggage, Calendar } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { travelApi, profileApi } from '../../api';
@@ -11,6 +11,8 @@ import type { TravelJourneyPayload } from '../../@types/index';
 
 const TravelAvailabilitySetup = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const isFromDashboard = location.pathname === '/picker/create-journey';
     const [useLocationCheckbox, setUseLocationCheckbox] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -113,20 +115,22 @@ const TravelAvailabilitySetup = () => {
     };
 
     return (
-        <div className="flex h-screen bg-white flex-col md:flex-row">
-            <DashboardSidebar activeTab="dashboard" />
+        <div className={isFromDashboard ? "flex h-screen bg-white flex-col md:flex-row" : "min-h-screen w-full flex items-center justify-center bg-white overflow-hidden py-6"}>
+            {isFromDashboard && <DashboardSidebar activeTab="dashboard" />}
 
-            <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-                <DashboardHeader
-                    title="Create Journey"
-                    showBackButton={true}
-                    avatarUrl={avatarUrl}
-                    avatarError={avatarError}
-                    onAvatarError={handleAvatarError}
-                />
+            <div className={isFromDashboard ? "flex-1 flex flex-col h-full overflow-hidden relative" : "w-full max-w-[600px] mx-auto"}>
+                {isFromDashboard && (
+                    <DashboardHeader
+                        title="Create Journey"
+                        showBackButton={true}
+                        avatarUrl={avatarUrl}
+                        avatarError={avatarError}
+                        onAvatarError={handleAvatarError}
+                    />
+                )}
 
-                <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white">
-                    <div className="max-w-2xl mx-auto">
+                <div className={isFromDashboard ? "flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white" : "border border-gray-200 bg-white rounded-[32px] p-8 shadow-lg"}>
+                    <div className={isFromDashboard ? "max-w-2xl mx-auto" : ""}>
                         <div className="text-center mb-6">
                             <h1 className="text-[22px] font-bold text-gray-900 mb-1">Travel Availability Setup</h1>
                             <p className="text-gray-500 text-xs font-medium">Share your travel details to get relevant Jetorders</p>
@@ -311,7 +315,7 @@ const TravelAvailabilitySetup = () => {
                     </div>
                 </div>
 
-                <MobileFooter activeTab="home" />
+                {isFromDashboard && <MobileFooter activeTab="home" />}
             </div>
         </div>
     );

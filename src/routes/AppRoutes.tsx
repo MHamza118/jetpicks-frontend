@@ -20,6 +20,9 @@ const AppRoutes = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/profile-setup" element={<ProfileSetup />} />
             
+            {/* Travel Availability - Used during signup and in dashboard */}
+            <Route path="/travel-availability-setup" element={<TravelAvailabilitySetup />} />
+            
             {/* Orderer Routes - Protected */}
             <Route 
               path="/orderer/dashboard" 
@@ -87,9 +90,6 @@ const AppRoutes = () => {
                 </ProtectedRoute>
               } 
             />
-            
-            {/* Shared Routes */}
-            <Route path="/travel-availability-setup" element={<TravelAvailabilitySetup />} />
         </Routes>
     );
 };
