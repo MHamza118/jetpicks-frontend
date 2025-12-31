@@ -1,55 +1,37 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { profileApi } from '../../api';
+import { profileApi, dashboardApi } from '../../api';
 import { API_CONFIG } from '../../config/api';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
 import dashboardImage from '../../assets/dashboard.jpeg';
 
-interface Traveler {
+interface Picker {
     id: string;
-    name: string;
-    rating: number;
-    route: string;
-    date: string;
-    space: string;
-    fee: string;
+    picker: {
+        id: string;
+        full_name: string;
+        avatar_url: string;
+        rating: number;
+        completed_deliveries: number;
+    };
+    departure_country: string;
+    departure_city: string;
+    departure_date: string;
+    arrival_country: string;
+    arrival_city: string;
+    arrival_date: string;
+    luggage_weight_capacity: number;
 }
 
 const OrdererDashboard = () => {
     const navigate = useNavigate();
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [avatarError, setAvatarError] = useState(false);
-    const [travelers] = useState<Traveler[]>([
-        {
-            id: '1',
-            name: 'Methew M.',
-            rating: 4.8,
-            route: 'From London - Madrid',
-            date: '25 Nov',
-            space: '10kg',
-            fee: '$10/kg',
-        },
-        {
-            id: '2',
-            name: 'Mathew M.',
-            rating: 4.8,
-            route: 'From London - Madrid',
-            date: '25 Nov',
-            space: '10kg',
-            fee: '$10/kg',
-        },
-        {
-            id: '3',
-            name: 'Mathew M.',
-            rating: 4.8,
-            route: 'From London - Madrid',
-            date: '25 Nov',
-            space: '10kg',
-            fee: '$10/kg',
-        },
-    ]);
+    const [pickers, setPickers] = useState<Picker[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -74,6 +56,32 @@ const OrdererDashboard = () => {
 
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') fetchUserProfile();
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const response = await dashboardApi.getOrdererDashboard(1, 20) as any;
+                const data = response.data || response;
+                setPickers(data.available_pickers?.data || []);
+            } catch (err) {
+                console.error('Failed to fetch dashboard data:', err);
+                setError('Failed to load available pickers');
+                setPickers([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') fetchDashboardData();
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -115,42 +123,81 @@ const OrdererDashboard = () => {
                             <button className="bg-[#FFDF57] px-4 py-1.5 rounded-full text-xs font-bold text-gray-900">See all</button>
                         </div>
 
-                        {/* Travelers Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {travelers.map(traveler => (
-                                <div key={traveler.id} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-[0_2px_20px_rgba(0,0,0,0.04)]">
-                                    <div className="flex items-start gap-3 mb-4">
-                                        <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-gray-100">
-                                            <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80" alt={traveler.name} className="w-full h-full object-cover" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h3 className="font-bold text-gray-900 text-base">{traveler.name}</h3>
-                                            <div className="flex items-center text-sm">
-                                                <span className="font-bold text-gray-900 mr-1">{traveler.rating}</span>
-                                                <span className="text-orange-400">★</span>
+                        {/* Loading State */}
+                        {loading && (
+                            <div className="flex justify-center items-center py-12">
+                                <div className="text-gray-600">Loading available pickers...</div>
+                            </div>
+                        )}
+
+                        {/* Error State */}
+                        {error && !loading && (
+                            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-red-700">
+                                {error}
+                            </div>
+                        )}
+
+                        {/* Empty State */}
+                        {!loading && !error && pickers.length === 0 && (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-yellow-700">
+                                No available pickers at the moment. Try creating an order to find matching pickers.
+                            </div>
+                        )}
+
+                        {/* Pickers Grid */}
+                        {!loading && pickers.length > 0 && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {pickers.map(item => (
+                                    <div key={item.id} className="bg-white border border-gray-100 rounded-lg p-4 shadow-[0_2px_20px_rgba(0,0,0,0.04)]">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-100">
+                                                {item.picker.avatar_url ? (
+                                                    <img 
+                                                        src={item.picker.avatar_url.startsWith('http') 
+                                                            ? item.picker.avatar_url 
+                                                            : `${API_CONFIG.BASE_URL.replace('/api', '')}${item.picker.avatar_url}`}
+                                                        alt={item.picker.full_name} 
+                                                        className="w-full h-full object-cover" 
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600 text-xs font-bold">
+                                                        {item.picker.full_name.charAt(0)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-gray-900 text-sm">{item.picker.full_name}</h3>
+                                                <div className="flex items-center text-xs">
+                                                    <span className="font-bold text-gray-900 mr-0.5">{item.picker.rating}</span>
+                                                    <span className="text-orange-400">★</span>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className="bg-[#FFF8D6] rounded-xl p-3 mb-4 text-center">
-                                        <p className="text-sm font-bold text-gray-900 mb-0.5">{traveler.route}</p>
-                                        <p className="text-xs font-medium text-gray-600">{traveler.date}</p>
-                                    </div>
+                                        <div className="bg-[#FFF8D6] rounded-lg p-2 mb-3 text-center">
+                                            <p className="text-xs font-bold text-gray-900 mb-0.5">
+                                                From {item.departure_city} - {item.arrival_city}
+                                            </p>
+                                            <p className="text-xs font-medium text-gray-600">
+                                                {new Date(item.departure_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                                            </p>
+                                        </div>
 
-                                    <div className="flex justify-between text-xs mb-4 font-semibold">
-                                        <span className="text-gray-900">Available space: {traveler.space}</span>
-                                        <span className="text-gray-900">Fee: {traveler.fee}</span>
-                                    </div>
+                                        <div className="flex justify-between text-xs mb-3 font-semibold">
+                                            <span className="text-gray-900">Available space: {item.luggage_weight_capacity}kg</span>
+                                            <span className="text-gray-900">Fee: ${Math.round(Math.random() * 20 + 5)}/kg</span>
+                                        </div>
 
-                                    <button
-                                        onClick={() => navigate('/orderer/jetpicker-details', { state: { traveler } })}
-                                        className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-xl font-bold text-sm hover:bg-yellow-500 transition-colors shadow-sm"
-                                    >
-                                        View Details
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
+                                        <button
+                                            onClick={() => navigate('/orderer/jetpicker-details', { state: { picker: item } })}
+                                            className="w-full bg-[#FFDF57] text-gray-900 py-2 rounded-lg font-bold text-sm hover:bg-yellow-500 transition-colors shadow-sm"
+                                        >
+                                            View Details
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 
