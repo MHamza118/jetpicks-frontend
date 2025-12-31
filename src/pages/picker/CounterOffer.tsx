@@ -168,14 +168,14 @@ const PickerCounterOffer = () => {
             </p>
           </div>
 
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-xl mx-auto">
             {/* Counter Offer Card */}
-            <div className="bg-pink-50 border border-pink-200 rounded-3xl p-8 mb-8">
+            <div className="bg-white border border-gray-200 rounded-3xl p-8 mb-8">
               <div className="text-center mb-8">
-                <p className="text-red-900 font-semibold text-lg mb-2">
+                <p className="text-[#FFDF57] font-semibold text-lg mb-2">
                   {order.orderer.full_name} is offering ${rewardAmount.toFixed(2)} as reward
                 </p>
-                <p className="text-red-900 font-semibold text-lg">
+                <p className="text-[#FFDF57] font-semibold text-lg">
                   set your own counter offer
                 </p>
               </div>
@@ -194,7 +194,7 @@ const PickerCounterOffer = () => {
                     value={counterOfferAmount}
                     onChange={(e) => setCounterOfferAmount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full pl-8 pr-4 py-3 border-b-2 border-gray-300 focus:border-red-900 outline-none text-gray-900 font-semibold text-lg"
+                    className="w-full pl-8 pr-4 py-3 border-b-2 border-gray-300 focus:border-[#FFDF57] outline-none text-gray-900 font-semibold text-lg"
                     step="0.01"
                     min="0"
                   />
@@ -207,18 +207,12 @@ const PickerCounterOffer = () => {
               </p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={() => navigate(`/picker/orders/${orderId}`)}
-                className="flex-1 border-2 border-gray-300 text-gray-900 py-3 rounded-lg font-bold hover:bg-gray-50 transition-colors text-base"
-              >
-                Cancel
-              </button>
+            {/* Action Button - Centered and Medium */}
+            <div className="flex justify-center">
               <button
                 onClick={handleSendCounterOffer}
                 disabled={submitting}
-                className="flex-1 bg-red-900 text-white py-3 rounded-lg font-bold hover:bg-red-800 transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-20 py-3 bg-[#FFDF57] text-gray-900 rounded-lg font-bold hover:bg-yellow-500 transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? 'Sending...' : 'Send'}
               </button>
