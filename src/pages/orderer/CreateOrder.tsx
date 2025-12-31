@@ -58,13 +58,18 @@ const CreateOrder = () => {
                 setLoading(true);
                 try {
                     // Save order to backend immediately
-                    const res = await ordersApi.createOrder({
+                    const orderPayload: any = {
                         origin_country: formData.originCountry,
                         origin_city: formData.originCity,
                         destination_country: formData.destinationCountry,
                         destination_city: formData.destinationCity,
-                        special_notes: formData.specialNotes,
-                    });
+                    };
+                    
+                    if (formData.specialNotes.trim()) {
+                        orderPayload.special_notes = formData.specialNotes;
+                    }
+                    
+                    const res = await ordersApi.createOrder(orderPayload);
 
                     const orderId = (res as any).data.id;
                     updateOrderData({

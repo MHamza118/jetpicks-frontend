@@ -15,34 +15,40 @@ const PickerDashboard = () => {
     const [dashboardData, setDashboardData] = useState<PickerDashboardData | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [profileRes, dashboardRes] = await Promise.all([
-                    profileApi.getProfile(),
-                    dashboardApi.getPickerDashboard()
-                ]);
+    const fetchData = async () => {
+        try {
+            const [profileRes, dashboardRes] = await Promise.all([
+                profileApi.getProfile(),
+                dashboardApi.getPickerDashboard()
+            ]);
 
-                // picker Profile image
-                const profile = profileRes.data;
-                if (profile?.avatar_url) {
-                    const avatarPath = profile.avatar_url;
-                    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
-                    const fullUrl = avatarPath.startsWith('http')
-                        ? avatarPath
-                        : `${baseUrl}${avatarPath}`;
-                    setAvatarUrl(fullUrl);
-                    setAvatarError(false);
-                }
+            console.log('Full dashboard response:', dashboardRes);
 
-                setDashboardData((dashboardRes as any).data);
-            } catch (error) {
-                console.error('Failed to fetch dashboard data:', error);
-            } finally {
-                setLoading(false);
+            // picker Profile image
+            const profile = profileRes.data;
+            if (profile?.avatar_url) {
+                const avatarPath = profile.avatar_url;
+                const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
+                const fullUrl = avatarPath.startsWith('http')
+                    ? avatarPath
+                    : `${baseUrl}${avatarPath}`;
+                setAvatarUrl(fullUrl);
+                setAvatarError(false);
             }
-        };
 
+            // The API client returns response.data directly
+            // The backend now wraps it in { data: dashboard }
+            const dashboardData = (dashboardRes as any).data || dashboardRes;
+            console.log('Setting dashboard data:', dashboardData);
+            setDashboardData(dashboardData);
+        } catch (error) {
+            console.error('Failed to fetch dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchData();
 
         // Visibility change to refresh profile if updated in another tab
@@ -100,9 +106,9 @@ const PickerDashboard = () => {
                         <div className="flex justify-center p-12">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFDF57]"></div>
                         </div>
-                    ) : (
+                    ) : dashboardData?.available_orders?.data && dashboardData.available_orders.data.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {dashboardData?.available_orders.data.map((order) => (
+                            {dashboardData.available_orders.data.map((order) => (
                                 <div key={order.id} className="bg-pink-50/30 border border-pink-100 rounded-2xl p-6 hover:shadow-md transition-shadow">
                                     {/* Header */}
                                     <div className="flex items-center gap-3 mb-4">
@@ -125,7 +131,7 @@ const PickerDashboard = () => {
                                     <div className="flex items-start justify-between mb-4 bg-white p-3 rounded-xl border border-gray-100">
                                         <div className="flex gap-2">
                                             {/* Item Images - Limit to 3 */}
-                                            {order.items_images && order.items_images.slice(0, 3).map((img, idx) => (
+                                            {order.items_images && order.items_images.length > 0 && order.items_images.slice(0, 3).map((img, idx) => (
                                                 <div key={idx} className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                                                     <img src={img.startsWith('http') ? img : `${API_CONFIG.BASE_URL.replace('/api', '')}${img}`} alt="Item" className="w-full h-full object-cover" />
                                                 </div>
@@ -152,6 +158,11 @@ const PickerDashboard = () => {
                                     </button>
                                 </div>
                             ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-12">
+                            <p className="text-gray-500 text-lg">No orders available for your routes yet.</p>
+                            <p className="text-gray-400 text-sm mt-2">Create a journey to see matching orders from orderers.</p>
                         </div>
                     )}
                 </div>

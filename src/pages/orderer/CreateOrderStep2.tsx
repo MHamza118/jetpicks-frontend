@@ -109,7 +109,10 @@ const CreateOrderStep2 = () => {
                 formData.append('weight', item.weight);
                 formData.append('price', item.price);
                 formData.append('quantity', (parseInt(item.quantity) || 1).toString());
-                formData.append('special_notes', item.notes);
+
+                if (item.notes?.trim()) {
+                    formData.append('special_notes', item.notes.trim());
+                }
 
                 if (item.storeLink?.trim()) {
                     formData.append('store_link', item.storeLink.trim());
