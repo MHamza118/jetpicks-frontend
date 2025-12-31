@@ -9,6 +9,7 @@ import CreateOrderStep2 from '../pages/orderer/CreateOrderStep2';
 import CreateOrderStep3 from '../pages/orderer/CreateOrderStep3';
 import CreateOrderStep4 from '../pages/orderer/CreateOrderStep4';
 import PickerDashboard from '../pages/picker/Dashboard';
+import PickerOrderDetails from '../pages/picker/OrderDetails';
 import JetPickerDetails from '../pages/orderer/JetPickerDetails';
 import ProtectedRoute from '../components/ProtectedRoute';
 
@@ -79,6 +80,14 @@ const AppRoutes = () => {
               element={
                 <ProtectedRoute requiredRole="PICKER">
                   <PickerDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/picker/orders/:orderId" 
+              element={
+                <ProtectedRoute requiredRole="PICKER">
+                  <PickerOrderDetails />
                 </ProtectedRoute>
               } 
             />
