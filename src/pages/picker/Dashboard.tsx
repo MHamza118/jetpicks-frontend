@@ -81,7 +81,11 @@ const PickerDashboard = () => {
                         <div className="text-center mb-6">
                             <p className="text-gray-900 font-semibold text-lg">
                                 From {dashboardData.travel_journeys[0].departure_city} - {dashboardData.travel_journeys[0].arrival_city} {' '}
-                                <span className="text-gray-500">{new Date(dashboardData.travel_journeys[0].departure_date).toLocaleDateString()}</span>
+                                <span className="text-gray-500">{new Date(dashboardData.travel_journeys[0].arrival_date).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}</span>
                             </p>
                         </div>
                     )}
