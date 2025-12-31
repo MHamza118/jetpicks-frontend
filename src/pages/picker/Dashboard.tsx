@@ -77,10 +77,6 @@ const PickerDashboard = () => {
                 />
 
                 <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white">
-                    {/* Top Stats / Journey Context (Optional based on Screenshot) 
-                        The screenshot showed "From London - Madrid 12 Dec". 
-                        We can show active journey or just a welcome message. 
-                    */}
                     {dashboardData?.travel_journeys && dashboardData.travel_journeys.length > 0 && (
                         <div className="text-center mb-6">
                             <p className="text-gray-900 font-semibold text-lg">
@@ -112,12 +108,18 @@ const PickerDashboard = () => {
                                 <div key={order.id} className="bg-pink-50/30 border border-pink-100 rounded-2xl p-6 hover:shadow-md transition-shadow">
                                     {/* Header */}
                                     <div className="flex items-center gap-3 mb-4">
-                                        <img
-                                            src={order.orderer.avatar_url || 'https://via.placeholder.com/40'}
-                                            alt={order.orderer.full_name}
-                                            className="w-12 h-12 rounded-full object-cover bg-gray-200"
-                                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/40' }}
-                                        />
+                                        <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                            {order.orderer.avatar_url ? (
+                                                <img
+                                                    src={order.orderer.avatar_url.startsWith('http') ? order.orderer.avatar_url : `${API_CONFIG.BASE_URL.replace('/api', '')}${order.orderer.avatar_url}`}
+                                                    alt={order.orderer.full_name}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                                />
+                                            ) : (
+                                                <span className="text-gray-600 font-bold text-lg">{order.orderer.full_name.charAt(0).toUpperCase()}</span>
+                                            )}
+                                        </div>
                                         <div>
                                             <h3 className="font-semibold text-gray-900">{order.orderer.full_name}</h3>
                                             <div className="flex items-center gap-1">
