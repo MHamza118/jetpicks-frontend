@@ -185,7 +185,8 @@ const OrdererDashboard = () => {
 
                                         <div className="flex justify-between text-xs mb-3 font-semibold">
                                             <span className="text-gray-900">Available space: {item.luggage_weight_capacity}kg</span>
-                                            <span className="text-gray-900">Fee: ${Math.round(Math.random() * 20 + 5)}/kg</span>
+                                            {/* TODO: Fee calculation logic to be implemented */}
+                                            {/* <span className="text-gray-900">Fee: ${Math.round(Math.random() * 20 + 5)}/kg</span> */}
                                         </div>
 
                                         <button

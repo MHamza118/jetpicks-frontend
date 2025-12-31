@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { ordersApi } from '../../api/orders';
 import { API_CONFIG } from '../../config/api';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
@@ -41,7 +41,6 @@ interface OrderDetails {
 
 const PickerOrderDetails = () => {
   const { orderId } = useParams<{ orderId: string }>();
-  const navigate = useNavigate();
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -167,14 +166,6 @@ const PickerOrderDetails = () => {
         />
 
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white">
-          {/* Back Button */}
-          <button
-            onClick={() => navigate('/picker/dashboard')}
-            className="mb-6 text-gray-600 hover:text-gray-900 font-medium text-sm flex items-center gap-2"
-          >
-            ← Back to Dashboard
-          </button>
-
           {/* Route Header */}
           <div className="text-center mb-8">
             <p className="text-gray-900 font-semibold text-lg md:text-xl">
@@ -285,6 +276,24 @@ const PickerOrderDetails = () => {
               </div>
             )}
 
+            {/* Agreements */}
+            <div className="space-y-3 mb-6">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="w-5 h-5 rounded accent-red-900"
+                />
+                <span className="text-gray-700 text-sm">I agree to terms and conditions</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="w-5 h-5 rounded accent-red-900"
+                />
+                <span className="text-gray-700 text-sm">I agree to the custom laws</span>
+              </label>
+            </div>
+
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
               <button
@@ -297,26 +306,6 @@ const PickerOrderDetails = () => {
               >
                 Send Counter Offer
               </button>
-            </div>
-
-            {/* Agreements */}
-            <div className="space-y-3 mb-6">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-5 h-5 rounded accent-red-900"
-                  defaultChecked
-                />
-                <span className="text-gray-700 text-sm">I agree to terms and conditions</span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-5 h-5 rounded accent-red-900"
-                  defaultChecked
-                />
-                <span className="text-gray-700 text-sm">I agree to the custom laws</span>
-              </label>
             </div>
           </div>
         </div>

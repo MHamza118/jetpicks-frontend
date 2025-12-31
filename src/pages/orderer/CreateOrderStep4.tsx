@@ -118,39 +118,64 @@ const CreateOrderStep4 = () => {
                   <span className="text-gray-600 font-medium">Route</span>
                   <span className="text-gray-900 font-semibold">From {orderDetails?.origin_city} to {orderDetails?.destination_city}</span>
                 </div>
+                
+                {/* Items List */}
                 {orderDetails?.items && orderDetails.items.length > 0 && (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 font-medium">Item list</span>
-                      <span className="text-gray-900 font-semibold">{orderDetails.items[0].item_name}</span>
+                  <div className="border-t border-gray-200 pt-4">
+                    <p className="text-gray-600 font-medium mb-3">Items</p>
+                    <div className="space-y-3">
+                      {orderDetails.items.map((item: any, idx: number) => (
+                        <div key={idx} className="bg-white rounded-lg p-3">
+                          <div className="flex justify-between mb-2">
+                            <span className="text-gray-900 font-semibold">{item.item_name}</span>
+                            <span className="text-gray-600 text-sm">Qty: {item.quantity}</span>
+                          </div>
+                          {item.store_link && (
+                            <div className="flex justify-between mb-2">
+                              <span className="text-gray-600 text-sm">Store:</span>
+                              <a href={item.store_link} target="_blank" rel="noopener noreferrer" className="text-[#FFDF57] text-sm underline">
+                                {item.store_link}
+                              </a>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 text-sm">Weight:</span>
+                            <span className="text-gray-900 text-sm">{item.weight}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 text-sm">Price:</span>
+                            <span className="text-gray-900 font-semibold">${(item.price * item.quantity).toFixed(2)}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    {orderDetails.items[0].store_link && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 font-medium">Store</span>
-                        <span className="text-gray-900 font-semibold">{orderDetails.items[0].store_link}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 font-medium">Weight</span>
-                      <span className="text-gray-900 font-semibold">{orderDetails.items[0].weight}</span>
-                    </div>
-                  </>
+                  </div>
                 )}
-                <div className="flex justify-between">
+                
+                <div className="border-t border-gray-200 pt-4 flex justify-between">
                   <span className="text-gray-600 font-medium">Reward</span>
                   <span className="text-gray-900 font-semibold">${orderDetails?.reward_amount}</span>
                 </div>
               </div>
 
               {/* Product Images */}
-              {orderDetails?.items && orderDetails.items[0]?.product_images && orderDetails.items[0].product_images.length > 0 && (
-                <div className="flex justify-center mb-8">
-                  <div className="flex gap-3 flex-wrap justify-center">
-                    {orderDetails.items[0].product_images.map((imageName: string, idx: number) => (
-                      <div key={idx} className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                        <span className="text-xs text-gray-500 text-center p-2">{imageName}</span>
-                      </div>
-                    ))}
+              {orderDetails?.items && orderDetails.items.length > 0 && (
+                <div className="mb-8">
+                  <p className="text-gray-600 font-medium mb-4">Product Images</p>
+                  <div className="flex gap-3 flex-wrap">
+                    {orderDetails.items.map((item: any, itemIdx: number) =>
+                      item.product_images && item.product_images.length > 0 ? (
+                        item.product_images.map((imagePath: string, imgIdx: number) => {
+                          const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
+                          const fullUrl = imagePath.startsWith('http') ? imagePath : `${baseUrl}${imagePath}`;
+                          return (
+                            <div key={`${itemIdx}-${imgIdx}`} className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200">
+                              <img src={fullUrl} alt={`Product ${itemIdx + 1}-${imgIdx + 1}`} className="w-full h-full object-cover" />
+                            </div>
+                          );
+                        })
+                      ) : null
+                    )}
                   </div>
                 </div>
               )}
@@ -222,25 +247,41 @@ const CreateOrderStep4 = () => {
                     <span className="text-gray-600 font-medium">Route</span>
                     <span className="text-gray-900 font-semibold">From {orderDetails?.origin_city} to {orderDetails?.destination_city}</span>
                   </div>
+                  
+                  {/* Items List */}
                   {orderDetails?.items && orderDetails.items.length > 0 && (
-                    <>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 font-medium">Item list</span>
-                        <span className="text-gray-900 font-semibold">{orderDetails.items[0].item_name}</span>
+                    <div className="border-t border-gray-200 pt-4">
+                      <p className="text-gray-600 font-medium mb-3">Items</p>
+                      <div className="space-y-3">
+                        {orderDetails.items.map((item: any, idx: number) => (
+                          <div key={idx} className="bg-white rounded-lg p-3">
+                            <div className="flex justify-between mb-2">
+                              <span className="text-gray-900 font-semibold">{item.item_name}</span>
+                              <span className="text-gray-600 text-sm">Qty: {item.quantity}</span>
+                            </div>
+                            {item.store_link && (
+                              <div className="flex justify-between mb-2">
+                                <span className="text-gray-600 text-sm">Store:</span>
+                                <a href={item.store_link} target="_blank" rel="noopener noreferrer" className="text-[#FFDF57] text-sm underline">
+                                  {item.store_link}
+                                </a>
+                              </div>
+                            )}
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 text-sm">Weight:</span>
+                              <span className="text-gray-900 text-sm">{item.weight}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 text-sm">Price:</span>
+                              <span className="text-gray-900 font-semibold">${(item.price * item.quantity).toFixed(2)}</span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      {orderDetails.items[0].store_link && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-600 font-medium">Store</span>
-                          <span className="text-gray-900 font-semibold">{orderDetails.items[0].store_link}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 font-medium">Weight</span>
-                        <span className="text-gray-900 font-semibold">{orderDetails.items[0].weight}</span>
-                      </div>
-                    </>
+                    </div>
                   )}
-                  <div className="flex justify-between">
+                  
+                  <div className="border-t border-gray-200 pt-4 flex justify-between">
                     <span className="text-gray-600 font-medium">Reward</span>
                     <span className="text-gray-900 font-semibold">${orderDetails?.reward_amount}</span>
                   </div>
@@ -249,18 +290,23 @@ const CreateOrderStep4 = () => {
             </div>
 
             {/* Product Images */}
-            {orderDetails?.items && orderDetails.items[0]?.product_images && orderDetails.items[0].product_images.length > 0 && (
-              <div className="flex justify-center mb-8">
-                <div className="flex gap-3 flex-wrap justify-center">
-                  {orderDetails.items[0].product_images.map((imagePath: string, idx: number) => {
-                    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
-                    const fullUrl = imagePath.startsWith('http') ? imagePath : `${baseUrl}${imagePath}`;
-                    return (
-                      <div key={idx} className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200">
-                        <img src={fullUrl} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
-                      </div>
-                    );
-                  })}
+            {orderDetails?.items && orderDetails.items.length > 0 && (
+              <div className="mb-8">
+                <p className="text-gray-600 font-medium mb-4">Product Images</p>
+                <div className="flex gap-3 flex-wrap">
+                  {orderDetails.items.map((item: any, itemIdx: number) =>
+                    item.product_images && item.product_images.length > 0 ? (
+                      item.product_images.map((imagePath: string, imgIdx: number) => {
+                        const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
+                        const fullUrl = imagePath.startsWith('http') ? imagePath : `${baseUrl}${imagePath}`;
+                        return (
+                          <div key={`${itemIdx}-${imgIdx}`} className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200">
+                            <img src={fullUrl} alt={`Product ${itemIdx + 1}-${imgIdx + 1}`} className="w-full h-full object-cover" />
+                          </div>
+                        );
+                      })
+                    ) : null
+                  )}
                 </div>
               </div>
             )}
