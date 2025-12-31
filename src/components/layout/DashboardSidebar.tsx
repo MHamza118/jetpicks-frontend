@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import logo from '../../assets/logo.jpg';
 
 interface DashboardSidebarProps {
@@ -7,9 +7,17 @@ interface DashboardSidebarProps {
 
 const DashboardSidebar = ({ activeTab = 'dashboard' }: DashboardSidebarProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Determine if user is a picker or orderer based on current route
+  const isPickerRoute = location.pathname.includes('/picker/');
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', action: () => navigate('/orderer/dashboard') },
+    { 
+      id: 'dashboard', 
+      label: 'Dashboard', 
+      action: () => navigate(isPickerRoute ? '/picker/dashboard' : '/orderer/dashboard') 
+    },
     { id: 'messages', label: 'Messages' },
     { id: 'orders', label: 'My Orders' },
     { id: 'profile', label: 'Profile' },

@@ -10,6 +10,7 @@ import CreateOrderStep3 from '../pages/orderer/CreateOrderStep3';
 import CreateOrderStep4 from '../pages/orderer/CreateOrderStep4';
 import PickerDashboard from '../pages/picker/Dashboard';
 import JetPickerDetails from '../pages/orderer/JetPickerDetails';
+import ProtectedRoute from '../components/ProtectedRoute';
 
 const AppRoutes = () => {
     return (
@@ -18,14 +19,77 @@ const AppRoutes = () => {
             <Route path="/signup" element={<Signup />} />
             <Route path="/login" element={<Login />} />
             <Route path="/profile-setup" element={<ProfileSetup />} />
+            
+            {/* Orderer Routes - Protected */}
+            <Route 
+              path="/orderer/dashboard" 
+              element={
+                <ProtectedRoute requiredRole="ORDERER">
+                  <OrdererDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/orderer/create-order" 
+              element={
+                <ProtectedRoute requiredRole="ORDERER">
+                  <CreateOrder />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/orderer/create-order-step2" 
+              element={
+                <ProtectedRoute requiredRole="ORDERER">
+                  <CreateOrderStep2 />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/orderer/create-order-step3" 
+              element={
+                <ProtectedRoute requiredRole="ORDERER">
+                  <CreateOrderStep3 />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/orderer/create-order-step4" 
+              element={
+                <ProtectedRoute requiredRole="ORDERER">
+                  <CreateOrderStep4 />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/orderer/jetpicker-details" 
+              element={
+                <ProtectedRoute requiredRole="ORDERER">
+                  <JetPickerDetails />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Picker Routes - Protected */}
+            <Route 
+              path="/picker/dashboard" 
+              element={
+                <ProtectedRoute requiredRole="PICKER">
+                  <PickerDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/picker/create-journey" 
+              element={
+                <ProtectedRoute requiredRole="PICKER">
+                  <TravelAvailabilitySetup />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Shared Routes */}
             <Route path="/travel-availability-setup" element={<TravelAvailabilitySetup />} />
-            <Route path="/orderer/dashboard" element={<OrdererDashboard />} />
-            <Route path="/orderer/create-order" element={<CreateOrder />} />
-            <Route path="/orderer/create-order-step2" element={<CreateOrderStep2 />} />
-            <Route path="/orderer/create-order-step3" element={<CreateOrderStep3 />} />
-            <Route path="/orderer/create-order-step4" element={<CreateOrderStep4 />} />
-            <Route path="/orderer/jetpicker-details" element={<JetPickerDetails />} />
-            <Route path="/picker/dashboard" element={<PickerDashboard />} />
         </Routes>
     );
 };

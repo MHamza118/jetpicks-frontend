@@ -102,7 +102,17 @@ const CreateOrder = () => {
     };
 
     const countries = ['UK', 'Spain', 'United States', 'France', 'Germany', 'Italy', 'Canada', 'Australia'];
-    const cities = ['London', 'Madrid', 'Barcelona', 'Paris', 'Berlin', 'Rome', 'Toronto', 'Sydney'];
+    
+    const cityMap: { [key: string]: string[] } = {
+        'UK': ['London'],
+        'Spain': ['Madrid', 'Barcelona'],
+        'United States': ['New York', 'Los Angeles'],
+        'France': ['Paris'],
+        'Germany': ['Berlin'],
+        'Italy': ['Rome'],
+        'Canada': ['Toronto'],
+        'Australia': ['Sydney'],
+    };
 
     return (
         <div className="flex h-dvh bg-white flex-col md:flex-row">
@@ -199,7 +209,7 @@ const CreateOrder = () => {
                                                 className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base"
                                             >
                                                 <option value="">Select city</option>
-                                                {cities.map(city => (
+                                                {cityMap[formData.originCountry]?.map(city => (
                                                     <option key={city} value={city}>{city}</option>
                                                 ))}
                                             </select>
@@ -235,7 +245,7 @@ const CreateOrder = () => {
                                                 className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base"
                                             >
                                                 <option value="">Select city</option>
-                                                {cities.map(city => (
+                                                {cityMap[formData.destinationCountry]?.map(city => (
                                                     <option key={city} value={city}>{city}</option>
                                                 ))}
                                             </select>
