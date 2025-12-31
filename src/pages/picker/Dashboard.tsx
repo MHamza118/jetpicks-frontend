@@ -103,11 +103,11 @@ const PickerDashboard = () => {
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFDF57]"></div>
                         </div>
                     ) : dashboardData?.available_orders?.data && dashboardData.available_orders.data.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto">
                             {dashboardData.available_orders.data.map((order) => (
-                                <div key={order.id} className="bg-pink-50/30 border border-pink-100 rounded-2xl p-6 hover:shadow-md transition-shadow">
-                                    {/* Header */}
-                                    <div className="flex items-center gap-3 mb-4">
+                                <div key={order.id} className="bg-pink-50/30 border border-pink-100 rounded-2xl p-4 flex flex-col w-full">
+                                    {/* Header with Avatar and Name */}
+                                    <div className="flex items-start gap-3 mb-4">
                                         <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0 overflow-hidden">
                                             {order.orderer.avatar_url ? (
                                                 <img
@@ -120,41 +120,42 @@ const PickerDashboard = () => {
                                                 <span className="text-gray-600 font-bold text-lg">{order.orderer.full_name.charAt(0).toUpperCase()}</span>
                                             )}
                                         </div>
-                                        <div>
-                                            <h3 className="font-semibold text-gray-900">{order.orderer.full_name}</h3>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-semibold text-gray-900 text-xs md:text-base truncate">{order.orderer.full_name}</h3>
                                             <div className="flex items-center gap-1">
-                                                <span className="font-semibold text-gray-900">{order.orderer.rating}</span>
-                                                <span className="text-orange-400">★</span>
+                                                <span className="font-semibold text-gray-900 text-xs">{order.orderer.rating}</span>
+                                                <span className="text-orange-400 text-xs">★</span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Body */}
-                                    <div className="flex items-start justify-between mb-4 bg-white p-3 rounded-xl border border-gray-100">
+                                    {/* Items and Reward Section */}
+                                    <div className="bg-white rounded-xl p-3 mb-4 flex-1 flex items-center justify-between">
+                                        {/* Item Images */}
                                         <div className="flex gap-2">
-                                            {/* Item Images - Limit to 3 */}
                                             {order.items_images && order.items_images.length > 0 && order.items_images.slice(0, 3).map((img, idx) => (
                                                 <div key={idx} className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                                                     <img src={img.startsWith('http') ? img : `${API_CONFIG.BASE_URL.replace('/api', '')}${img}`} alt="Item" className="w-full h-full object-cover" />
                                                 </div>
                                             ))}
                                             {order.items_count > 3 && (
-                                                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-xs text-gray-500 font-medium">
-                                                    +{order.items_count - 3} Items
+                                                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-xs text-gray-600 font-semibold flex-shrink-0">
+                                                    +{order.items_count - 3}
                                                 </div>
                                             )}
                                         </div>
 
+                                        {/* Total Items and Reward */}
                                         <div className="text-right">
-                                            <p className="text-xs text-gray-500">Total items {order.items_count}</p>
-                                            <p className="font-bold text-red-900 mt-1">Reward: ${order.reward_amount}</p>
+                                            <p className="text-xs text-gray-600 font-medium">Total items {order.items_count}</p>
+                                            <p className="font-bold text-red-900 text-sm">Reward: ${order.reward_amount}</p>
                                         </div>
                                     </div>
 
-                                    {/* Footer */}
+                                    {/* Footer Button */}
                                     <button
                                         onClick={() => navigate(`/picker/orders/${order.id}`)}
-                                        className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold hover:bg-yellow-500 transition-colors"
+                                        className="w-full bg-[#FFDF57] text-gray-900 py-2 md:py-3 rounded-lg font-bold hover:bg-yellow-500 transition-colors text-xs md:text-base"
                                     >
                                         View Order Details
                                     </button>
