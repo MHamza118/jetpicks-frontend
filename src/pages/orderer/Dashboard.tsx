@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { profileApi, dashboardApi } from '../../api';
+import { useAcceptedOrderPolling } from '../../context/OrderNotificationContext';
+import { useDashboardCache } from '../../context/DashboardCacheContext';
 import { API_CONFIG } from '../../config/api';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
@@ -32,6 +34,10 @@ const OrdererDashboard = () => {
     const [pickers, setPickers] = useState<Picker[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const { cachedData, setCachedData, isCacheValid } = useDashboardCache();
+
+    // Start polling for accepted orders
+    useAcceptedOrderPolling();
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -64,11 +70,31 @@ const OrdererDashboard = () => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
+                // Check if cache is valid
+                if (isCacheValid() && cachedData) {
+                    setPickers(cachedData.pickers);
+                    setLoading(false);
+                    return;
+                }
+
                 setLoading(true);
                 setError(null);
-                const response = await dashboardApi.getOrdererDashboard(1, 20) as any;
-                const data = response.data || response;
-                setPickers(data.available_pickers?.data || []);
+                
+                // Load dashboard from API
+                const response = await dashboardApi.getOrdererDashboard(1, 20);
+                
+                // Handle both wrapped and unwrapped responses
+                const data = (response as any).data || response;
+                
+                const pickersData = data.available_pickers?.data || data.available_pickers || [];
+                
+                // Cache the data
+                setCachedData({
+                    pickers: pickersData,
+                    timestamp: Date.now(),
+                });
+                
+                setPickers(pickersData);
             } catch (err) {
                 console.error('Failed to fetch dashboard data:', err);
                 setError('Failed to load available pickers');
@@ -118,11 +144,6 @@ const OrdererDashboard = () => {
 
                     {/* Available Pickers Section */}
                     <div className="mb-6">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-lg md:text-xl font-bold text-gray-900">Available jet pickers near you</h2>
-                            <button className="bg-[#FFDF57] px-4 py-1.5 rounded-full text-xs font-bold text-gray-900">See all</button>
-                        </div>
-
                         {/* Loading State */}
                         {loading && (
                             <div className="flex justify-center items-center py-12">

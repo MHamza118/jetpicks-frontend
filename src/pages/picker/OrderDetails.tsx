@@ -87,6 +87,17 @@ const PickerOrderDetails = () => {
     setAvatarUrl(null);
   };
 
+  const handleAcceptDelivery = async () => {
+    try {
+      await ordersApi.acceptDelivery(orderId!);
+      // Navigate to the accepted order page
+      navigate(`/orderer/order-accepted/${orderId}`);
+    } catch (error) {
+      console.error('Failed to accept delivery:', error);
+      alert('Failed to accept delivery. Please try again.');
+    }
+  };
+
   const getImageUrl = (imagePath: string) => {
     if (!imagePath) return '';
     if (imagePath.startsWith('http')) return imagePath;
@@ -300,6 +311,7 @@ const PickerOrderDetails = () => {
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
               <button
+                onClick={handleAcceptDelivery}
                 className="flex-1 bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold hover:bg-yellow-500 transition-colors text-base"
               >
                 Accept Delivery

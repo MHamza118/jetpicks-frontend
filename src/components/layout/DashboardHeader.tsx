@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Search, Bell, User, LogOut, ArrowLeft, SlidersHorizontal } from 'lucide-react';
+import { Search, Bell, User, LogOut, ArrowLeft, SlidersHorizontal, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
+import { useAcceptedOrderPolling } from '../../context/OrderNotificationContext';
 
 interface DashboardHeaderProps {
   title: string;
@@ -21,6 +22,8 @@ const DashboardHeader = ({
 }: DashboardHeaderProps) => {
   const navigate = useNavigate();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+  const { notification, acceptedOrdersHistory, showNotificationModal, setShowNotificationModal, handleNotificationClick } = useAcceptedOrderPolling();
 
   const handleLogout = () => {
     storage.remove(STORAGE_KEYS.AUTH_TOKEN);
@@ -69,8 +72,14 @@ const DashboardHeader = ({
             )}
           </div>
         </div>
-        <button className="p-2 relative">
+        <button 
+          onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
+          className="p-2 relative"
+        >
           <Bell size={24} className="text-gray-900" />
+          {notification && !notification.isRead && (
+            <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+          )}
         </button>
       </div>
 
@@ -99,8 +108,14 @@ const DashboardHeader = ({
               className="pl-10 pr-4 py-2 bg-white rounded-full text-sm text-gray-700 placeholder-gray-500 focus:outline-none w-64"
             />
           </div>
-          <button className="p-2 hover:opacity-80 transition-opacity relative">
+          <button 
+            onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
+            className="p-2 hover:opacity-80 transition-opacity relative"
+          >
             <Bell size={20} className="text-gray-900" />
+            {notification && !notification.isRead && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            )}
           </button>
           <div className="relative">
             <button
@@ -134,6 +149,68 @@ const DashboardHeader = ({
           </div>
         </div>
       </div>
+
+      {/* Notifications Dropdown Modal */}
+      {showNotificationsDropdown && (
+        <div className="fixed inset-0 z-40" onClick={() => setShowNotificationsDropdown(false)}>
+          <div className="absolute top-20 right-4 md:right-8 bg-white rounded-lg shadow-lg w-80 max-h-96 overflow-y-auto z-50">
+            <div className="sticky top-0 bg-white flex justify-between items-center p-4 border-b border-gray-100">
+              <h3 className="font-bold text-gray-900">Notifications</h3>
+              <button onClick={() => setShowNotificationsDropdown(false)}>
+                <X size={20} className="text-gray-600" />
+              </button>
+            </div>
+            
+            {acceptedOrdersHistory.length > 0 ? (
+              <div className="divide-y divide-gray-100">
+                {acceptedOrdersHistory.map((notif) => (
+                  <div 
+                    key={notif.id}
+                    onClick={() => handleNotificationClick(notif.orderId)}
+                    className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                  >
+                    <p className="text-sm font-semibold text-gray-900">
+                      {notif.pickerName} has accepted your order
+                    </p>
+                    {!notif.isRead && (
+                      <span className="text-xs text-blue-600 font-medium mt-1 block">New</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 text-center text-gray-500 text-sm">
+                No notifications yet
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Auto-show Notification Modal (5 seconds) */}
+      {showNotificationModal && notification && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold text-gray-900">Order Accepted!</h2>
+              <button onClick={() => setShowNotificationModal(false)}>
+                <X size={20} className="text-gray-600" />
+              </button>
+            </div>
+            
+            <p className="text-gray-700 mb-4">
+              {notification.pickerName} has accepted your order
+            </p>
+            
+            <button
+              onClick={() => handleNotificationClick(notification.orderId)}
+              className="w-full bg-[#FFDF57] text-gray-900 py-2 rounded-lg font-bold hover:bg-yellow-500 transition-colors"
+            >
+              View Order
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

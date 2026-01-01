@@ -8,6 +8,7 @@ import CreateOrder from '../pages/orderer/CreateOrder';
 import CreateOrderStep2 from '../pages/orderer/CreateOrderStep2';
 import CreateOrderStep3 from '../pages/orderer/CreateOrderStep3';
 import CreateOrderStep4 from '../pages/orderer/CreateOrderStep4';
+import OrderAccepted from '../pages/orderer/OrderAccepted';
 import PickerDashboard from '../pages/picker/Dashboard';
 import PickerOrderDetails from '../pages/picker/OrderDetails';
 import PickerCounterOffer from '../pages/picker/CounterOffer';
@@ -71,6 +72,14 @@ const AppRoutes = () => {
               element={
                 <ProtectedRoute requiredRole="ORDERER">
                   <JetPickerDetails />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/orderer/order-accepted/:orderId" 
+              element={
+                <ProtectedRoute requiredRole="ORDERER">
+                  <OrderAccepted />
                 </ProtectedRoute>
               } 
             />

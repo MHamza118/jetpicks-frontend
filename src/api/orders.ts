@@ -32,6 +32,9 @@ export const ordersApi = {
   setReward: (orderId: string, data: SetOrderRewardPayload) =>
     apiClient.put(`/orders/${orderId}/reward`, data),
 
+  acceptDelivery: (orderId: string) =>
+    apiClient.put(`/orders/${orderId}/accept`, {}),
+
   getOrders: (status?: string, page?: number, limit?: number) => {
     const params = new URLSearchParams();
     if (status) params.append('status', status);
