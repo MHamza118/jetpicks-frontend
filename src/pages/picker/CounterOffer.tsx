@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ordersApi } from '../../api/orders';
+import { apiClient } from '../../api/client';
 import { API_CONFIG } from '../../config/api';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
@@ -86,9 +87,19 @@ const PickerCounterOffer = () => {
 
     setSubmitting(true);
     try {
-      // TODO: Implement API call to send counter offer
-      // await ordersApi.sendCounterOffer(orderId!, { amount: parseFloat(counterOfferAmount) });
-      console.log('Counter offer sent:', counterOfferAmount);
+      // Get the latest offer for this order to use as parent_offer_id
+      const offersRes = await ordersApi.getOfferHistory(orderId!, 1, 1);
+      const offersData = (offersRes as any).data || offersRes;
+      const offers = offersData.data || offersData;
+      const parentOfferId = offers && offers.length > 0 ? offers[0].id : null;
+
+      // Send counter offer using apiClient
+      await apiClient.post('/offers', {
+        order_id: orderId,
+        offer_amount: parseFloat(counterOfferAmount),
+        parent_offer_id: parentOfferId,
+      });
+
       alert('Counter offer sent successfully!');
       navigate(`/picker/orders/${orderId}`);
     } catch (error) {

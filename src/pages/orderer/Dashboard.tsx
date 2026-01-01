@@ -38,7 +38,6 @@ const OrdererDashboard = () => {
 
     // Start polling for accepted orders
     useAcceptedOrderPolling();
-
     useEffect(() => {
         const fetchUserProfile = async () => {
             try {
@@ -57,9 +56,7 @@ const OrdererDashboard = () => {
                 console.error('Failed to fetch profile:', error);
             }
         };
-
         fetchUserProfile();
-
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') fetchUserProfile();
         };
@@ -76,16 +73,12 @@ const OrdererDashboard = () => {
                     setLoading(false);
                     return;
                 }
-
                 setLoading(true);
-                setError(null);
-                
+                setError(null);                
                 // Load dashboard from API
-                const response = await dashboardApi.getOrdererDashboard(1, 20);
-                
+                const response = await dashboardApi.getOrdererDashboard(1, 20);             
                 // Handle both wrapped and unwrapped responses
                 const data = (response as any).data || response;
-                
                 const pickersData = data.available_pickers?.data || data.available_pickers || [];
                 
                 // Cache the data
@@ -93,7 +86,6 @@ const OrdererDashboard = () => {
                     pickers: pickersData,
                     timestamp: Date.now(),
                 });
-                
                 setPickers(pickersData);
             } catch (err) {
                 console.error('Failed to fetch dashboard data:', err);
@@ -103,7 +95,6 @@ const OrdererDashboard = () => {
                 setLoading(false);
             }
         };
-
         fetchDashboardData();
 
         const handleVisibilityChange = () => {

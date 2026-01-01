@@ -49,4 +49,18 @@ export const ordersApi = {
 
   cancelOrder: (orderId: string) =>
     apiClient.delete(`/orders/${orderId}`),
+
+  acceptOffer: (offerId: string) =>
+    apiClient.put(`/offers/${offerId}/accept`, {}),
+
+  rejectOffer: (offerId: string) =>
+    apiClient.put(`/offers/${offerId}/reject`, {}),
+
+  getOfferHistory: (orderId: string, page?: number, limit?: number) => {
+    const params = new URLSearchParams();
+    if (page) params.append('page', page.toString());
+    if (limit) params.append('limit', limit.toString());
+    const queryString = params.toString();
+    return apiClient.get(`/orders/${orderId}/offers${queryString ? '?' + queryString : ''}`);
+  },
 };

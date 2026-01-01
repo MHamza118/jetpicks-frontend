@@ -3,7 +3,7 @@ import { Search, Bell, User, LogOut, ArrowLeft, SlidersHorizontal, X } from 'luc
 import { useNavigate } from 'react-router-dom';
 import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
-import { useAcceptedOrderPolling } from '../../context/OrderNotificationContext';
+import { useAcceptedOrderPolling, useCounterOfferPolling } from '../../context/OrderNotificationContext';
 
 interface DashboardHeaderProps {
   title: string;
@@ -24,6 +24,11 @@ const DashboardHeader = ({
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   const { notification, acceptedOrdersHistory, showNotificationModal, setShowNotificationModal, handleNotificationClick } = useAcceptedOrderPolling();
+  const { counterOfferNotification, counterOffersHistory, showCounterOfferModal, setShowCounterOfferModal, handleCounterOfferClick } = useCounterOfferPolling();
+
+  // Combine all notifications
+  const allNotifications = [...acceptedOrdersHistory, ...counterOffersHistory];
+  const unreadCount = allNotifications.filter(n => !n.isRead).length;
 
   const handleLogout = () => {
     storage.remove(STORAGE_KEYS.AUTH_TOKEN);
@@ -77,8 +82,8 @@ const DashboardHeader = ({
           className="p-2 relative"
         >
           <Bell size={24} className="text-gray-900" />
-          {notification && !notification.isRead && (
-            <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">{unreadCount}</span>
           )}
         </button>
       </div>
@@ -113,8 +118,8 @@ const DashboardHeader = ({
             className="p-2 hover:opacity-80 transition-opacity relative"
           >
             <Bell size={20} className="text-gray-900" />
-            {notification && !notification.isRead && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">{unreadCount}</span>
             )}
           </button>
           <div className="relative">
@@ -161,16 +166,26 @@ const DashboardHeader = ({
               </button>
             </div>
             
-            {acceptedOrdersHistory.length > 0 ? (
+            {allNotifications.length > 0 ? (
               <div className="divide-y divide-gray-100">
-                {acceptedOrdersHistory.map((notif) => (
+                {allNotifications.map((notif) => (
                   <div 
                     key={notif.id}
-                    onClick={() => handleNotificationClick(notif.orderId)}
+                    onClick={() => {
+                      if ('offerId' in notif) {
+                        const counterNotif = notif as any;
+                        handleCounterOfferClick(counterNotif.orderId, counterNotif.offerId);
+                      } else {
+                        handleNotificationClick(notif.orderId);
+                      }
+                    }}
                     className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
                   >
                     <p className="text-sm font-semibold text-gray-900">
-                      {notif.pickerName} has accepted your order
+                      {'offerId' in notif 
+                        ? `${notif.pickerName} sent a counter offer`
+                        : `${notif.pickerName} has accepted your order`
+                      }
                     </p>
                     {!notif.isRead && (
                       <span className="text-xs text-blue-600 font-medium mt-1 block">New</span>
@@ -207,6 +222,31 @@ const DashboardHeader = ({
               className="w-full bg-[#FFDF57] text-gray-900 py-2 rounded-lg font-bold hover:bg-yellow-500 transition-colors"
             >
               View Order
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Auto-show Counter Offer Modal (5 seconds) */}
+      {showCounterOfferModal && counterOfferNotification && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold text-gray-900">Counter Offer!</h2>
+              <button onClick={() => setShowCounterOfferModal(false)}>
+                <X size={20} className="text-gray-600" />
+              </button>
+            </div>
+            
+            <p className="text-gray-700 mb-4">
+              {counterOfferNotification.pickerName} sent you a counter offer
+            </p>
+            
+            <button
+              onClick={() => handleCounterOfferClick(counterOfferNotification.orderId, counterOfferNotification.offerId)}
+              className="w-full bg-[#FFDF57] text-gray-900 py-2 rounded-lg font-bold hover:bg-yellow-500 transition-colors"
+            >
+              View Offer
             </button>
           </div>
         </div>
