@@ -5,12 +5,25 @@ interface CachedDashboardData {
   timestamp: number;
 }
 
+interface CachedPickerDashboardData {
+  orders: any;
+  timestamp: number;
+}
+
 interface DashboardCacheContextType {
+  // Orderer cache
   cachedData: CachedDashboardData | null;
   setCachedData: (data: CachedDashboardData) => void;
   clearCache: () => void;
   isCacheValid: () => boolean;
   invalidateCache: () => void;
+  
+  // Picker cache
+  pickerCachedData: CachedPickerDashboardData | null;
+  setPickerCachedData: (data: CachedPickerDashboardData) => void;
+  clearPickerCache: () => void;
+  isPickerCacheValid: () => boolean;
+  invalidatePickerCache: () => void;
 }
 
 const DashboardCacheContext = createContext<DashboardCacheContextType | undefined>(undefined);
@@ -19,10 +32,11 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export const DashboardCacheProvider = ({ children }: { children: ReactNode }) => {
   const [cachedData, setCachedData] = useState<CachedDashboardData | null>(null);
+  const [pickerCachedData, setPickerCachedData] = useState<CachedPickerDashboardData | null>(null);
   const cacheInvalidatedRef = useRef<boolean>(false);
+  const pickerCacheInvalidatedRef = useRef<boolean>(false);
 
   const isCacheValid = () => {
-    // If cache was manually invalidated, it's not valid
     if (cacheInvalidatedRef.current) {
       return false;
     }
@@ -32,17 +46,47 @@ export const DashboardCacheProvider = ({ children }: { children: ReactNode }) =>
     return now - cachedData.timestamp < CACHE_DURATION;
   };
 
+  const isPickerCacheValid = () => {
+    if (pickerCacheInvalidatedRef.current) {
+      return false;
+    }
+    
+    if (!pickerCachedData) return false;
+    const now = Date.now();
+    return now - pickerCachedData.timestamp < CACHE_DURATION;
+  };
+
   const clearCache = () => {
     setCachedData(null);
     cacheInvalidatedRef.current = false;
+  };
+
+  const clearPickerCache = () => {
+    setPickerCachedData(null);
+    pickerCacheInvalidatedRef.current = false;
   };
 
   const invalidateCache = () => {
     cacheInvalidatedRef.current = true;
   };
 
+  const invalidatePickerCache = () => {
+    pickerCacheInvalidatedRef.current = true;
+  };
+
   return (
-    <DashboardCacheContext.Provider value={{ cachedData, setCachedData, clearCache, isCacheValid, invalidateCache }}>
+    <DashboardCacheContext.Provider value={{
+      cachedData,
+      setCachedData,
+      clearCache,
+      isCacheValid,
+      invalidateCache,
+      pickerCachedData,
+      setPickerCachedData,
+      clearPickerCache,
+      isPickerCacheValid,
+      invalidatePickerCache,
+    }}>
       {children}
     </DashboardCacheContext.Provider>
   );

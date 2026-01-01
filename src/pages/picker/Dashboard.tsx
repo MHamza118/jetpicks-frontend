@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dashboardApi, profileApi } from '../../api';
 import type { PickerDashboardData } from '../../api/dashboard';
+import { useDashboardCache } from '../../context/DashboardCacheContext';
 import { API_CONFIG } from '../../config/api';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
@@ -14,15 +15,22 @@ const PickerDashboard = () => {
     const [avatarError, setAvatarError] = useState(false);
     const [dashboardData, setDashboardData] = useState<PickerDashboardData | null>(null);
     const [loading, setLoading] = useState(true);
+    const { pickerCachedData, setPickerCachedData, isPickerCacheValid } = useDashboardCache();
+    const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    const fetchData = async () => {
+    const fetchData = async (skipCache = false) => {
         try {
+            // Check if cache is valid and we're not skipping it
+            if (!skipCache && isPickerCacheValid() && pickerCachedData) {
+                setDashboardData(pickerCachedData.orders);
+                setLoading(false);
+                return;
+            }
+
             const [profileRes, dashboardRes] = await Promise.all([
                 profileApi.getProfile(),
                 dashboardApi.getPickerDashboard()
             ]);
-
-            console.log('Full dashboard response:', dashboardRes);
 
             // picker Profile image
             const profile = profileRes.data;
@@ -38,9 +46,15 @@ const PickerDashboard = () => {
 
             // The API client returns response.data directly
             // The backend now wraps it in { data: dashboard }
-            const dashboardData = (dashboardRes as any).data || dashboardRes;
-            console.log('Setting dashboard data:', dashboardData);
-            setDashboardData(dashboardData);
+            const data = (dashboardRes as any).data || dashboardRes;
+            
+            // Cache the data
+            setPickerCachedData({
+                orders: data,
+                timestamp: Date.now(),
+            });
+            
+            setDashboardData(data);
         } catch (error) {
             console.error('Failed to fetch dashboard data:', error);
         } finally {
@@ -57,6 +71,19 @@ const PickerDashboard = () => {
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
+
+    // Polling for real-time sync every 30 seconds
+    useEffect(() => {
+        pollingIntervalRef.current = setInterval(() => {
+            fetchData(true); // Skip cache for polling
+        }, 30 * 1000);
+
+        return () => {
+            if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
+            }
+        };
     }, []);
 
     const handleAvatarError = () => {

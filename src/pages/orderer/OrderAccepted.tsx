@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { ordersApi } from '../../api/orders';
 import { API_CONFIG } from '../../config/api';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
@@ -49,7 +49,6 @@ interface OrderDetails {
 
 const OrderAccepted = () => {
   const { orderId } = useParams<{ orderId: string }>();
-  const navigate = useNavigate();
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -176,18 +175,18 @@ const OrderAccepted = () => {
 
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white">
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <img src={orderAcceptedImage} alt="Order Accepted" className="w-20 h-20" />
+          <div className="text-center mb-6">
+            <div className="flex justify-center mb-3">
+              <img src={orderAcceptedImage} alt="Order Accepted" className="w-16 h-16" />
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Your Order Accepted</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">Your Order Accepted</h1>
           </div>
 
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-lg mx-auto">
             {/* Picker Information */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="bg-white border border-gray-200 rounded-2xl p-3 mb-3">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                   {order.picker?.avatar_url ? (
                     <img
                       src={getImageUrl(order.picker.avatar_url)}
@@ -195,23 +194,23 @@ const OrderAccepted = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="text-gray-600 font-bold text-xl">{order.picker?.full_name.charAt(0).toUpperCase()}</span>
+                    <span className="text-gray-600 font-bold text-lg">{order.picker?.full_name.charAt(0).toUpperCase()}</span>
                   )}
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">{order.picker?.full_name}</h2>
+                  <h2 className="text-base font-bold text-gray-900">{order.picker?.full_name}</h2>
                   {order.picker?.rating && (
                     <div className="flex items-center gap-1">
-                      <span className="font-semibold text-gray-900">{order.picker.rating}</span>
-                      <span className="text-orange-400">★</span>
+                      <span className="font-semibold text-gray-900 text-sm">{order.picker.rating}</span>
+                      <span className="text-orange-400 text-sm">★</span>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Route Information */}
-              <div className="bg-[#FFF8D6] rounded-lg p-3 text-center">
-                <p className="text-sm font-bold text-gray-900">
+              <div className="bg-[#FFF8D6] rounded-lg p-2 text-center">
+                <p className="text-xs font-bold text-gray-900">
                   From {order.origin_city} - {order.destination_city}
                 </p>
                 <p className="text-xs text-gray-600">
@@ -229,38 +228,32 @@ const OrderAccepted = () => {
             </div>
 
             {/* Fee Breakdown */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
-              <h3 className="text-gray-900 font-bold text-lg mb-4">Fee Breakdown</h3>
-              <div className="space-y-3">
+            <div className="bg-white border border-gray-200 rounded-2xl p-3 mb-6">
+              <h3 className="text-gray-900 font-bold text-base mb-3">Fee Breakdown</h3>
+              <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Item Cost</span>
-                  <span className="text-gray-900 font-semibold">${itemsCost.toFixed(2)}</span>
+                  <span className="text-gray-600 text-sm">Item Cost</span>
+                  <span className="text-gray-900 font-semibold text-sm">${itemsCost.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Reward</span>
-                  <span className="text-gray-900 font-semibold">${typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount).toFixed(2) : order.reward_amount.toFixed(2)}</span>
+                  <span className="text-gray-600 text-sm">Reward</span>
+                  <span className="text-gray-900 font-semibold text-sm">${typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount).toFixed(2) : order.reward_amount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">JetPicks fee</span>
-                  <span className="text-gray-900 font-semibold">(1.5%) ${jetPicksFee}</span>
+                  <span className="text-gray-600 text-sm">JetPicks fee</span>
+                  <span className="text-gray-900 font-semibold text-sm">(1.5%) ${jetPicksFee}</span>
                 </div>
-                <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
-                  <span className="text-gray-900 font-bold">Total</span>
-                  <span className="text-gray-900 font-bold text-lg">${totalAmount}</span>
+                <div className="border-t border-gray-200 pt-2 flex justify-between items-center">
+                  <span className="text-gray-900 font-bold text-sm">Total</span>
+                  <span className="text-gray-900 font-bold text-base">${totalAmount}</span>
                 </div>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col gap-3">
+            <div className="flex justify-center mb-8">
               <button
-                onClick={() => navigate(`/orderer/dashboard`)}
-                className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold hover:bg-yellow-500 transition-colors text-base"
-              >
-                Continue with JetPicker
-              </button>
-              <button
-                className="w-full border-2 border-gray-300 text-gray-900 py-3 rounded-lg font-bold hover:bg-gray-50 transition-colors text-base"
+                className="border-2 border-gray-300 text-gray-900 px-12 py-3 rounded-lg font-bold hover:bg-gray-50 transition-colors text-base"
               >
                 Start Chat
               </button>
