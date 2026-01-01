@@ -182,7 +182,7 @@ const OrderAccepted = () => {
             <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">Your Order Accepted</h1>
           </div>
 
-          <div className="max-w-lg mx-auto">
+          <div className="max-w-sm mx-auto">
             {/* Picker Information */}
             <div className="bg-white border border-gray-200 rounded-2xl p-3 mb-3">
               <div className="flex items-center gap-3 mb-3">
