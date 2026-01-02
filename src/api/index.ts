@@ -5,3 +5,4 @@ export { travelApi } from './travel';
 export { ordersApi } from './orders';
 export { dashboardApi } from './dashboard';
 export { notificationsApi } from './notifications';
+export { chatApi } from './chat';

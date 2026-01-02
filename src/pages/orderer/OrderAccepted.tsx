@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ordersApi } from '../../api/orders';
+import { chatApi } from '../../api/chat';
 import { API_CONFIG } from '../../config/api';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
@@ -32,6 +33,7 @@ interface OrderDetails {
   status: string;
   items_count: number;
   items_cost: number;
+  chat_room_id?: string;
   items: OrderItem[];
   orderer: {
     id: string;
@@ -54,6 +56,7 @@ const OrderAccepted = () => {
   const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -93,6 +96,28 @@ const OrderAccepted = () => {
   const handleAvatarError = () => {
     setAvatarError(true);
     setAvatarUrl(null);
+  };
+
+  // Handle Start Chat - get or create chat room before navigating
+  const handleStartChat = async () => {
+    if (!order) return;
+
+    setStartingChat(true);
+    try {
+      // apiClient.post() already returns response.data, so result IS the actual response
+      const result = await chatApi.getOrCreateChatRoom(order.id, order.assigned_picker_id);
+      
+      if ((result as any)?.success && (result as any)?.chatRoomId) {
+        // Navigate to chat with the guaranteed chatRoomId
+        navigate(`/orderer/chat/${(result as any).chatRoomId}`);
+      } else {
+        console.error('Failed to get or create chat room:', (result as any)?.message || 'Unknown error');
+      }
+    } catch (error: any) {
+      console.error('Error starting chat:', error);
+    } finally {
+      setStartingChat(false);
+    }
   };
 
   const getImageUrl = (imagePath: string) => {
@@ -254,10 +279,11 @@ const OrderAccepted = () => {
             {/* Action Buttons */}
             <div className="flex justify-center mb-8">
               <button
-                onClick={() => navigate(`/orderer/chat/${order.id}`)}
-                className="border-2 border-gray-300 text-gray-900 px-12 py-3 rounded-lg font-bold hover:bg-gray-50 transition-colors text-base"
+                onClick={handleStartChat}
+                disabled={startingChat}
+                className="border-2 border-gray-300 text-gray-900 px-12 py-3 rounded-lg font-bold hover:bg-gray-50 transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Start Chat
+                {startingChat ? 'Starting Chat...' : 'Start Chat'}
               </button>
             </div>
           </div>

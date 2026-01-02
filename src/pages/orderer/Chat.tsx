@@ -1,53 +1,44 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Send, Paperclip, Phone, Info, Plus } from 'lucide-react';
+import { Send, Paperclip, Phone, Info, Plus } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
-
-interface ChatMessage {
-  id: string;
-  sender_id: string;
-  content: string;
-  status: 'sent' | 'delivered' | 'read';
-  created_at: string;
-  attachments?: string[];
-  needs_translation?: boolean;
-}
-
-interface ChatRoom {
-  id: string;
-  picker: {
-    id: string;
-    full_name: string;
-    avatar_url: string;
-  };
-  order: {
-    id: string;
-    origin_city: string;
-    destination_city: string;
-    origin_country: string;
-    destination_country: string;
-  };
-  picker_language?: string;
-  orderer_language?: string;
-}
+import { useChat } from '../../context/ChatContext';
+import { API_CONFIG } from '../../config/api';
 
 const Chat = () => {
-  const [chatRoom] = useState<ChatRoom | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { roomId } = useParams<{ roomId?: string }>();
+  const { chatRooms, currentRoom, messages, fetchChatRooms, fetchChatRoom, fetchMessages, sendMessage } = useChat();
+  
   const [messageInput, setMessageInput] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
   const [fabPosition, setFabPosition] = useState({ x: 304, y: window.innerHeight - 120 });
   const [isDragging, setIsDragging] = useState(false);
+  const [showTranslated, setShowTranslated] = useState<{ [key: string]: boolean }>({});
+  const [sending, setSending] = useState(false);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fabRef = useRef<HTMLDivElement>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
 
-  // TODO: Fetch chat room data from API
-  // For now, chatRoom is null and will show "Select a chat" message
+  // Fetch chat rooms on mount
+  useEffect(() => {
+    fetchChatRooms();
+  }, [fetchChatRooms]);
 
+  // Fetch specific room if roomId is provided
+  // GUARD: Only fetch if roomId exists to prevent null API calls
+  useEffect(() => {
+    if (roomId) {
+      fetchChatRoom(roomId);
+      fetchMessages(roomId);
+    }
+  }, [roomId, fetchChatRoom, fetchMessages]);
+
+  // Auto-scroll to latest message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -98,20 +89,18 @@ const Chat = () => {
     setAvatarUrl(null);
   };
 
-  const handleSendMessage = () => {
-    if (!messageInput.trim()) return;
+  const handleSendMessage = async () => {
+    if (!messageInput.trim() || !roomId || sending) return;
     
-    // TODO: API integration
-    const newMessage: ChatMessage = {
-      id: Date.now().toString(),
-      sender_id: 'current-user',
-      content: messageInput,
-      status: 'sent',
-      created_at: new Date().toISOString(),
-    };
-    
-    setMessages([...messages, newMessage]);
-    setMessageInput('');
+    setSending(true);
+    try {
+      await sendMessage(roomId, messageInput);
+      setMessageInput('');
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleAttachmentClick = () => {
@@ -121,23 +110,34 @@ const Chat = () => {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.currentTarget.files;
     if (files) {
-      // TODO: Handle file upload
+      // TODO: Handle file upload to backend
       console.log('Files selected:', files);
     }
   };
 
-  const shouldShowTranslate = (message: ChatMessage) => {
-    return message.needs_translation && message.sender_id !== 'current-user';
+  const getImageUrl = (imagePath?: string) => {
+    if (!imagePath) return '';
+    if (imagePath.startsWith('http')) return imagePath;
+    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
+    return `${baseUrl}${imagePath}`;
   };
 
-  const getMessageStatus = (status: string) => {
-    if (status === 'sent') return '✓';
-    if (status === 'delivered') return '✓✓';
-    if (status === 'read') return '✓✓';
+  const toggleTranslation = (messageId: string) => {
+    setShowTranslated(prev => ({
+      ...prev,
+      [messageId]: !prev[messageId],
+    }));
   };
 
-  const getStatusColor = (status: string) => {
-    return status === 'read' ? 'text-blue-500' : 'text-gray-400';
+  const getMessageContent = (message: any) => {
+    if (showTranslated[message.id] && message.content_translated) {
+      return message.content_translated;
+    }
+    return message.content_original;
+  };
+
+  const shouldShowTranslateButton = (message: any) => {
+    return message.content_translated && message.sender_id !== 'current-user';
   };
 
   return (
@@ -155,49 +155,90 @@ const Chat = () => {
         <div className="flex-1 flex overflow-hidden">
           {/* Chat List - Left Panel */}
           <div className="hidden md:flex md:w-80 flex-col bg-white rounded-3xl shadow-lg m-4 overflow-hidden">
-            <div className="p-4">
-              <div className="relative">
-                <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by name"
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#FFDF57]"
-                />
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-4">
-              {/* Chat list items will go here */}
-              <div className="py-8 text-center text-gray-500 text-sm">
-                No chats yet
-              </div>
+            <div className="flex-1 overflow-y-auto">
+              {chatRooms.length === 0 ? (
+                <div className="py-8 text-center text-gray-500 text-sm">
+                  No chats yet
+                </div>
+              ) : (
+                chatRooms.map(room => (
+                  <div
+                    key={room.id}
+                    onClick={() => {
+                      fetchChatRoom(room.id);
+                      fetchMessages(room.id);
+                    }}
+                    className={`px-4 py-3 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 ${
+                      currentRoom?.id === room.id
+                        ? 'bg-[#FFF8D6]'
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                        {room.other_user.avatar_url ? (
+                          <img
+                            src={getImageUrl(room.other_user.avatar_url)}
+                            alt={room.other_user.full_name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-600 font-bold">
+                            {room.other_user.full_name.charAt(0)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-baseline gap-2">
+                          <h3 className="font-bold text-gray-900 text-sm truncate">
+                            {room.other_user.full_name}
+                          </h3>
+                          <span className="text-xs text-gray-500 flex-shrink-0">
+                            {room.last_message_time ? new Date(room.last_message_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }).replace(':', '.') : ''}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 truncate mt-1">
+                          {room.last_message || 'No messages yet'}
+                        </p>
+                      </div>
+                      {room.unread_count > 0 && (
+                        <div className="w-5 h-5 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-white text-xs font-bold">
+                            {room.unread_count}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
           {/* Chat Messages - Right Panel */}
           <div className="flex-1 flex flex-col">
-            {chatRoom ? (
+            {currentRoom ? (
               <>
                 {/* Chat Header */}
                 <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100">
-                      {chatRoom.picker.avatar_url ? (
+                      {currentRoom.picker.avatar_url ? (
                         <img
-                          src={chatRoom.picker.avatar_url}
-                          alt={chatRoom.picker.full_name}
+                          src={getImageUrl(currentRoom.picker.avatar_url)}
+                          alt={currentRoom.picker.full_name}
                           className="w-full h-full object-cover"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-600 font-bold">
-                          {chatRoom.picker.full_name.charAt(0)}
+                          {currentRoom.picker.full_name.charAt(0)}
                         </div>
                       )}
                     </div>
                     <div>
-                      <h3 className="font-bold text-gray-900">{chatRoom.picker.full_name}</h3>
+                      <h3 className="font-bold text-gray-900">{currentRoom.picker.full_name}</h3>
                       <p className="text-xs text-gray-500">
-                        From {chatRoom.order.origin_city} - {chatRoom.order.destination_city}
+                        Order: {currentRoom.order_id.slice(0, 8)}...
                       </p>
                     </div>
                   </div>
@@ -232,7 +273,7 @@ const Chat = () => {
                               : 'bg-gray-100 text-gray-900'
                           }`}
                         >
-                          <p className="text-sm">{message.content}</p>
+                          <p className="text-sm">{getMessageContent(message)}</p>
                           <div className="flex items-center justify-between gap-2 mt-1">
                             <span className="text-xs text-gray-600">
                               {new Date(message.created_at).toLocaleTimeString('en-US', {
@@ -241,14 +282,19 @@ const Chat = () => {
                               })}
                             </span>
                             {message.sender_id === 'current-user' && (
-                              <span className={`text-xs font-bold ${getStatusColor(message.status)}`}>
-                                {getMessageStatus(message.status)}
+                              <span className={`text-xs font-bold ${
+                                message.is_read ? 'text-blue-500' : 'text-gray-400'
+                              }`}>
+                                {message.is_read ? '✓✓' : '✓'}
                               </span>
                             )}
                           </div>
-                          {shouldShowTranslate(message) && (
-                            <button className="mt-2 text-xs bg-yellow-300 text-gray-900 px-2 py-1 rounded font-semibold hover:bg-yellow-400 transition-colors">
-                              Translate
+                          {shouldShowTranslateButton(message) && (
+                            <button
+                              onClick={() => toggleTranslation(message.id)}
+                              className="mt-2 text-xs bg-yellow-300 text-gray-900 px-2 py-1 rounded font-semibold hover:bg-yellow-400 transition-colors"
+                            >
+                              {showTranslated[message.id] ? 'Original' : 'Translate'}
                             </button>
                           )}
                         </div>
@@ -278,13 +324,15 @@ const Chat = () => {
                       type="text"
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      onKeyDown={(e) => e.key === 'Enter' && !sending && handleSendMessage()}
                       placeholder="Type something..."
-                      className="flex-1 px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#FFDF57]"
+                      disabled={sending}
+                      className="flex-1 px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#FFDF57] disabled:opacity-50"
                     />
                     <button
                       onClick={handleSendMessage}
-                      className="p-2 bg-[#FFDF57] hover:bg-yellow-500 rounded-full transition-colors"
+                      disabled={sending || !messageInput.trim()}
+                      className="p-2 bg-[#FFDF57] hover:bg-yellow-500 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send size={20} className="text-gray-900" />
                     </button>

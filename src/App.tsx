@@ -3,6 +3,7 @@ import AppRoutes from './routes/AppRoutes';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { OrderProvider } from './context/OrderContext';
 import { DashboardCacheProvider } from './context/DashboardCacheContext';
+import { ChatProvider } from './context/ChatContext';
 
 function App() {
   return (
@@ -10,7 +11,9 @@ function App() {
       <Router>
         <OrderProvider>
           <DashboardCacheProvider>
-            <AppRoutes />
+            <ChatProvider>
+              <AppRoutes />
+            </ChatProvider>
           </DashboardCacheProvider>
         </OrderProvider>
       </Router>
