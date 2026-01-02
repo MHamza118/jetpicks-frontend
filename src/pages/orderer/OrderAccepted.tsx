@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ordersApi } from '../../api/orders';
 import { API_CONFIG } from '../../config/api';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
@@ -49,6 +49,7 @@ interface OrderDetails {
 
 const OrderAccepted = () => {
   const { orderId } = useParams<{ orderId: string }>();
+  const navigate = useNavigate();
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -253,6 +254,7 @@ const OrderAccepted = () => {
             {/* Action Buttons */}
             <div className="flex justify-center mb-8">
               <button
+                onClick={() => navigate(`/orderer/chat/${order.id}`)}
                 className="border-2 border-gray-300 text-gray-900 px-12 py-3 rounded-lg font-bold hover:bg-gray-50 transition-colors text-base"
               >
                 Start Chat

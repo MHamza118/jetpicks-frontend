@@ -10,9 +10,11 @@ import CreateOrderStep3 from '../pages/orderer/CreateOrderStep3';
 import CreateOrderStep4 from '../pages/orderer/CreateOrderStep4';
 import OrderAccepted from '../pages/orderer/OrderAccepted';
 import CounterOfferReceived from '../pages/orderer/CounterOfferReceived';
+import OrdererChat from '../pages/orderer/Chat';
 import PickerDashboard from '../pages/picker/Dashboard';
 import PickerOrderDetails from '../pages/picker/OrderDetails';
 import PickerCounterOffer from '../pages/picker/CounterOffer';
+import PickerChat from '../pages/picker/Chat';
 import JetPickerDetails from '../pages/orderer/JetPickerDetails';
 import ProtectedRoute from '../components/ProtectedRoute';
 
@@ -92,6 +94,22 @@ const AppRoutes = () => {
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/orderer/chat" 
+              element={
+                <ProtectedRoute requiredRole="ORDERER">
+                  <OrdererChat />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/orderer/chat/:roomId" 
+              element={
+                <ProtectedRoute requiredRole="ORDERER">
+                  <OrdererChat />
+                </ProtectedRoute>
+              } 
+            />
 
             {/* Picker Routes - Protected */}
             <Route 
@@ -123,6 +141,22 @@ const AppRoutes = () => {
               element={
                 <ProtectedRoute requiredRole="PICKER">
                   <TravelAvailabilitySetup />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/picker/chat" 
+              element={
+                <ProtectedRoute requiredRole="PICKER">
+                  <PickerChat />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/picker/chat/:roomId" 
+              element={
+                <ProtectedRoute requiredRole="PICKER">
+                  <PickerChat />
                 </ProtectedRoute>
               } 
             />
