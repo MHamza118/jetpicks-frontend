@@ -3,6 +3,7 @@ import { Search, Bell, User, LogOut, ArrowLeft, SlidersHorizontal, X } from 'luc
 import { useNavigate } from 'react-router-dom';
 import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
+import { notificationsApi } from '../../api';
 import { useAcceptedOrderPolling, useCounterOfferPolling } from '../../context/OrderNotificationContext';
 
 interface DashboardHeaderProps {
@@ -171,7 +172,16 @@ const DashboardHeader = ({
                 {allNotifications.map((notif) => (
                   <div 
                     key={notif.id}
-                    onClick={() => {
+                    onClick={async () => {
+                      // Mark as read in backend if not already read
+                      if (!notif.isRead) {
+                        try {
+                          await notificationsApi.markAsRead(notif.id);
+                        } catch (error) {
+                          console.error('Failed to mark notification as read:', error);
+                        }
+                      }
+                      
                       if ('offerId' in notif) {
                         const counterNotif = notif as any;
                         handleCounterOfferClick(counterNotif.orderId, counterNotif.offerId);
