@@ -6,3 +6,4 @@ export { ordersApi } from './orders';
 export { dashboardApi } from './dashboard';
 export { notificationsApi } from './notifications';
 export { chatApi } from './chat';
+export { pickerOrdersApi } from './picker/orders';

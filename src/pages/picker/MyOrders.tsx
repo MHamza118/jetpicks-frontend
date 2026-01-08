@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
+import { pickerOrdersApi } from '../../services/picker/orders';
+import { imageUtils } from '../../utils';
 import PickerDashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
@@ -29,141 +31,58 @@ interface Order {
   created_at: string;
 }
 
-// Mock data for UI development
-const MOCK_ORDERS: Order[] = [
-  {
-    id: '1',
-    orderer_id: 'orderer-1',
-    orderer: {
-      id: 'orderer-1',
-      full_name: 'Sarah M.',
-      avatar_url: '/api/avatars/sarah.jpg',
-      rating: 4.8
-    },
-    origin_city: 'London',
-    destination_city: 'New York',
-    status: 'delivered',
-    items_count: 5,
-    reward_amount: 20,
-    items: [
-      { id: 'item-1', item_name: 'Headphones', product_images: ['/api/products/headphones.jpg'] },
-      { id: 'item-2', item_name: 'Watch', product_images: ['/api/products/watch.jpg'] },
-      { id: 'item-3', item_name: 'Shoes', product_images: ['/api/products/shoes.jpg'] },
-    ],
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    orderer_id: 'orderer-2',
-    orderer: {
-      id: 'orderer-2',
-      full_name: 'Sarah M.',
-      avatar_url: '/api/avatars/sarah.jpg',
-      rating: 4.8
-    },
-    origin_city: 'London',
-    destination_city: 'New York',
-    status: 'pending',
-    items_count: 8,
-    reward_amount: 20,
-    items: [
-      { id: 'item-4', item_name: 'Headphones', product_images: ['/api/products/headphones.jpg'] },
-      { id: 'item-5', item_name: 'Watch', product_images: ['/api/products/watch.jpg'] },
-      { id: 'item-6', item_name: 'Shoes', product_images: ['/api/products/shoes.jpg'] },
-    ],
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    orderer_id: 'orderer-3',
-    orderer: {
-      id: 'orderer-3',
-      full_name: 'Sarah M.',
-      avatar_url: '/api/avatars/sarah.jpg',
-      rating: 4.8
-    },
-    origin_city: 'London',
-    destination_city: 'New York',
-    status: 'cancelled',
-    items_count: 8,
-    reward_amount: 20,
-    items: [
-      { id: 'item-7', item_name: 'Headphones', product_images: ['/api/products/headphones.jpg'] },
-      { id: 'item-8', item_name: 'Watch', product_images: ['/api/products/watch.jpg'] },
-      { id: 'item-9', item_name: 'Shoes', product_images: ['/api/products/shoes.jpg'] },
-    ],
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '4',
-    orderer_id: 'orderer-1',
-    orderer: {
-      id: 'orderer-1',
-      full_name: 'Sarah M.',
-      avatar_url: '/api/avatars/sarah.jpg',
-      rating: 4.8
-    },
-    origin_city: 'London',
-    destination_city: 'New York',
-    status: 'delivered',
-    items_count: 5,
-    reward_amount: 20,
-    items: [
-      { id: 'item-10', item_name: 'Headphones', product_images: ['/api/products/headphones.jpg'] },
-      { id: 'item-11', item_name: 'Watch', product_images: ['/api/products/watch.jpg'] },
-      { id: 'item-12', item_name: 'Shoes', product_images: ['/api/products/shoes.jpg'] },
-    ],
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '5',
-    orderer_id: 'orderer-2',
-    orderer: {
-      id: 'orderer-2',
-      full_name: 'Sarah M.',
-      avatar_url: '/api/avatars/sarah.jpg',
-      rating: 4.8
-    },
-    origin_city: 'London',
-    destination_city: 'New York',
-    status: 'pending',
-    items_count: 8,
-    reward_amount: 20,
-    items: [
-      { id: 'item-13', item_name: 'Headphones', product_images: ['/api/products/headphones.jpg'] },
-      { id: 'item-14', item_name: 'Watch', product_images: ['/api/products/watch.jpg'] },
-      { id: 'item-15', item_name: 'Shoes', product_images: ['/api/products/shoes.jpg'] },
-    ],
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '6',
-    orderer_id: 'orderer-3',
-    orderer: {
-      id: 'orderer-3',
-      full_name: 'Sarah M.',
-      avatar_url: '/api/avatars/sarah.jpg',
-      rating: 4.8
-    },
-    origin_city: 'London',
-    destination_city: 'New York',
-    status: 'cancelled',
-    items_count: 8,
-    reward_amount: 20,
-    items: [
-      { id: 'item-16', item_name: 'Headphones', product_images: ['/api/products/headphones.jpg'] },
-      { id: 'item-17', item_name: 'Watch', product_images: ['/api/products/watch.jpg'] },
-      { id: 'item-18', item_name: 'Shoes', product_images: ['/api/products/shoes.jpg'] },
-    ],
-    created_at: new Date().toISOString(),
-  },
-];
-
 const PickerMyOrders = () => {
   const navigate = useNavigate();
   const { avatarUrl, avatarError, handleAvatarError } = useUser();
-  const [orders] = useState<Order[]>(MOCK_ORDERS);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'delivered' | 'cancelled'>('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Map filter to API status format
+        const statusMap: Record<string, string | undefined> = {
+          'all': undefined,
+          'pending': 'ACCEPTED',
+          'delivered': 'DELIVERED',
+          'cancelled': 'CANCELLED',
+        };
+        
+        const status = statusMap[activeFilter];
+        const response = await pickerOrdersApi.getPickerOrders(status, 1, 20);
+        
+        // The apiClient returns response.data directly
+        // So response is { data: [...], pagination: {...} }
+        const ordersData = (response as any)?.data || [];
+        
+        if (!Array.isArray(ordersData)) {
+          console.error('Invalid response format:', response);
+          setError('Invalid response format from server');
+          return;
+        }
+        
+        // Transform API response to match Order interface
+        const transformedOrders: Order[] = ordersData.map((order: any) => ({
+          ...order,
+          status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled',
+        }));
+        
+        setOrders(transformedOrders);
+      } catch (err) {
+        console.error('Failed to fetch orders:', err);
+        setError('Failed to load orders. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [activeFilter]);
 
   // Filter orders based on active filter
   const filteredOrders = orders.filter((order) => {
@@ -193,11 +112,11 @@ const PickerMyOrders = () => {
       case 'delivered':
         return 'View Order Details';
       case 'pending':
-        return 'View Details';
+        return 'View Order Details';
       case 'cancelled':
         return 'Accept again';
       default:
-        return 'View Details';
+        return 'View Order Details';
     }
   };
 
@@ -245,8 +164,22 @@ const PickerMyOrders = () => {
             </div>
           </div>
 
+          {/* Loading State */}
+          {loading && (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4D0013]"></div>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-red-700">{error}</p>
+            </div>
+          )}
+
           {/* Orders Grid */}
-          {filteredOrders.length > 0 ? (
+          {!loading && filteredOrders.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredOrders.map((order) => (
                 <div
@@ -256,9 +189,12 @@ const PickerMyOrders = () => {
                   {/* Orderer Info */}
                   <div className="flex items-center gap-3 mb-4">
                     <img
-                      src={order.orderer.avatar_url || '/api/avatars/default.jpg'}
+                      src={imageUtils.getImageUrl(order.orderer.avatar_url)}
                       alt={order.orderer.full_name}
                       className="w-12 h-12 rounded-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"%3E%3Ccircle cx="12" cy="12" r="10"/%3E%3Cpath d="M12 16c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"/%3E%3C/svg%3E';
+                      }}
                     />
                     <div className="flex-1">
                       <p className="font-semibold text-gray-900">{order.orderer.full_name}</p>
@@ -286,9 +222,12 @@ const PickerMyOrders = () => {
                             className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0"
                           >
                             <img
-                              src={item.product_images?.[0] || '/api/products/default.jpg'}
+                              src={imageUtils.getImageUrl(item.product_images?.[0])}
                               alt={item.item_name}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"%3E%3Crect x="3" y="3" width="18" height="18" rx="2"/%3E%3Ccircle cx="8.5" cy="8.5" r="1.5"/%3E%3Cpath d="M21 15l-5-5L5 21"/%3E%3C/svg%3E';
+                              }}
                             />
                           </div>
                         ))}
