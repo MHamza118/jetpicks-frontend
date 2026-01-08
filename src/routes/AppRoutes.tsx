@@ -14,6 +14,7 @@ import OrdererChat from '../pages/orderer/Chat';
 import PickerDashboard from '../pages/picker/Dashboard';
 import PickerMyOrders from '../pages/picker/MyOrders';
 import PickerOrderDetails from '../pages/picker/OrderDetails';
+import PickerOrderDetailsView from '../pages/picker/OrderDetailsView';
 import PickerCounterOffer from '../pages/picker/CounterOffer';
 import PickerChat from '../pages/picker/Chat';
 import JetPickerDetails from '../pages/orderer/JetPickerDetails';
@@ -134,6 +135,14 @@ const AppRoutes = () => {
               element={
                 <ProtectedRoute requiredRole="PICKER">
                   <PickerOrderDetails />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/picker/orders/:orderId/view" 
+              element={
+                <ProtectedRoute requiredRole="PICKER">
+                  <PickerOrderDetailsView />
                 </ProtectedRoute>
               } 
             />

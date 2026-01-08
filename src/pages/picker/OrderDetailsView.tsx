@@ -1,0 +1,257 @@
+import { useState } from 'react';
+import { useUser } from '../../context/UserContext';
+import { imageUtils } from '../../utils';
+import PickerDashboardSidebar from '../../components/layout/PickerDashboardSidebar';
+import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
+import MobileFooter from '../../components/layout/MobileFooter';
+import { Upload, CheckCircle, Circle } from 'lucide-react';
+
+interface OrderItem {
+  id: string;
+  item_name: string;
+  weight?: string;
+  price?: number;
+  quantity?: number;
+  special_notes?: string;
+  store_link?: string;
+  product_images?: string[];
+}
+
+interface OrderDetailsViewData {
+  id: string;
+  orderer_id: string;
+  origin_city: string;
+  destination_city: string;
+  status: string;
+  items_count: number;
+  reward_amount: number | string;
+  items: OrderItem[];
+  orderer: {
+    id: string;
+    full_name: string;
+    avatar_url?: string;
+    rating: number;
+  };
+  created_at: string;
+}
+
+// Mock data for UI development
+const MOCK_ORDER: OrderDetailsViewData = {
+  id: '1',
+  orderer_id: 'orderer-1',
+  origin_city: 'London',
+  destination_city: 'Madrid',
+  status: 'ACCEPTED',
+  items_count: 1,
+  reward_amount: 10,
+  items: [
+    {
+      id: 'item-1',
+      item_name: 'Watch',
+      weight: '1/4kg',
+      price: 50,
+      quantity: 1,
+      store_link: 'https://amazon.com',
+      product_images: ['/storage/order-items/watch.jpg'],
+    },
+  ],
+  orderer: {
+    id: 'orderer-1',
+    full_name: 'Sarah M.',
+    avatar_url: '/storage/avatars/sarah.jpg',
+    rating: 4.8,
+  },
+  created_at: new Date().toISOString(),
+};
+
+const PickerOrderDetailsView = () => {
+  const { avatarUrl, avatarError, handleAvatarError } = useUser();
+  const [order] = useState<OrderDetailsViewData>(MOCK_ORDER);
+  const [uploadedProof, setUploadedProof] = useState<File | null>(null);
+  const [isDelivered, setIsDelivered] = useState(false);
+  const [showUploadSection, setShowUploadSection] = useState(false);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedProof(file);
+    }
+  };
+
+  const handleToggleMarkAsDelivered = () => {
+    if (!showUploadSection) {
+      // First click - show upload section
+      setShowUploadSection(true);
+    } else if (uploadedProof) {
+      // Second click with file - mark as delivered
+      setIsDelivered(true);
+      setShowUploadSection(false);
+      // API call will be added here
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-white flex-col md:flex-row">
+      <PickerDashboardSidebar activeTab="orders" />
+
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+        <PickerDashboardHeader
+          title="My orders"
+          avatarUrl={avatarUrl}
+          avatarError={avatarError}
+          onAvatarError={handleAvatarError}
+        />
+
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white">
+          {/* Route Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-[#4D0013]">
+              {order.origin_city} - {order.destination_city}
+            </h1>
+          </div>
+
+          <div className="max-w-xl mx-auto space-y-6">
+            {/* Order Summary Card */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-6">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-gray-600">Route</p>
+                  <p className="font-semibold text-gray-900">
+                    From {order.origin_city} to {order.destination_city}
+                  </p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-gray-600">Item list</p>
+                  <p className="font-semibold text-gray-900">{order.items[0]?.item_name || 'N/A'}</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-gray-600">Store</p>
+                  <p className="font-semibold text-gray-900">
+                    {order.items[0]?.store_link ? 'Amazone' : 'N/A'}
+                  </p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-gray-600">Weight</p>
+                  <p className="font-semibold text-gray-900">{order.items[0]?.weight || 'N/A'}</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-gray-600">Reward</p>
+                  <p className="font-semibold text-gray-900">
+                    ${typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount).toFixed(2) : order.reward_amount.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Product Image and Orderer Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Product Image */}
+              <div className="bg-white border border-gray-200 rounded-2xl p-6 flex items-center justify-center">
+                <div className="w-48 h-48 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                  <img
+                    src={imageUtils.getImageUrl(order.items[0]?.product_images?.[0])}
+                    alt={order.items[0]?.item_name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"%3E%3Crect x="3" y="3" width="18" height="18" rx="2"/%3E%3Ccircle cx="8.5" cy="8.5" r="1.5"/%3E%3Cpath d="M21 15l-5-5L5 21"/%3E%3C/svg%3E';
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Orderer Info */}
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-6">JetOrderer</h3>
+                <div className="flex items-center gap-4">
+                  <img
+                    src={imageUtils.getImageUrl(order.orderer.avatar_url)}
+                    alt={order.orderer.full_name}
+                    className="w-16 h-16 rounded-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"%3E%3Ccircle cx="12" cy="12" r="10"/%3E%3Cpath d="M12 16c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"/%3E%3C/svg%3E';
+                    }}
+                  />
+                  <div>
+                    <p className="font-semibold text-gray-900">{order.orderer.full_name}</p>
+                    <p className="text-sm text-gray-600">{order.orderer.rating} ⭐</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Delivery Status */}
+            {!isDelivered && (
+              <div>
+                <button
+                  onClick={handleToggleMarkAsDelivered}
+                  className="flex items-center gap-3 mb-6 hover:opacity-80 transition-opacity"
+                >
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center">
+                    {showUploadSection ? (
+                      <CheckCircle size={20} className="text-green-600" />
+                    ) : (
+                      <Circle size={20} className="text-gray-400" />
+                    )}
+                  </div>
+                  <p className="font-semibold text-gray-900">Mark as delivered</p>
+                </button>
+
+                {/* Upload Area - Shows when toggled */}
+                {showUploadSection && (
+                  <>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-6">
+                      <Upload size={32} className="mx-auto text-gray-400 mb-3" />
+                      <p className="text-gray-600 text-sm mb-2">Upload proof of delivery/ Receipt</p>
+                      <label className="cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                        />
+                        <span className="text-[#4D0013] font-semibold text-sm hover:underline">
+                          Click to upload
+                        </span>
+                      </label>
+                      {uploadedProof && (
+                        <p className="text-green-600 text-sm mt-2">✓ {uploadedProof.name}</p>
+                      )}
+                    </div>
+
+                    {/* Action Button */}
+                    <div className="flex justify-center">
+                      <button
+                        onClick={handleToggleMarkAsDelivered}
+                        disabled={!uploadedProof}
+                        className={`px-8 py-2 rounded-lg font-bold text-sm transition-colors ${
+                          uploadedProof
+                            ? 'bg-[#4D0013] text-white hover:bg-[#660019]'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        Confirm Delivery
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Delivered Confirmation */}
+            {isDelivered && (
+              <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center">
+                <CheckCircle size={48} className="mx-auto text-green-600 mb-3" />
+                <p className="font-semibold text-green-900 text-lg">Order Delivered Successfully</p>
+                <p className="text-green-700 text-sm mt-2">Thank you for completing this delivery</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <MobileFooter activeTab="home" />
+      </div>
+    </div>
+  );
+};
+
+export default PickerOrderDetailsView;

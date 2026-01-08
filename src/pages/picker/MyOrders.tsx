@@ -121,14 +121,7 @@ const PickerMyOrders = () => {
   };
 
   const handleActionClick = (order: Order) => {
-    if (order.status === 'pending') {
-      navigate(`/picker/orders/${order.id}`);
-    } else if (order.status === 'delivered') {
-      navigate(`/picker/orders/${order.id}`);
-    } else if (order.status === 'cancelled') {
-      // Handle accept again action
-      navigate(`/picker/orders/${order.id}`);
-    }
+    navigate(`/picker/orders/${order.id}/view`);
   };
 
   return (
