@@ -23,7 +23,11 @@ const PickerDashboardSidebar = ({ activeTab = 'dashboard' }: PickerDashboardSide
       label: 'Messages',
       action: () => navigate('/picker/chat')
     },
-    { id: 'orders', label: 'My Orders' },
+    { 
+      id: 'orders', 
+      label: 'My Orders',
+      action: () => navigate('/picker/my-orders')
+    },
     { id: 'profile', label: 'Profile' },
   ];
 

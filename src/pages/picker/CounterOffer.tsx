@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ordersApi } from '../../services/orders';
 import { apiClient } from '../../services/apiClient';
 import { API_CONFIG } from '../../config/api';
-import DashboardSidebar from '../../components/layout/DashboardSidebar';
+import DashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
 import { profileApi } from '../../services';
@@ -183,10 +183,10 @@ const PickerCounterOffer = () => {
             {/* Counter Offer Card */}
             <div className="bg-white border border-gray-200 rounded-3xl p-8 mb-8">
               <div className="text-center mb-8">
-                <p className="text-[#FFDF57] font-semibold text-lg mb-2">
+                <p className="text-[#4D0013] font-semibold text-lg mb-2">
                   {order.orderer.full_name} is offering ${rewardAmount.toFixed(2)} as reward
                 </p>
-                <p className="text-[#FFDF57] font-semibold text-lg">
+                <p className="text-[#4D0013] font-semibold text-lg">
                   set your own counter offer
                 </p>
               </div>
@@ -205,7 +205,7 @@ const PickerCounterOffer = () => {
                     value={counterOfferAmount}
                     onChange={(e) => setCounterOfferAmount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full pl-8 pr-4 py-3 border-b-2 border-gray-300 focus:border-[#FFDF57] outline-none text-gray-900 font-semibold text-lg"
+                    className="w-full pl-8 pr-4 py-3 border-b-2 border-gray-300 focus:border-[#4D0013] outline-none text-gray-900 font-semibold text-lg"
                     step="0.01"
                     min="0"
                   />
@@ -223,7 +223,7 @@ const PickerCounterOffer = () => {
               <button
                 onClick={handleSendCounterOffer}
                 disabled={submitting}
-                className="px-20 py-3 bg-[#FFDF57] text-gray-900 rounded-lg font-bold hover:bg-yellow-500 transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-20 py-3 bg-[#4D0013] text-white rounded-lg font-bold text-base disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? 'Sending...' : 'Send'}
               </button>

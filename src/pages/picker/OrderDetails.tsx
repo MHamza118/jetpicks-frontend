@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ordersApi } from '../../services/orders';
 import { API_CONFIG } from '../../config/api';
 import { imageUtils } from '../../utils';
-import DashboardSidebar from '../../components/layout/DashboardSidebar';
+import DashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
 import { profileApi } from '../../services';
@@ -47,6 +47,8 @@ const PickerOrderDetails = () => {
   const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToCustomLaws, setAgreedToCustomLaws] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -293,6 +295,8 @@ const PickerOrderDetails = () => {
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
                   className="w-5 h-5 rounded accent-red-900"
                 />
                 <span className="text-gray-700 text-sm">I agree to terms and conditions</span>
@@ -300,6 +304,8 @@ const PickerOrderDetails = () => {
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
+                  checked={agreedToCustomLaws}
+                  onChange={(e) => setAgreedToCustomLaws(e.target.checked)}
                   className="w-5 h-5 rounded accent-red-900"
                 />
                 <span className="text-gray-700 text-sm">I agree to the custom laws</span>
@@ -310,13 +316,23 @@ const PickerOrderDetails = () => {
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
               <button
                 onClick={handleAcceptDelivery}
-                className="flex-1 bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold hover:bg-yellow-500 transition-colors text-base"
+                disabled={!agreedToTerms || !agreedToCustomLaws}
+                className={`flex-1 py-3 rounded-lg font-bold text-base transition-colors ${
+                  agreedToTerms && agreedToCustomLaws
+                    ? 'bg-[#4D0013] text-white cursor-pointer'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
               >
                 Accept Delivery
               </button>
               <button
                 onClick={() => navigate(`/picker/orders/${orderId}/counter-offer`)}
-                className="flex-1 border-2 border-gray-300 text-gray-900 py-3 rounded-lg font-bold hover:bg-gray-50 transition-colors text-base"
+                disabled={!agreedToTerms || !agreedToCustomLaws}
+                className={`flex-1 py-3 rounded-lg font-bold text-base transition-colors ${
+                  agreedToTerms && agreedToCustomLaws
+                    ? 'border-2 border-gray-300 text-gray-900 hover:bg-gray-50 cursor-pointer'
+                    : 'border-2 border-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
               >
                 Send Counter Offer
               </button>

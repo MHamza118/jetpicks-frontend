@@ -4,18 +4,21 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { OrderProvider } from './context/OrderContext';
 import { DashboardCacheProvider } from './context/DashboardCacheContext';
 import { ChatProvider } from './context/ChatContext';
+import { UserProvider } from './context/UserContext';
 
 function App() {
   return (
     <ErrorBoundary>
       <Router>
-        <OrderProvider>
-          <DashboardCacheProvider>
-            <ChatProvider>
-              <AppRoutes />
-            </ChatProvider>
-          </DashboardCacheProvider>
-        </OrderProvider>
+        <UserProvider>
+          <OrderProvider>
+            <DashboardCacheProvider>
+              <ChatProvider>
+                <AppRoutes />
+              </ChatProvider>
+            </DashboardCacheProvider>
+          </OrderProvider>
+        </UserProvider>
       </Router>
     </ErrorBoundary>
   );

@@ -5,16 +5,16 @@ import PickerDashboardSidebar from '../../components/layout/PickerDashboardSideb
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
 import { useChat } from '../../context/ChatContext';
+import { useUser } from '../../context/UserContext';
 import { API_CONFIG } from '../../config/api';
 
 const Chat = () => {
   const { roomId } = useParams<{ roomId?: string }>();
   const navigate = useNavigate();
+  const { avatarUrl, avatarError, handleAvatarError } = useUser();
   const { chatRooms, currentRoom, messages, fetchChatRooms, fetchChatRoom, fetchMessages, sendMessage } = useChat();
 
   const [messageInput, setMessageInput] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarError, setAvatarError] = useState(false);
   const [fabPosition, setFabPosition] = useState({ x: 304, y: window.innerHeight - 120 });
   const [isDragging, setIsDragging] = useState(false);
   const [showTranslated, setShowTranslated] = useState<{ [key: string]: boolean }>({});
@@ -84,11 +84,6 @@ const Chat = () => {
       };
     }
   }, [isDragging]);
-
-  const handleAvatarError = () => {
-    setAvatarError(true);
-    setAvatarUrl(null);
-  };
 
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !roomId || sending) return;

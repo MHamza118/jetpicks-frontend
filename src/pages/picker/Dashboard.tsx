@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { dashboardApi, profileApi } from '../../services';
+import { dashboardApi } from '../../services';
 import type { PickerDashboardData } from '../../services/dashboard';
 import { useDashboardCache } from '../../context/DashboardCacheContext';
-import { API_CONFIG } from '../../config/api';
+import { useUser } from '../../context/UserContext';
 import { imageUtils } from '../../utils';
+import { API_CONFIG } from '../../config/api';
 import PickerDashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
@@ -12,8 +13,7 @@ import dashboardHero from '../../assets/dashboard.jpeg';
 
 const PickerDashboard = () => {
     const navigate = useNavigate();
-    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-    const [avatarError, setAvatarError] = useState(false);
+    const { avatarUrl, avatarError, handleAvatarError } = useUser();
     const [dashboardData, setDashboardData] = useState<PickerDashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const { pickerCachedData, setPickerCachedData, isPickerCacheValid } = useDashboardCache();
@@ -28,18 +28,7 @@ const PickerDashboard = () => {
                 return;
             }
 
-            const [profileRes, dashboardRes] = await Promise.all([
-                profileApi.getProfile(),
-                dashboardApi.getPickerDashboard()
-            ]);
-
-            // picker Profile image
-            const profile = profileRes.data;
-            if (profile?.avatar_url) {
-                const fullUrl = imageUtils.getImageUrl(profile.avatar_url, API_CONFIG.BASE_URL);
-                setAvatarUrl(fullUrl);
-                setAvatarError(false);
-            }
+            const dashboardRes = await dashboardApi.getPickerDashboard();
 
             // The API client returns response.data directly
             // The backend now wraps it in { data: dashboard }
@@ -82,11 +71,6 @@ const PickerDashboard = () => {
             }
         };
     }, []);
-
-    const handleAvatarError = () => {
-        setAvatarError(true);
-        setAvatarUrl(null);
-    };
 
     return (
         <div className="flex h-screen bg-white flex-col md:flex-row">
