@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authApi } from '../api';
+import { authApi } from '../services';
 import { storage, errorUtils } from '../utils';
 import { STORAGE_KEYS, ROUTES, SUCCESS_MESSAGES } from '../constants';
 import type { User, LoginPayload, SignupPayload } from '../@types';

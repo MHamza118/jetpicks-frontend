@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { profileApi, ordersApi } from '../../api';
+import { profileApi, ordersApi } from '../../services';
 import { API_CONFIG } from '../../config/api';
 import { useOrder } from '../../context/OrderContext';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';

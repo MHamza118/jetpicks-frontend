@@ -4,27 +4,24 @@ import logo from '../../assets/logo.jpg';
 import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
 
-interface DashboardSidebarProps {
+interface PickerDashboardSidebarProps {
   activeTab?: 'dashboard' | 'messages' | 'orders' | 'profile';
 }
 
-const DashboardSidebar = ({ activeTab = 'dashboard' }: DashboardSidebarProps) => {
+const PickerDashboardSidebar = ({ activeTab = 'dashboard' }: PickerDashboardSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Determine if user is a picker or orderer based on current route
-  const isPickerRoute = location.pathname.includes('/picker/');
 
   const navItems = [
     { 
       id: 'dashboard', 
       label: 'Dashboard', 
-      action: () => navigate(isPickerRoute ? '/picker/dashboard' : '/orderer/dashboard') 
+      action: () => navigate('/picker/dashboard') 
     },
     { 
       id: 'messages', 
       label: 'Messages',
-      action: () => navigate(isPickerRoute ? '/picker/chat' : '/orderer/chat')
+      action: () => navigate('/picker/chat')
     },
     { id: 'orders', label: 'My Orders' },
     { id: 'profile', label: 'Profile' },
@@ -37,7 +34,7 @@ const DashboardSidebar = ({ activeTab = 'dashboard' }: DashboardSidebarProps) =>
   };
 
   return (
-    <div className="hidden md:flex w-48 bg-[#FFDF57] p-6 flex-col h-screen">
+    <div className="hidden md:flex w-48 bg-[#4D0013] p-6 flex-col h-screen">
       <div className="mb-8 flex justify-center">
         <img src={logo} alt="Logo" className="w-16 h-16 object-cover rounded-lg" />
       </div>
@@ -49,8 +46,8 @@ const DashboardSidebar = ({ activeTab = 'dashboard' }: DashboardSidebarProps) =>
             onClick={action}
             className={`w-full text-left px-4 py-2 font-semibold text-sm rounded-full transition-colors ${
               activeTab === id
-                ? 'bg-gray-900 text-[#FFDF57]'
-                : 'text-gray-900 hover:opacity-80'
+                ? 'bg-white text-[#4D0013]'
+                : 'text-white hover:opacity-80'
             }`}
           >
             {label}
@@ -60,7 +57,7 @@ const DashboardSidebar = ({ activeTab = 'dashboard' }: DashboardSidebarProps) =>
 
       <button
         onClick={handleLogout}
-        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-900 text-[#FFDF57] font-semibold text-sm rounded-full hover:bg-gray-800 transition-colors"
+        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white text-[#4D0013] font-semibold text-sm rounded-full hover:bg-gray-100 transition-colors"
       >
         <LogOut size={18} />
         <span>Logout</span>
@@ -69,4 +66,4 @@ const DashboardSidebar = ({ activeTab = 'dashboard' }: DashboardSidebarProps) =>
   );
 };
 
-export default DashboardSidebar;
+export default PickerDashboardSidebar;

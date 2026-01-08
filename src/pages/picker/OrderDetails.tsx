@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ordersApi } from '../../api/orders';
+import { ordersApi } from '../../services/orders';
 import { API_CONFIG } from '../../config/api';
+import { imageUtils } from '../../utils';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
-import DashboardHeader from '../../components/layout/DashboardHeader';
+import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
-import { profileApi } from '../../api';
+import { profileApi } from '../../services';
 
 interface OrderItem {
   id: string;
@@ -99,10 +100,7 @@ const PickerOrderDetails = () => {
   };
 
   const getImageUrl = (imagePath: string) => {
-    if (!imagePath) return '';
-    if (imagePath.startsWith('http')) return imagePath;
-    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
-    return `${baseUrl}${imagePath}`;
+    return imageUtils.getImageUrl(imagePath, API_CONFIG.BASE_URL);
   };
 
   const calculateTotalCost = () => {
@@ -116,8 +114,8 @@ const PickerOrderDetails = () => {
   const calculateTotal = () => {
     const itemsCost = calculateTotalCost();
     const fee = parseFloat(calculateJetPicksFee(itemsCost));
-    const reward = typeof order?.reward_amount === 'string' 
-      ? parseFloat(order.reward_amount) 
+    const reward = typeof order?.reward_amount === 'string'
+      ? parseFloat(order.reward_amount)
       : (order?.reward_amount || 0);
     const total = itemsCost + fee + reward;
     return total.toFixed(2);
@@ -128,7 +126,7 @@ const PickerOrderDetails = () => {
       <div className="flex h-screen bg-white flex-col md:flex-row">
         <DashboardSidebar activeTab="dashboard" />
         <div className="flex-1 flex flex-col h-full overflow-hidden">
-          <DashboardHeader
+          <PickerDashboardHeader
             title="Order Details"
             avatarUrl={avatarUrl}
             avatarError={avatarError}
@@ -147,7 +145,7 @@ const PickerOrderDetails = () => {
       <div className="flex h-screen bg-white flex-col md:flex-row">
         <DashboardSidebar activeTab="dashboard" />
         <div className="flex-1 flex flex-col h-full overflow-hidden">
-          <DashboardHeader
+          <PickerDashboardHeader
             title="Order Details"
             avatarUrl={avatarUrl}
             avatarError={avatarError}
@@ -170,7 +168,7 @@ const PickerOrderDetails = () => {
       <DashboardSidebar activeTab="dashboard" />
 
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <DashboardHeader
+        <PickerDashboardHeader
           title="Order Details"
           avatarUrl={avatarUrl}
           avatarError={avatarError}

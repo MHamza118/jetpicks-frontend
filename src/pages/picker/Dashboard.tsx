@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { dashboardApi, profileApi } from '../../api';
-import type { PickerDashboardData } from '../../api/dashboard';
+import { dashboardApi, profileApi } from '../../services';
+import type { PickerDashboardData } from '../../services/dashboard';
 import { useDashboardCache } from '../../context/DashboardCacheContext';
 import { API_CONFIG } from '../../config/api';
-import DashboardSidebar from '../../components/layout/DashboardSidebar';
-import DashboardHeader from '../../components/layout/DashboardHeader';
+import { imageUtils } from '../../utils';
+import PickerDashboardSidebar from '../../components/layout/PickerDashboardSidebar';
+import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
 import dashboardHero from '../../assets/dashboard.jpeg';
 
@@ -35,11 +36,7 @@ const PickerDashboard = () => {
             // picker Profile image
             const profile = profileRes.data;
             if (profile?.avatar_url) {
-                const avatarPath = profile.avatar_url;
-                const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
-                const fullUrl = avatarPath.startsWith('http')
-                    ? avatarPath
-                    : `${baseUrl}${avatarPath}`;
+                const fullUrl = imageUtils.getImageUrl(profile.avatar_url, API_CONFIG.BASE_URL);
                 setAvatarUrl(fullUrl);
                 setAvatarError(false);
             }
@@ -47,13 +44,13 @@ const PickerDashboard = () => {
             // The API client returns response.data directly
             // The backend now wraps it in { data: dashboard }
             const data = (dashboardRes as any).data || dashboardRes;
-            
+
             // Cache the data
             setPickerCachedData({
                 orders: data,
                 timestamp: Date.now(),
             });
-            
+
             setDashboardData(data);
         } catch (error) {
             console.error('Failed to fetch dashboard data:', error);
@@ -93,10 +90,10 @@ const PickerDashboard = () => {
 
     return (
         <div className="flex h-screen bg-white flex-col md:flex-row">
-            <DashboardSidebar activeTab="dashboard" />
+            <PickerDashboardSidebar activeTab="dashboard" />
 
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-                <DashboardHeader
+                <PickerDashboardHeader
                     title="Dashboard"
                     avatarUrl={avatarUrl}
                     avatarError={avatarError}
@@ -109,9 +106,9 @@ const PickerDashboard = () => {
                             <p className="text-gray-900 font-semibold text-lg">
                                 From {dashboardData.travel_journeys[0].departure_city} - {dashboardData.travel_journeys[0].arrival_city} {' '}
                                 <span className="text-gray-500">{new Date(dashboardData.travel_journeys[0].arrival_date).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric'
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
                                 })}</span>
                             </p>
                         </div>
@@ -120,9 +117,9 @@ const PickerDashboard = () => {
                     {/* Hero Section */}
                     <div className="mb-8 rounded-3xl overflow-hidden h-40 md:h-56 relative flex items-end justify-center pb-6 md:pb-8">
                         <img src={dashboardHero} alt="Dashboard" className="w-full h-full object-cover absolute inset-0" />
-                        <button 
+                        <button
                             onClick={() => navigate('/picker/create-journey')}
-                            className="relative bg-[#FFDF57] text-gray-900 px-6 py-2 rounded-full font-bold text-sm md:text-base hover:bg-yellow-500 transition-colors shadow-lg"
+                            className="relative bg-[#4D0013] text-white px-6 py-2 rounded-full font-bold text-sm md:text-base hover:bg-[#660019] transition-colors shadow-lg"
                         >
                             Create New Journey
                         </button>
@@ -142,7 +139,7 @@ const PickerDashboard = () => {
                                         <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0 overflow-hidden">
                                             {order.orderer.avatar_url ? (
                                                 <img
-                                                    src={order.orderer.avatar_url.startsWith('http') ? order.orderer.avatar_url : `${API_CONFIG.BASE_URL.replace('/api', '')}${order.orderer.avatar_url}`}
+                                                    src={imageUtils.getImageUrl(order.orderer.avatar_url, API_CONFIG.BASE_URL)}
                                                     alt={order.orderer.full_name}
                                                     className="w-full h-full object-cover"
                                                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
@@ -166,7 +163,7 @@ const PickerDashboard = () => {
                                         <div className="flex gap-2">
                                             {order.items_images && order.items_images.length > 0 && order.items_images.slice(0, 3).map((img, idx) => (
                                                 <div key={idx} className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                                                    <img src={img.startsWith('http') ? img : `${API_CONFIG.BASE_URL.replace('/api', '')}${img}`} alt="Item" className="w-full h-full object-cover" />
+                                                    <img src={imageUtils.getImageUrl(img, API_CONFIG.BASE_URL)} alt="Item" className="w-full h-full object-cover" />
                                                 </div>
                                             ))}
                                             {order.items_count > 3 && (
@@ -186,7 +183,7 @@ const PickerDashboard = () => {
                                     {/* Footer Button */}
                                     <button
                                         onClick={() => navigate(`/picker/orders/${order.id}`)}
-                                        className="w-full bg-[#FFDF57] text-gray-900 py-2 md:py-3 rounded-lg font-bold hover:bg-yellow-500 transition-colors text-xs md:text-base"
+                                        className="w-full bg-[#4D0013] text-white py-2 md:py-3 rounded-lg font-bold hover:bg-[#660019] transition-colors text-xs md:text-base"
                                     >
                                         View Order Details
                                     </button>

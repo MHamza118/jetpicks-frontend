@@ -3,7 +3,7 @@ import { Search, Bell, User, LogOut, ArrowLeft, SlidersHorizontal, X } from 'luc
 import { useNavigate } from 'react-router-dom';
 import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
-import { notificationsApi } from '../../api';
+import { notificationsApi } from '../../services';
 import { useAcceptedOrderPolling, useCounterOfferPolling } from '../../context/OrderNotificationContext';
 
 interface DashboardHeaderProps {
@@ -67,13 +67,6 @@ const DashboardHeader = ({
             </button>
             {showProfileDropdown && (
               <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                <button
-                  onClick={handleLogout}
-                  className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
-                >
-                  <LogOut size={18} />
-                  <span>Logout</span>
-                </button>
               </div>
             )}
           </div>
@@ -143,13 +136,6 @@ const DashboardHeader = ({
             </button>
             {showProfileDropdown && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                <button
-                  onClick={handleLogout}
-                  className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
-                >
-                  <LogOut size={18} />
-                  <span>Logout</span>
-                </button>
               </div>
             )}
           </div>

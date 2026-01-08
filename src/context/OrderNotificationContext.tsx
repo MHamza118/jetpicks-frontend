@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { notificationsApi } from '../api';
+import { notificationsApi } from '../services';
 
 export interface AcceptedOrderNotification {
   id: string;
@@ -38,7 +38,7 @@ export const useAcceptedOrderPolling = () => {
     const fetchNotificationsFromDB = async () => {
       try {
         const response = await notificationsApi.getNotifications(1, 100);
-        const notificationsData = (response as any).data || [];
+        const notificationsData = response.data || [];
         
         const history: AcceptedOrderNotification[] = [];
         for (const notif of notificationsData) {
@@ -152,7 +152,7 @@ export const useCounterOfferPolling = () => {
     const fetchCounterOfferHistory = async () => {
       try {
         const response = await notificationsApi.getNotifications(1, 100);
-        const notificationsData = (response as any).data || [];
+        const notificationsData = response.data || [];
         
         const history: CounterOfferNotification[] = [];
         

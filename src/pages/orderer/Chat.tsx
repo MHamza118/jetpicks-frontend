@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Paperclip, Phone, Info, Plus } from 'lucide-react';
-import { useParams } from 'react-router-dom';
+import { Send, Paperclip, Phone, Plus } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
@@ -9,6 +9,7 @@ import { API_CONFIG } from '../../config/api';
 
 const Chat = () => {
   const { roomId } = useParams<{ roomId?: string }>();
+  const navigate = useNavigate();
   const { chatRooms, currentRoom, messages, fetchChatRooms, fetchChatRoom, fetchMessages, sendMessage } = useChat();
   
   const [messageInput, setMessageInput] = useState('');
@@ -137,7 +138,7 @@ const Chat = () => {
   };
 
   const shouldShowTranslateButton = (message: any) => {
-    return message.content_translated && message.sender_id !== 'current-user';
+    return message.content_translated && message.sender_id !== currentRoom?.orderer.id;
   };
 
   return (
@@ -165,6 +166,7 @@ const Chat = () => {
                   <div
                     key={room.id}
                     onClick={() => {
+                      navigate(`/orderer/chat/${room.id}`);
                       fetchChatRoom(room.id);
                       fetchMessages(room.id);
                     }}
@@ -246,9 +248,6 @@ const Chat = () => {
                     <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                       <Phone size={20} className="text-gray-600" />
                     </button>
-                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                      <Info size={20} className="text-gray-600" />
-                    </button>
                   </div>
                 </div>
 
@@ -263,12 +262,12 @@ const Chat = () => {
                       <div
                         key={message.id}
                         className={`flex ${
-                          message.sender_id === 'current-user' ? 'justify-end' : 'justify-start'
+                          message.sender_id === currentRoom?.orderer.id ? 'justify-end' : 'justify-start'
                         }`}
                       >
                         <div
                           className={`max-w-xs px-4 py-2 rounded-lg ${
-                            message.sender_id === 'current-user'
+                            message.sender_id === currentRoom?.orderer.id
                               ? 'bg-[#FFDF57] text-gray-900'
                               : 'bg-gray-100 text-gray-900'
                           }`}
@@ -281,7 +280,7 @@ const Chat = () => {
                                 minute: '2-digit',
                               })}
                             </span>
-                            {message.sender_id === 'current-user' && (
+                            {message.sender_id === currentRoom?.orderer.id && (
                               <span className={`text-xs font-bold ${
                                 message.is_read ? 'text-blue-500' : 'text-gray-400'
                               }`}>

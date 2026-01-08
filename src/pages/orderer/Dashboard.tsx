@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { profileApi, dashboardApi } from '../../api';
+import { profileApi, dashboardApi } from '../../services';
 import { useAcceptedOrderPolling } from '../../context/OrderNotificationContext';
 import { useDashboardCache } from '../../context/DashboardCacheContext';
 import { API_CONFIG } from '../../config/api';

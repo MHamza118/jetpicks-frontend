@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
-import { chatApi } from '../api';
+import { chatApi } from '../services';
 
 export interface ChatMessage {
   id: string;
@@ -83,6 +83,20 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
   const clearError = useCallback(() => setError(null), []);
 
+  const markMessageAsRead = useCallback(async (messageId: string) => {
+    try {
+      await chatApi.markMessageAsRead(messageId);
+      
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === messageId ? { ...msg, is_read: true } : msg
+        )
+      );
+    } catch (err) {
+      console.error('Error marking message as read:', err);
+    }
+  }, []);
+
   const fetchChatRooms = useCallback(async () => {
     try {
       setLoading(true);
@@ -115,6 +129,15 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       const response = await chatApi.getChatRoom(roomId);
       const data = (response as any).data;
       setCurrentRoom(data);
+      
+      // Mark all unread messages in this room as read
+      if (messages.length > 0) {
+        const unreadMessages = messages.filter(msg => !msg.is_read && msg.sender_id !== 'current-user');
+        for (const msg of unreadMessages) {
+          await markMessageAsRead(msg.id);
+        }
+      }
+      
       setError(null);
     } catch (err) {
       setError('Failed to fetch chat room');
@@ -123,7 +146,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [messages, markMessageAsRead]);
 
   const fetchMessages = useCallback(async (roomId: string, page = 1) => {
     try {
@@ -149,7 +172,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const sendMessage = useCallback(async (roomId: string, content: string, translate = false) => {
     try {
       const response = await chatApi.sendMessage(roomId, content, translate);
-      const newMessage = (response as any).data;
+      const newMessage = (response as any).data?.data || (response as any).data;
       
       setMessages(prev => [...prev, newMessage]);
       lastMessageIdRef.current = newMessage.id;
@@ -160,28 +183,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       throw err;
     }
   }, []);
-
-  const markMessageAsRead = useCallback(async (messageId: string) => {
-    try {
-      await chatApi.markMessageAsRead(messageId);
-      
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.id === messageId ? { ...msg, is_read: true } : msg
-        )
-      );
-    } catch (err) {
-      console.error('Error marking message as read:', err);
-    }
-  }, []);
-
-  // Auto-mark messages as read when they're visible
-  useEffect(() => {
-    const unreadMessages = messages.filter(msg => !msg.is_read && msg.sender_id !== 'current-user');
-    unreadMessages.forEach(msg => {
-      markMessageAsRead(msg.id);
-    });
-  }, [messages, markMessageAsRead]);
 
   // Polling for new messages every 2 seconds
   useEffect(() => {

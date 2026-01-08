@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient } from './apiClient';
 import type { TravelJourneyPayload, TravelJourney } from '../@types/index';
 
 export const travelApi = {

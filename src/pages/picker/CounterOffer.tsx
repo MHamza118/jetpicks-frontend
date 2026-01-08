@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ordersApi } from '../../api/orders';
-import { apiClient } from '../../api/client';
+import { ordersApi } from '../../services/orders';
+import { apiClient } from '../../services/apiClient';
 import { API_CONFIG } from '../../config/api';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
-import DashboardHeader from '../../components/layout/DashboardHeader';
+import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
-import { profileApi } from '../../api';
+import { profileApi } from '../../services';
 
 interface OrderDetails {
   id: string;
@@ -115,7 +115,7 @@ const PickerCounterOffer = () => {
       <div className="flex h-screen bg-white flex-col md:flex-row">
         <DashboardSidebar activeTab="dashboard" />
         <div className="flex-1 flex flex-col h-full overflow-hidden">
-          <DashboardHeader
+          <PickerDashboardHeader
             title="Counter Offer"
             avatarUrl={avatarUrl}
             avatarError={avatarError}
@@ -134,7 +134,7 @@ const PickerCounterOffer = () => {
       <div className="flex h-screen bg-white flex-col md:flex-row">
         <DashboardSidebar activeTab="dashboard" />
         <div className="flex-1 flex flex-col h-full overflow-hidden">
-          <DashboardHeader
+          <PickerDashboardHeader
             title="Counter Offer"
             avatarUrl={avatarUrl}
             avatarError={avatarError}
@@ -148,8 +148,8 @@ const PickerCounterOffer = () => {
     );
   }
 
-  const rewardAmount = typeof order.reward_amount === 'string' 
-    ? parseFloat(order.reward_amount) 
+  const rewardAmount = typeof order.reward_amount === 'string'
+    ? parseFloat(order.reward_amount)
     : order.reward_amount;
 
   return (
@@ -157,7 +157,7 @@ const PickerCounterOffer = () => {
       <DashboardSidebar activeTab="dashboard" />
 
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <DashboardHeader
+        <PickerDashboardHeader
           title="Counter Offer"
           avatarUrl={avatarUrl}
           avatarError={avatarError}

@@ -4,7 +4,7 @@ import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import signupBg from '../../assets/signupbg.jpg';
-import { authApi } from '../../api';
+import { authApi } from '../../services';
 import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
 import type { LoginPayload } from '../../@types';

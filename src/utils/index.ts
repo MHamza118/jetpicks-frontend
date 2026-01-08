@@ -96,3 +96,25 @@ export const errorUtils = {
     return 'An unexpected error occurred';
   },
 };
+
+// Image URL Utilities
+export const imageUtils = {
+  getImageUrl: (imagePath: string | null | undefined, baseUrl?: string): string => {
+    if (!imagePath) return '';
+    
+    // If it's already an absolute URL, return as-is
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // If it starts with /storage/, prepend the base URL without /api
+    if (imagePath.startsWith('/storage/')) {
+      const base = baseUrl || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+      return base.replace('/api', '') + imagePath;
+    }
+    
+    // For other relative paths, prepend base URL without /api
+    const base = baseUrl || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+    return base.replace('/api', '') + '/' + imagePath;
+  },
+};

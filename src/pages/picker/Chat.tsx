@@ -1,16 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Paperclip, Phone, Info, Plus } from 'lucide-react';
-import { useParams } from 'react-router-dom';
-import DashboardSidebar from '../../components/layout/DashboardSidebar';
-import DashboardHeader from '../../components/layout/DashboardHeader';
+import { Send, Paperclip, Phone, Plus } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import PickerDashboardSidebar from '../../components/layout/PickerDashboardSidebar';
+import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
 import { useChat } from '../../context/ChatContext';
 import { API_CONFIG } from '../../config/api';
 
 const Chat = () => {
   const { roomId } = useParams<{ roomId?: string }>();
+  const navigate = useNavigate();
   const { chatRooms, currentRoom, messages, fetchChatRooms, fetchChatRoom, fetchMessages, sendMessage } = useChat();
-  
+
   const [messageInput, setMessageInput] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
@@ -18,7 +19,7 @@ const Chat = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [showTranslated, setShowTranslated] = useState<{ [key: string]: boolean }>({});
   const [sending, setSending] = useState(false);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fabRef = useRef<HTMLDivElement>(null);
@@ -91,7 +92,7 @@ const Chat = () => {
 
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !roomId || sending) return;
-    
+
     setSending(true);
     try {
       await sendMessage(roomId, messageInput);
@@ -137,15 +138,15 @@ const Chat = () => {
   };
 
   const shouldShowTranslateButton = (message: any) => {
-    return message.content_translated && message.sender_id !== 'current-user';
+    return message.content_translated && message.sender_id !== currentRoom?.picker.id;
   };
 
   return (
     <div className="flex h-screen bg-white flex-col md:flex-row">
-      <DashboardSidebar activeTab="messages" />
+      <PickerDashboardSidebar activeTab="messages" />
 
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <DashboardHeader
+        <PickerDashboardHeader
           title="Messages"
           avatarUrl={avatarUrl}
           avatarError={avatarError}
@@ -165,14 +166,14 @@ const Chat = () => {
                   <div
                     key={room.id}
                     onClick={() => {
+                      navigate(`/picker/chat/${room.id}`);
                       fetchChatRoom(room.id);
                       fetchMessages(room.id);
                     }}
-                    className={`px-4 py-3 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 ${
-                      currentRoom?.id === room.id
-                        ? 'bg-[#FFF8D6]'
+                    className={`px-4 py-3 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 ${currentRoom?.id === room.id
+                        ? 'bg-[#4D0013] text-white'
                         : 'hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start gap-3">
                       <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
@@ -190,20 +191,20 @@ const Chat = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-baseline gap-2">
-                          <h3 className="font-bold text-gray-900 text-sm truncate">
+                          <h3 className={`font-bold text-sm truncate ${currentRoom?.id === room.id ? 'text-white' : 'text-gray-900'}`}>
                             {room.other_user.full_name}
                           </h3>
-                          <span className="text-xs text-gray-500 flex-shrink-0">
+                          <span className={`text-xs flex-shrink-0 ${currentRoom?.id === room.id ? 'text-white/70' : 'text-gray-500'}`}>
                             {room.last_message_time ? new Date(room.last_message_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }).replace(':', '.') : ''}
                           </span>
                         </div>
-                        <p className="text-xs text-gray-500 truncate mt-1">
+                        <p className={`text-xs truncate mt-1 ${currentRoom?.id === room.id ? 'text-white/70' : 'text-gray-500'}`}>
                           {room.last_message || 'No messages yet'}
                         </p>
                       </div>
                       {room.unread_count > 0 && (
-                        <div className="w-5 h-5 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-white text-xs font-bold">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${currentRoom?.id === room.id ? 'bg-white' : 'bg-gray-900'}`}>
+                          <span className={`text-xs font-bold ${currentRoom?.id === room.id ? 'text-[#4D0013]' : 'text-white'}`}>
                             {room.unread_count}
                           </span>
                         </div>
@@ -246,9 +247,6 @@ const Chat = () => {
                     <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                       <Phone size={20} className="text-gray-600" />
                     </button>
-                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                      <Info size={20} className="text-gray-600" />
-                    </button>
                   </div>
                 </div>
 
@@ -262,29 +260,26 @@ const Chat = () => {
                     messages.map((message) => (
                       <div
                         key={message.id}
-                        className={`flex ${
-                          message.sender_id === 'current-user' ? 'justify-end' : 'justify-start'
-                        }`}
+                        className={`flex ${message.sender_id === currentRoom?.picker.id ? 'justify-end' : 'justify-start'
+                          }`}
                       >
                         <div
-                          className={`max-w-xs px-4 py-2 rounded-lg ${
-                            message.sender_id === 'current-user'
-                              ? 'bg-[#FFDF57] text-gray-900'
+                          className={`max-w-xs px-4 py-2 rounded-lg ${message.sender_id === currentRoom?.picker.id
+                              ? 'bg-[#4D0013] text-white'
                               : 'bg-gray-100 text-gray-900'
-                          }`}
+                            }`}
                         >
                           <p className="text-sm">{getMessageContent(message)}</p>
                           <div className="flex items-center justify-between gap-2 mt-1">
-                            <span className="text-xs text-gray-600">
+                            <span className={`text-xs ${message.sender_id === currentRoom?.picker.id ? 'text-white/70' : 'text-gray-600'}`}>
                               {new Date(message.created_at).toLocaleTimeString('en-US', {
                                 hour: '2-digit',
                                 minute: '2-digit',
                               })}
                             </span>
-                            {message.sender_id === 'current-user' && (
-                              <span className={`text-xs font-bold ${
-                                message.is_read ? 'text-blue-500' : 'text-gray-400'
-                              }`}>
+                            {message.sender_id === currentRoom?.picker.id && (
+                              <span className={`text-xs font-bold ${message.is_read ? 'text-blue-300' : 'text-white/50'
+                                }`}>
                                 {message.is_read ? '✓✓' : '✓'}
                               </span>
                             )}
@@ -292,7 +287,7 @@ const Chat = () => {
                           {shouldShowTranslateButton(message) && (
                             <button
                               onClick={() => toggleTranslation(message.id)}
-                              className="mt-2 text-xs bg-yellow-300 text-gray-900 px-2 py-1 rounded font-semibold hover:bg-yellow-400 transition-colors"
+                              className="mt-2 text-xs bg-white text-[#4D0013] px-2 py-1 rounded font-semibold hover:bg-gray-100 transition-colors"
                             >
                               {showTranslated[message.id] ? 'Original' : 'Translate'}
                             </button>
@@ -327,12 +322,12 @@ const Chat = () => {
                       onKeyDown={(e) => e.key === 'Enter' && !sending && handleSendMessage()}
                       placeholder="Type something..."
                       disabled={sending}
-                      className="flex-1 px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#FFDF57] disabled:opacity-50"
+                      className="flex-1 px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#4D0013] disabled:opacity-50"
                     />
                     <button
                       onClick={handleSendMessage}
                       disabled={sending || !messageInput.trim()}
-                      className="p-2 bg-[#FFDF57] hover:bg-yellow-500 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-2 bg-[#4D0013] hover:bg-[#660019] text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send size={20} className="text-gray-900" />
                     </button>

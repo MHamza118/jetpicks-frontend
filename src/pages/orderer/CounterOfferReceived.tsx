@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ordersApi } from '../../api/orders';
+import { ordersApi } from '../../services';
 import { API_CONFIG } from '../../config/api';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
-import { profileApi } from '../../api';
+import { profileApi } from '../../services';
 
 interface OrderItem {
   id: string;

@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient } from './apiClient';
 
 export interface CreateOrderPayload {
   origin_country: string;

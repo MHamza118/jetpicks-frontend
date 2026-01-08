@@ -6,7 +6,7 @@ import Button from '../../components/ui/Button';
 import Toggle from '../../components/ui/Toggle';
 import RoleSelector from '../../components/auth/RoleSelector';
 import signupBg from '../../assets/signupbg.jpg';
-import { authApi } from '../../api';
+import { authApi } from '../../services';
 import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
 import type { SignupPayload } from '../../@types';
