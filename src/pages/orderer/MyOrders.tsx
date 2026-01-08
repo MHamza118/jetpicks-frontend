@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
 import { useUser } from '../../context/UserContext';
+import { ordererOrdersApi } from '../../services/orderer/orders';
 
 interface Order {
   id: string;
@@ -15,69 +16,44 @@ interface Order {
   created_at: string;
 }
 
-// Mock data for UI development
-const MOCK_ORDERS: Order[] = [
-  {
-    id: '1',
-    origin_city: 'London',
-    destination_city: 'Spain',
-    status: 'delivered',
-    items_count: 3,
-    total_cost: 70,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    origin_city: 'London',
-    destination_city: 'Spain',
-    status: 'delivered',
-    items_count: 3,
-    total_cost: 70,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    origin_city: 'London',
-    destination_city: 'Spain',
-    status: 'delivered',
-    items_count: 3,
-    total_cost: 70,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '4',
-    origin_city: 'London',
-    destination_city: 'Spain',
-    status: 'delivered',
-    items_count: 3,
-    total_cost: 70,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '5',
-    origin_city: 'London',
-    destination_city: 'Spain',
-    status: 'delivered',
-    items_count: 3,
-    total_cost: 70,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '6',
-    origin_city: 'London',
-    destination_city: 'Spain',
-    status: 'delivered',
-    items_count: 3,
-    total_cost: 70,
-    created_at: new Date().toISOString(),
-  },
-];
-
 const OrdererMyOrders = () => {
   const navigate = useNavigate();
   const { avatarUrl, avatarError, handleAvatarError } = useUser();
-  const [orders] = useState<Order[]>(MOCK_ORDERS);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'delivered' | 'cancelled'>('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const status = activeFilter === 'all' ? undefined : activeFilter.toUpperCase();
+        const response = await ordererOrdersApi.getOrders(status);
+        const data = (response as any).data || response;
+        
+        const formattedOrders = data.map((order: any) => ({
+          id: order.id,
+          origin_city: order.origin_city,
+          destination_city: order.destination_city,
+          status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled',
+          items_count: order.items_count,
+          total_cost: order.total_cost,
+          created_at: order.created_at,
+        }));
+        
+        setOrders(formattedOrders);
+      } catch (err) {
+        console.error('Failed to fetch orders:', err);
+        setError('Failed to load orders');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [activeFilter]);
 
   // Filter orders based on active filter
   const filteredOrders = orders.filter((order) => {
@@ -135,8 +111,22 @@ const OrdererMyOrders = () => {
             </div>
           </div>
 
+          {/* Error State */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-red-700">{error}</p>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFDF57]"></div>
+            </div>
+          )}
+
           {/* Orders Grid */}
-          {filteredOrders.length > 0 ? (
+          {!loading && filteredOrders.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredOrders.map((order) => (
                 <div

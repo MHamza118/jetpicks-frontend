@@ -19,7 +19,6 @@ const CreateOrder = () => {
         originCity: orderData.originCity || '',
         destinationCountry: orderData.destinationCountry || '',
         destinationCity: orderData.destinationCity || '',
-        useLocation: false,
         specialNotes: orderData.specialNotes || '',
     });
 
@@ -53,7 +52,7 @@ const CreateOrder = () => {
     };
 
     const handleNext = async () => {
-        if (currentStep < 3) {
+        if (currentStep < 4) {
             if (currentStep === 1) {
                 setLoading(true);
                 try {
@@ -134,7 +133,7 @@ const CreateOrder = () => {
                     </button>
                     {/* Step Indicator - Mobile */}
                     <div className="flex gap-1.5 flex-1 justify-center">
-                        {[1, 2, 3].map(step => (
+                        {[1, 2, 3, 4].map(step => (
                             <div
                                 key={step}
                                 className={`w-2 h-2 rounded-full transition-colors ${
@@ -164,7 +163,7 @@ const CreateOrder = () => {
                 <div className="flex-1 overflow-y-auto p-4 md:p-12 pb-24 md:pb-0 bg-white">
                     {/* Desktop Step Indicator */}
                     <div className="hidden md:flex justify-center gap-2 mb-8">
-                        {[1, 2, 3].map(step => (
+                        {[1, 2, 3, 4].map(step => (
                             <div
                                 key={step}
                                 className={`w-3 h-3 rounded-full transition-colors ${
@@ -258,18 +257,6 @@ const CreateOrder = () => {
                                     </div>
                                 </div>
 
-                                {/* Use Location */}
-                                <div className="flex items-center gap-3 py-2">
-                                    <input
-                                        type="radio"
-                                        id="useLocation"
-                                        checked={formData.useLocation}
-                                        onChange={(e) => handleInputChange('useLocation', e.target.checked)}
-                                        className="w-5 h-5 text-green-500 cursor-pointer flex-shrink-0"
-                                    />
-                                    <label htmlFor="useLocation" className="text-gray-900 font-medium cursor-pointer text-sm md:text-base">Use my location</label>
-                                </div>
-
                                 {/* Special Notes */}
                                 <div>
                                     <label className="block text-xs md:text-sm font-medium text-gray-600 mb-2">Special notes <span className="text-gray-400">(optional)</span></label>
@@ -284,16 +271,10 @@ const CreateOrder = () => {
                             </div>
                         )}
 
-                        {/* Step 2 & 3 Placeholder */}
+                        {/* Step 2 Placeholder */}
                         {currentStep === 2 && (
                             <div className="text-center py-12">
                                 <p className="text-gray-600 text-lg">Step 2: Order Details</p>
-                            </div>
-                        )}
-
-                        {currentStep === 3 && (
-                            <div className="text-center py-12">
-                                <p className="text-gray-600 text-lg">Step 3: Review & Confirm</p>
                             </div>
                         )}
 
@@ -304,7 +285,7 @@ const CreateOrder = () => {
                                 disabled={loading}
                                 className="w-full px-6 py-3 md:py-3 bg-[#FFDF57] text-gray-900 font-bold rounded-lg hover:bg-yellow-500 transition-colors text-base md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {loading ? 'Loading...' : (currentStep === 3 ? 'Submit' : 'Next')}
+                                {loading ? 'Loading...' : (currentStep === 4 ? 'Submit' : 'Next')}
                             </button>
                         </div>
                     </div>

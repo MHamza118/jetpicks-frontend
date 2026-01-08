@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
 import { useUser } from '../../context/UserContext';
+import { imageUtils } from '../../utils';
+import { ordererOrdersApi } from '../../services/orderer/orders';
 
 interface OrderItem {
   id: string;
@@ -33,41 +35,65 @@ interface OrderDetailsData {
   remaining_time?: string;
 }
 
-// Mock data for UI development
-const MOCK_ORDER: OrderDetailsData = {
-  id: '1',
-  origin_city: 'London',
-  destination_city: 'Madrid',
-  items: [
-    {
-      id: '1',
-      name: 'Watch',
-      store: 'Amazone',
-      weight: '1/4kg',
-      reward: 10,
-      image_url: '/api/placeholder/150/150',
-    },
-  ],
-  picker: {
-    id: '1',
-    name: 'Sarah M.',
-    rating: 4.8,
-    avatar_url: '/api/placeholder/80/80',
-  },
-  status: 'delivered',
-  delivery_status: 'completed',
-  remaining_time: '47h:12m',
-};
-
 const OrdererOrderDetailsView = () => {
   const { orderId } = useParams();
   const { avatarUrl, avatarError, handleAvatarError } = useUser();
-  const [order] = useState<OrderDetailsData>(MOCK_ORDER);
+  const [order, setOrder] = useState<OrderDetailsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [deliveryCompleted, setDeliveryCompleted] = useState(false);
   const [issueWithDelivery, setIssueWithDelivery] = useState(false);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [selectedTip, setSelectedTip] = useState('5');
+
+  useEffect(() => {
+    const fetchOrderDetails = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await ordererOrdersApi.getOrderDetails(orderId!);
+        const data = (response as any).data || response;
+        
+        setOrder({
+          id: data.id,
+          origin_city: data.origin_city,
+          destination_city: data.destination_city,
+          items: data.items.map((item: any) => ({
+            id: item.id,
+            name: item.item_name,
+            store: 'Amazone',
+            weight: item.weight,
+            reward: data.reward_amount,
+            image_url: item.product_images?.[0],
+          })),
+          picker: data.picker ? {
+            id: data.picker.id,
+            name: data.picker.full_name,
+            rating: 4.8,
+            avatar_url: data.picker.avatar_url,
+          } : {
+            id: '',
+            name: 'Unknown',
+            rating: 0,
+            avatar_url: undefined,
+          },
+          status: data.status.toLowerCase(),
+          delivery_status: null,
+          remaining_time: '47h:12m',
+        });
+      } catch (err) {
+        console.error('Failed to fetch order details:', err);
+        setError('Failed to load order details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (orderId) {
+      fetchOrderDetails();
+    }
+  }, [orderId]);
 
   return (
     <div className="flex h-screen bg-white flex-col md:flex-row">
@@ -82,6 +108,20 @@ const OrdererOrderDetailsView = () => {
         />
 
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white">
+          {loading && (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFDF57]"></div>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-red-700">{error}</p>
+            </div>
+          )}
+
+          {!loading && order && (
+            <>
           {/* Route Header */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900">
@@ -121,7 +161,7 @@ const OrdererOrderDetailsView = () => {
             {/* Product Image */}
             <div className="w-40 h-40 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center">
               <img
-                src={order.items[0]?.image_url || '/api/placeholder/150/150'}
+                src={imageUtils.getImageUrl(order.items[0]?.image_url)}
                 alt="Product"
                 className="w-full h-full object-cover rounded-lg"
               />
@@ -131,7 +171,7 @@ const OrdererOrderDetailsView = () => {
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
                 <img
-                  src={order.picker.avatar_url || '/api/placeholder/80/80'}
+                  src={imageUtils.getImageUrl(order.picker.avatar_url)}
                   alt={order.picker.name}
                   className="w-full h-full object-cover"
                 />
@@ -156,7 +196,16 @@ const OrdererOrderDetailsView = () => {
             {/* Status Indicators */}
             <div className="space-y-3 mb-6">
               <button
-                onClick={() => setDeliveryCompleted(!deliveryCompleted)}
+                onClick={async () => {
+                  try {
+                    if (!deliveryCompleted && orderId) {
+                      await ordererOrdersApi.confirmDelivery(orderId);
+                    }
+                    setDeliveryCompleted(!deliveryCompleted);
+                  } catch (err) {
+                    console.error('Failed to confirm delivery:', err);
+                  }
+                }}
                 className="flex items-center gap-3 cursor-pointer"
               >
                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
@@ -280,6 +329,8 @@ const OrdererOrderDetailsView = () => {
             </button>
           </div>
           </div>
+            </>
+          )}
         </div>
 
         <MobileFooter activeTab="home" />
