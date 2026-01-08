@@ -4,6 +4,7 @@ import Signup from '../pages/auth/Signup';
 import ProfileSetup from '../pages/profile/ProfileSetup';
 import TravelAvailabilitySetup from '../pages/travel/TravelAvailabilitySetup';
 import OrdererDashboard from '../pages/orderer/Dashboard';
+import OrdererMyOrders from '../pages/orderer/MyOrders';
 import CreateOrder from '../pages/orderer/CreateOrder';
 import CreateOrderStep2 from '../pages/orderer/CreateOrderStep2';
 import CreateOrderStep3 from '../pages/orderer/CreateOrderStep3';
@@ -37,6 +38,14 @@ const AppRoutes = () => {
               element={
                 <ProtectedRoute requiredRole="ORDERER">
                   <OrdererDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/orderer/my-orders" 
+              element={
+                <ProtectedRoute requiredRole="ORDERER">
+                  <OrdererMyOrders />
                 </ProtectedRoute>
               } 
             />

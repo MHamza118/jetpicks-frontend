@@ -26,7 +26,11 @@ const DashboardSidebar = ({ activeTab = 'dashboard' }: DashboardSidebarProps) =>
       label: 'Messages',
       action: () => navigate(isPickerRoute ? '/picker/chat' : '/orderer/chat')
     },
-    { id: 'orders', label: 'My Orders' },
+    { 
+      id: 'orders', 
+      label: 'My Orders',
+      action: () => navigate(isPickerRoute ? '/picker/my-orders' : '/orderer/my-orders')
+    },
     { id: 'profile', label: 'Profile' },
   ];
 
