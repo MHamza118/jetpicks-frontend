@@ -12,20 +12,40 @@ import { useUser } from '../../context/UserContext';
 import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
 import { API_CONFIG } from '../../config/api';
+import { profileApi } from '../../services';
 
 const OrdererProfile = () => {
   const navigate = useNavigate();
-  const { avatarUrl, avatarError, handleAvatarError, refetchAvatar } = useUser();
+  const { avatarUrl, avatarError, handleAvatarError, refetchAvatar, clearAvatar } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [userProfile] = useState({
-    name: 'Esther Howard',
-    phone: '0301 1234012450',
-    roles: ['Jetpicker', 'Jetorderer'],
+  const [userProfile, setUserProfile] = useState({
+    name: '',
+    phone: '',
+    roles: [] as string[],
   });
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState('');
+
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const response = await profileApi.getProfile();
+        const profile = response.data;
+        setUserProfile({
+          name: profile.full_name || '',
+          phone: profile.phone_number || '',
+          roles: profile.roles || [],
+        });
+      } catch (error) {
+        console.error('Failed to fetch user profile:', error);
+      }
+    };
+    
+    fetchUserProfile();
+  }, []);
 
   // Initialize orderer role on mount
   useEffect(() => {
@@ -63,6 +83,7 @@ const OrdererProfile = () => {
   }, []);
 
   const handleLogout = () => {
+    clearAvatar();
     storage.remove(STORAGE_KEYS.AUTH_TOKEN);
     storage.remove(STORAGE_KEYS.USER);
     navigate('/login');

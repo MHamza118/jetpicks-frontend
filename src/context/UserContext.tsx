@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import { profileApi } from '../services';
 import { API_CONFIG } from '../config/api';
 import { imageUtils } from '../utils';
+import { STORAGE_KEYS } from '../constants';
 
 interface UserContextType {
   avatarUrl: string | null;
@@ -9,6 +10,7 @@ interface UserContextType {
   loading: boolean;
   handleAvatarError: () => void;
   refetchAvatar: () => Promise<void>;
+  clearAvatar: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -37,19 +39,57 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Watch for auth token changes and fetch avatar when it changes
   useEffect(() => {
-    // Only initialize if user is authenticated
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    
     if (token) {
+      // Token exists, fetch avatar
+      setLoading(true);
       fetchAvatar();
     } else {
+      // No token, clear avatar
+      setAvatarUrl(null);
+      setAvatarError(false);
       setLoading(false);
     }
+  }, []);
+
+  // Set up an interval to check for token changes
+  useEffect(() => {
+    let lastToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    
+    const checkTokenChange = setInterval(() => {
+      const currentToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      
+      if (currentToken !== lastToken) {
+        lastToken = currentToken;
+        
+        if (currentToken) {
+          // Token changed to a new one, fetch avatar
+          setLoading(true);
+          fetchAvatar();
+        } else {
+          // Token was cleared, clear avatar
+          setAvatarUrl(null);
+          setAvatarError(false);
+          setLoading(false);
+        }
+      }
+    }, 500);
+    
+    return () => clearInterval(checkTokenChange);
   }, []);
 
   const handleAvatarError = () => {
     setAvatarError(true);
     setAvatarUrl(null);
+  };
+
+  const clearAvatar = () => {
+    setAvatarUrl(null);
+    setAvatarError(false);
+    setLoading(false);
   };
 
   const refetchAvatar = async () => {
@@ -58,7 +98,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <UserContext.Provider value={{ avatarUrl, avatarError, loading, handleAvatarError, refetchAvatar }}>
+    <UserContext.Provider value={{ avatarUrl, avatarError, loading, handleAvatarError, refetchAvatar, clearAvatar }}>
       {children}
     </UserContext.Provider>
   );

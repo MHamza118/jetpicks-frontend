@@ -3,6 +3,7 @@ import { LogOut } from 'lucide-react';
 import logo from '../../assets/logo.jpg';
 import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
+import { useUser } from '../../context/UserContext';
 
 interface DashboardSidebarProps {
   activeTab?: 'dashboard' | 'messages' | 'orders' | 'profile';
@@ -11,6 +12,7 @@ interface DashboardSidebarProps {
 const DashboardSidebar = ({ activeTab = 'dashboard' }: DashboardSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { clearAvatar } = useUser();
 
   // Determine if user is a picker or orderer based on current route
   const isPickerRoute = location.pathname.includes('/picker/');
@@ -39,6 +41,7 @@ const DashboardSidebar = ({ activeTab = 'dashboard' }: DashboardSidebarProps) =>
   ];
 
   const handleLogout = () => {
+    clearAvatar();
     storage.remove(STORAGE_KEYS.AUTH_TOKEN);
     storage.remove(STORAGE_KEYS.USER);
     navigate('/login');

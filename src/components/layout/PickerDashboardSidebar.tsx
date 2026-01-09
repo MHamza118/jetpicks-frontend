@@ -3,6 +3,7 @@ import { LogOut } from 'lucide-react';
 import logo from '../../assets/logo.jpg';
 import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
+import { useUser } from '../../context/UserContext';
 
 interface PickerDashboardSidebarProps {
   activeTab?: 'dashboard' | 'messages' | 'orders' | 'profile';
@@ -11,6 +12,7 @@ interface PickerDashboardSidebarProps {
 const PickerDashboardSidebar = ({ activeTab = 'dashboard' }: PickerDashboardSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { clearAvatar } = useUser();
 
   const navItems = [
     { 
@@ -36,6 +38,7 @@ const PickerDashboardSidebar = ({ activeTab = 'dashboard' }: PickerDashboardSide
   ];
 
   const handleLogout = () => {
+    clearAvatar();
     storage.remove(STORAGE_KEYS.AUTH_TOKEN);
     storage.remove(STORAGE_KEYS.USER);
     navigate('/login');

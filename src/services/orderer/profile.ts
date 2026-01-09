@@ -62,12 +62,12 @@ export const ordererProfileApi = {
 
   // Get user settings
   getSettings: () => {
-    return apiClient.get<{ data: UserSettings }>('/user/settings');
+    return apiClient.get<{ data: UserSettings }>('/orderer/settings');
   },
 
   // Update user settings
   updateSettings: (data: Partial<UserSettings>) => {
-    return apiClient.put<{ message: string; data: UserSettings }>('/user/settings', data);
+    return apiClient.put<{ message: string; data: UserSettings }>('/orderer/settings', data);
   },
 
   // Get payment methods

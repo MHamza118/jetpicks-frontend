@@ -73,12 +73,12 @@ export const pickerProfileApi = {
 
   // Get user settings
   getSettings: () => {
-    return apiClient.get<{ data: UserSettings }>('/user/settings');
+    return apiClient.get<{ data: UserSettings }>('/picker/settings');
   },
 
   // Update user settings
   updateSettings: (data: Partial<UserSettings>) => {
-    return apiClient.put<{ message: string; data: UserSettings }>('/user/settings', data);
+    return apiClient.put<{ message: string; data: UserSettings }>('/picker/settings', data);
   },
 
   // Get travel journeys

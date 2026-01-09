@@ -5,6 +5,7 @@ import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
 import { notificationsApi } from '../../services';
 import { useAcceptedOrderPolling, useCounterOfferPolling } from '../../context/OrderNotificationContext';
+import { useUser } from '../../context/UserContext';
 
 interface DashboardHeaderProps {
   title: string;
@@ -26,12 +27,14 @@ const DashboardHeader = ({
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   const { notification, acceptedOrdersHistory, showNotificationModal, setShowNotificationModal, handleNotificationClick } = useAcceptedOrderPolling();
   const { counterOfferNotification, counterOffersHistory, showCounterOfferModal, setShowCounterOfferModal, handleCounterOfferClick } = useCounterOfferPolling();
+  const { clearAvatar } = useUser();
 
   // Combine all notifications
   const allNotifications = [...acceptedOrdersHistory, ...counterOffersHistory];
   const unreadCount = allNotifications.filter(n => !n.isRead).length;
 
   const handleLogout = () => {
+    clearAvatar();
     storage.remove(STORAGE_KEYS.AUTH_TOKEN);
     storage.remove(STORAGE_KEYS.USER);
     navigate('/login');
