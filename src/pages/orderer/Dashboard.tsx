@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { profileApi, dashboardApi } from '../../services';
+import { dashboardApi } from '../../services';
 import { useAcceptedOrderPolling } from '../../context/OrderNotificationContext';
 import { useDashboardCache } from '../../context/DashboardCacheContext';
+import { useUser } from '../../context/UserContext';
 import { API_CONFIG } from '../../config/api';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
@@ -29,43 +30,22 @@ interface Picker {
 
 const OrdererDashboard = () => {
     const navigate = useNavigate();
-    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-    const [avatarError, setAvatarError] = useState(false);
+    const { avatarUrl, avatarError, handleAvatarError } = useUser();
     const [pickers, setPickers] = useState<Picker[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { cachedData, setCachedData, isCacheValid } = useDashboardCache();
+    const fetchInProgressRef = useRef(false);
+    const visibilityHandlerRef = useRef<(() => void) | null>(null);
 
     // Start polling for accepted orders
     useAcceptedOrderPolling();
-    useEffect(() => {
-        const fetchUserProfile = async () => {
-            try {
-                const response = await profileApi.getProfile();
-                const profile = response.data;
-                if (profile?.avatar_url) {
-                    const avatarPath = profile.avatar_url;
-                    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
-                    const fullUrl = avatarPath.startsWith('http')
-                        ? avatarPath
-                        : `${baseUrl}${avatarPath}`;
-                    setAvatarUrl(fullUrl);
-                    setAvatarError(false);
-                }
-            } catch (error) {
-                console.error('Failed to fetch profile:', error);
-            }
-        };
-        fetchUserProfile();
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') fetchUserProfile();
-        };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, []);
 
     useEffect(() => {
         const fetchDashboardData = async (skipCache = false) => {
+            // Prevent duplicate fetches
+            if (fetchInProgressRef.current) return;
+            
             try {
                 // Check if cache is valid (unless we're skipping cache)
                 if (!skipCache && isCacheValid() && cachedData) {
@@ -73,10 +53,14 @@ const OrdererDashboard = () => {
                     setLoading(false);
                     return;
                 }
+                
+                fetchInProgressRef.current = true;
                 setLoading(true);
                 setError(null);                
+                
                 // Load dashboard from API
                 const response = await dashboardApi.getOrdererDashboard(1, 20);             
+                
                 // Handle both wrapped and unwrapped responses
                 const data = (response as any).data || response;
                 const pickersData = data.available_pickers?.data || data.available_pickers || [];
@@ -93,26 +77,29 @@ const OrdererDashboard = () => {
                 setPickers([]);
             } finally {
                 setLoading(false);
+                fetchInProgressRef.current = false;
             }
         };
         
-        // Always fetch fresh data on mount
-        fetchDashboardData(true);
+        // Fetch on mount with cache check
+        fetchDashboardData(false);
 
-        const handleVisibilityChange = () => {
+        // Set up visibility change handler
+        visibilityHandlerRef.current = () => {
             if (document.visibilityState === 'visible') {
-                // Always fetch fresh data when page becomes visible
+                // Fetch fresh data when page becomes visible
                 fetchDashboardData(true);
             }
         };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, []);
-
-    const handleAvatarError = () => {
-        setAvatarError(true);
-        setAvatarUrl(null);
-    };
+        
+        document.addEventListener('visibilitychange', visibilityHandlerRef.current);
+        
+        return () => {
+            if (visibilityHandlerRef.current) {
+                document.removeEventListener('visibilitychange', visibilityHandlerRef.current);
+            }
+        };
+    }, [isCacheValid, cachedData, setCachedData]);
 
     return (
         <div className="flex h-screen bg-white flex-col md:flex-row">
@@ -202,8 +189,6 @@ const OrdererDashboard = () => {
 
                                         <div className="flex justify-between text-xs mb-3 font-semibold">
                                             <span className="text-gray-900">Available space: {item.luggage_weight_capacity}kg</span>
-                                            {/* TODO: Fee calculation logic to be implemented */}
-                                            {/* <span className="text-gray-900">Fee: ${Math.round(Math.random() * 20 + 5)}/kg</span> */}
                                         </div>
 
                                         <button

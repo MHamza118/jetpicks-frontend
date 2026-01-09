@@ -18,8 +18,13 @@ const PickerDashboard = () => {
     const [loading, setLoading] = useState(true);
     const { pickerCachedData, setPickerCachedData, isPickerCacheValid } = useDashboardCache();
     const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const fetchInProgressRef = useRef(false);
+    const visibilityHandlerRef = useRef<(() => void) | null>(null);
 
     const fetchData = async (skipCache = false) => {
+        // Prevent duplicate fetches
+        if (fetchInProgressRef.current) return;
+        
         try {
             // Check if cache is valid and we're not skipping it
             if (!skipCache && isPickerCacheValid() && pickerCachedData) {
@@ -28,6 +33,7 @@ const PickerDashboard = () => {
                 return;
             }
 
+            fetchInProgressRef.current = true;
             const dashboardRes = await dashboardApi.getPickerDashboard();
 
             // The API client returns response.data directly
@@ -45,19 +51,30 @@ const PickerDashboard = () => {
             console.error('Failed to fetch dashboard data:', error);
         } finally {
             setLoading(false);
+            fetchInProgressRef.current = false;
         }
     };
 
     useEffect(() => {
-        fetchData();
+        // Fetch on mount with cache check
+        fetchData(false);
 
-        // Visibility change to refresh profile if updated in another tab
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') fetchData();
+        // Set up visibility change handler
+        visibilityHandlerRef.current = () => {
+            if (document.visibilityState === 'visible') {
+                // Fetch fresh data when page becomes visible
+                fetchData(true);
+            }
         };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, []);
+        
+        document.addEventListener('visibilitychange', visibilityHandlerRef.current);
+        
+        return () => {
+            if (visibilityHandlerRef.current) {
+                document.removeEventListener('visibilitychange', visibilityHandlerRef.current);
+            }
+        };
+    }, [isPickerCacheValid, pickerCachedData, setPickerCachedData]);
 
     // Polling for real-time sync every 30 seconds
     useEffect(() => {
