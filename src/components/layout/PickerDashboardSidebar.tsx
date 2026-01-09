@@ -28,7 +28,11 @@ const PickerDashboardSidebar = ({ activeTab = 'dashboard' }: PickerDashboardSide
       label: 'My Orders',
       action: () => navigate('/picker/my-orders')
     },
-    { id: 'profile', label: 'Profile' },
+    { 
+      id: 'profile', 
+      label: 'Profile',
+      action: () => navigate('/picker/profile')
+    },
   ];
 
   const handleLogout = () => {
