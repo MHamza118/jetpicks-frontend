@@ -99,6 +99,11 @@ export const pickerProfileApi = {
     return apiClient.post<{ message: string; data: TravelJourney }>('/travel-journeys', data);
   },
 
+  // Update travel journey
+  updateTravelJourney: (journeyId: string, data: { luggage_weight_capacity: string }) => {
+    return apiClient.put<{ message: string; data: TravelJourney }>(`/travel-journeys/${journeyId}`, data);
+  },
+
   // Get payout methods
   getPayoutMethods: () => {
     return apiClient.get<{ data: PayoutMethod[] }>('/payout-methods');
