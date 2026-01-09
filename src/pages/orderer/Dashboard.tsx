@@ -65,10 +65,10 @@ const OrdererDashboard = () => {
     }, []);
 
     useEffect(() => {
-        const fetchDashboardData = async () => {
+        const fetchDashboardData = async (skipCache = false) => {
             try {
-                // Check if cache is valid
-                if (isCacheValid() && cachedData) {
+                // Check if cache is valid (unless we're skipping cache)
+                if (!skipCache && isCacheValid() && cachedData) {
                     setPickers(cachedData.pickers);
                     setLoading(false);
                     return;
@@ -95,10 +95,15 @@ const OrdererDashboard = () => {
                 setLoading(false);
             }
         };
-        fetchDashboardData();
+        
+        // Always fetch fresh data on mount
+        fetchDashboardData(true);
 
         const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') fetchDashboardData();
+            if (document.visibilityState === 'visible') {
+                // Always fetch fresh data when page becomes visible
+                fetchDashboardData(true);
+            }
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);

@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
 import { profileApi } from '../services';
 import { API_CONFIG } from '../config/api';
 import { imageUtils } from '../utils';
@@ -18,41 +17,35 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
   const [loading, setLoading] = useState(true);
-  const location = useLocation();
 
   const fetchAvatar = async () => {
     try {
       const response = await profileApi.getProfile();
       const profile = response.data;
+      
       if (profile?.avatar_url) {
         const fullUrl = imageUtils.getImageUrl(profile.avatar_url, API_CONFIG.BASE_URL);
         setAvatarUrl(fullUrl);
         setAvatarError(false);
+      } else {
+        setAvatarUrl(null);
       }
     } catch (error) {
       console.error('Failed to fetch avatar:', error);
-      setLoading(false);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Only fetch avatar if we're on a protected route (picker or orderer)
-    const isProtectedRoute = location.pathname.includes('/picker/') || location.pathname.includes('/orderer/');
-    
-    if (isProtectedRoute) {
-      setLoading(true);
-      setAvatarUrl(null);
-      setAvatarError(false);
+    // Only initialize if user is authenticated
+    const token = localStorage.getItem('auth_token');
+    if (token) {
       fetchAvatar();
     } else {
-      // Clear avatar on public routes (login, signup, etc.)
-      setAvatarUrl(null);
-      setAvatarError(false);
       setLoading(false);
     }
-  }, [location.pathname]);
+  }, []);
 
   const handleAvatarError = () => {
     setAvatarError(true);

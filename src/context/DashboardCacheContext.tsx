@@ -28,7 +28,7 @@ interface DashboardCacheContextType {
 
 const DashboardCacheContext = createContext<DashboardCacheContextType | undefined>(undefined);
 
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 1 * 60 * 1000; // 1 minute
 
 export const DashboardCacheProvider = ({ children }: { children: ReactNode }) => {
   const [cachedData, setCachedData] = useState<CachedDashboardData | null>(null);
@@ -67,11 +67,13 @@ export const DashboardCacheProvider = ({ children }: { children: ReactNode }) =>
   };
 
   const invalidateCache = () => {
-    cacheInvalidatedRef.current = true;
+    setCachedData(null);
+    cacheInvalidatedRef.current = false;
   };
 
   const invalidatePickerCache = () => {
-    pickerCacheInvalidatedRef.current = true;
+    setPickerCachedData(null);
+    pickerCacheInvalidatedRef.current = false;
   };
 
   return (

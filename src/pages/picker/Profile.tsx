@@ -12,7 +12,7 @@ import MobileFooter from '../../components/layout/MobileFooter';
 import { useUser } from '../../context/UserContext';
 import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
-import { pickerProfileApi } from '../../services/picker/profile';
+import { API_CONFIG } from '../../config/api';
 
 const PickerProfile = () => {
   const navigate = useNavigate();
@@ -27,6 +27,11 @@ const PickerProfile = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState('');
+
+  // Initialize on mount
+  useEffect(() => {
+    refetchAvatar();
+  }, []);
 
   // Start polling for profile changes after successful upload
   const startPolling = () => {
@@ -91,11 +96,34 @@ const PickerProfile = () => {
       setUploadError('');
       setUploadSuccess('');
 
-      await pickerProfileApi.updateProfile({
-        image: file,
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('image', file);
+
+      // Use the avatar endpoint
+      const response = await fetch(`${API_CONFIG.BASE_URL}/user/avatar`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${storage.get(STORAGE_KEYS.AUTH_TOKEN)}`,
+        },
+        body: formData,
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to upload avatar');
+      }
+
+      const responseData = await response.json();
+      console.log('Avatar upload response:', responseData);
+
       setUploadSuccess('Avatar updated successfully');
+      
+      // Wait a moment for the backend to process
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Refetch avatar
+      await refetchAvatar();
       
       // Start polling to check for changes
       startPolling();

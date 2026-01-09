@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, ChevronRight, HelpCircle, LogOut } from 'lucide-react';
 import personalInfoSvg from '../../assets/perrsonalinfo.svg';
@@ -11,20 +11,139 @@ import MobileFooter from '../../components/layout/MobileFooter';
 import { useUser } from '../../context/UserContext';
 import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
+import { API_CONFIG } from '../../config/api';
 
 const OrdererProfile = () => {
   const navigate = useNavigate();
-  const { avatarUrl, avatarError, handleAvatarError } = useUser();
-  const [userProfile, setUserProfile] = useState({
+  const { avatarUrl, avatarError, handleAvatarError, refetchAvatar } = useUser();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [userProfile] = useState({
     name: 'Esther Howard',
     phone: '0301 1234012450',
     roles: ['Jetpicker', 'Jetorderer'],
   });
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [uploadSuccess, setUploadSuccess] = useState('');
+
+  // Initialize orderer role on mount
+  useEffect(() => {
+    refetchAvatar();
+  }, []);
+
+  // Start polling for profile changes after successful upload
+  const startPolling = () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+
+    pollingIntervalRef.current = setInterval(async () => {
+      try {
+        await refetchAvatar();
+      } catch (err) {
+        console.error('Silent polling error:', err);
+      }
+    }, 3000);
+  };
+
+  // Stop polling
+  const stopPolling = () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+  };
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      stopPolling();
+    };
+  }, []);
 
   const handleLogout = () => {
     storage.remove(STORAGE_KEYS.AUTH_TOKEN);
     storage.remove(STORAGE_KEYS.USER);
     navigate('/login');
+  };
+
+  const handleCameraClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please select an image file');
+      setTimeout(() => setUploadError(''), 3000);
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError('File size must be less than 10MB');
+      setTimeout(() => setUploadError(''), 3000);
+      return;
+    }
+
+    try {
+      setUploading(true);
+      setUploadError('');
+      setUploadSuccess('');
+
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('image', file);
+
+      // Use the avatar endpoint
+      const response = await fetch(`${API_CONFIG.BASE_URL}/user/avatar`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${storage.get(STORAGE_KEYS.AUTH_TOKEN)}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to upload avatar');
+      }
+
+      const responseData = await response.json();
+      console.log('Avatar upload response:', responseData);
+
+      setUploadSuccess('Avatar updated successfully');
+      
+      // Wait a moment for the backend to process
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Refetch avatar
+      await refetchAvatar();
+      
+      // Start polling to check for changes
+      startPolling();
+
+      // Stop polling after 15 seconds (5 polls)
+      setTimeout(() => {
+        stopPolling();
+      }, 15000);
+
+      setTimeout(() => setUploadSuccess(''), 3000);
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (err) {
+      setUploadError('Failed to upload avatar');
+      console.error(err);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const menuItems = [
@@ -68,6 +187,10 @@ const OrdererProfile = () => {
 
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white">
           <div className="max-w-2xl mx-auto">
+            {/* Upload Status Messages */}
+            {uploadError && <div className="bg-red-100 text-red-700 p-3 rounded-lg text-sm mb-4">{uploadError}</div>}
+            {uploadSuccess && <div className="bg-green-100 text-green-700 p-3 rounded-lg text-sm mb-4">{uploadSuccess}</div>}
+
             {/* Profile Header */}
             <div className="flex flex-col items-center mb-8">
               {/* Avatar */}
@@ -85,9 +208,23 @@ const OrdererProfile = () => {
                   )}
                 </div>
                 {/* Edit Avatar Button */}
-                <button className="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center text-white hover:opacity-80 transition-opacity" style={{ backgroundColor: '#FFE5EC' }}>
+                <button
+                  onClick={handleCameraClick}
+                  disabled={uploading}
+                  className="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center text-white hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: '#FFE5EC' }}
+                >
                   <img src={cameraSvg} alt="Edit avatar" className="w-4 h-4" />
                 </button>
+                {/* Hidden File Input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  disabled={uploading}
+                />
               </div>
 
               {/* User Info */}
