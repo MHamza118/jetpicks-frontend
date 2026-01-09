@@ -7,6 +7,7 @@ import MobileFooter from '../../components/layout/MobileFooter';
 import { useUser } from '../../context/UserContext';
 import { imageUtils } from '../../utils';
 import { ordererOrdersApi } from '../../services/orderer/orders';
+import { apiClient } from '../../services/apiClient';
 
 interface OrderItem {
   id: string;
@@ -46,6 +47,9 @@ const OrdererOrderDetailsView = () => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [selectedTip, setSelectedTip] = useState('5');
+  const [customTipAmount, setCustomTipAmount] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -95,6 +99,60 @@ const OrdererOrderDetailsView = () => {
     }
   }, [orderId]);
 
+  const handleSubmitReview = async () => {
+    if (!rating) {
+      alert('Please select a rating');
+      return;
+    }
+
+    if (!order) return;
+
+    try {
+      setSubmitting(true);
+      setError(null);
+
+      // Submit review
+      await ordererOrdersApi.submitReview(
+        order.id,
+        rating,
+        comment,
+        order.picker.id
+      );
+
+      // Submit tip if selected
+      if (selectedTip !== '0') {
+        let tipAmount = 0;
+        if (selectedTip === 'custom') {
+          tipAmount = parseFloat(customTipAmount) || 0;
+        } else {
+          tipAmount = parseFloat(selectedTip);
+        }
+
+        if (tipAmount > 0) {
+          await apiClient.post('/tips', {
+            order_id: order.id,
+            amount: tipAmount,
+          });
+        }
+      }
+
+      setSubmitSuccess(true);
+      setTimeout(() => {
+        setSubmitSuccess(false);
+        // Reset form
+        setRating(0);
+        setComment('');
+        setSelectedTip('5');
+        setCustomTipAmount('');
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to submit review:', err);
+      setError('Failed to submit review. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-white flex-col md:flex-row">
       <DashboardSidebar activeTab="orders" />
@@ -117,6 +175,12 @@ const OrdererOrderDetailsView = () => {
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
               <p className="text-red-700">{error}</p>
+            </div>
+          )}
+
+          {submitSuccess && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+              <p className="text-green-700">Review and tip submitted successfully!</p>
             </div>
           )}
 
@@ -247,7 +311,7 @@ const OrdererOrderDetailsView = () => {
 
           {/* Rate and Tip Section */}
           <div className="rounded-2xl p-8 mb-6" style={{ backgroundColor: '#FFFACD' }}>
-            <h3 className="text-center font-bold text-gray-900 mb-6 text-lg">Rate your experience with Jetpicker</h3>
+            <h3 className="text-center font-bold text-gray-900 mb-6 text-lg">Rate your experience with {order.picker.name}</h3>
 
             {/* Star Rating */}
             <div className="flex justify-center gap-3 mb-8">
@@ -321,11 +385,28 @@ const OrdererOrderDetailsView = () => {
                   <span className="font-semibold text-gray-900 text-sm">Custom amount</span>
                 </button>
               </div>
+
+              {/* Custom Tip Input */}
+              {selectedTip === 'custom' && (
+                <div className="mt-4">
+                  <input
+                    type="number"
+                    value={customTipAmount}
+                    onChange={(e) => setCustomTipAmount(e.target.value)}
+                    placeholder="Enter custom amount"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FFDF57]"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}
-            <button className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold text-lg hover:bg-yellow-500 transition-colors">
-              Submit
+            <button
+              onClick={handleSubmitReview}
+              disabled={submitting || !rating}
+              className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold text-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? 'Submitting...' : 'Submit'}
             </button>
           </div>
           </div>

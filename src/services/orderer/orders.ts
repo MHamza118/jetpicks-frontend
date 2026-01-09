@@ -66,12 +66,20 @@ export const ordererOrdersApi = {
     return response;
   },
 
-  submitReview: async (orderId: string, rating: number, comment: string, tip: number) => {
+  submitReview: async (orderId: string, rating: number, comment: string, revieweeId: string) => {
     const response = await apiClient.post('/reviews', {
       order_id: orderId,
       rating,
       comment,
-      tip,
+      reviewee_id: revieweeId,
+    });
+    return response;
+  },
+
+  submitTip: async (orderId: string, amount: number) => {
+    const response = await apiClient.post('/tips', {
+      order_id: orderId,
+      amount,
     });
     return response;
   },
