@@ -31,7 +31,11 @@ const DashboardSidebar = ({ activeTab = 'dashboard' }: DashboardSidebarProps) =>
       label: 'My Orders',
       action: () => navigate(isPickerRoute ? '/picker/my-orders' : '/orderer/my-orders')
     },
-    { id: 'profile', label: 'Profile' },
+    { 
+      id: 'profile', 
+      label: 'Profile',
+      action: () => navigate(isPickerRoute ? '/picker/profile' : '/orderer/profile')
+    },
   ];
 
   const handleLogout = () => {

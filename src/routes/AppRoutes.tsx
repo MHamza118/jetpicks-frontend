@@ -6,6 +6,9 @@ import TravelAvailabilitySetup from '../pages/travel/TravelAvailabilitySetup';
 import OrdererDashboard from '../pages/orderer/Dashboard';
 import OrdererMyOrders from '../pages/orderer/MyOrders';
 import OrdererOrderDetailsView from '../pages/orderer/OrderDetailsView';
+import OrdererProfile from '../pages/orderer/Profile';
+import OrdererPersonalInformation from '../pages/orderer/PersonalInformation';
+import OrdererSettings from '../pages/orderer/Settings';
 import CreateOrder from '../pages/orderer/CreateOrder';
 import CreateOrderStep2 from '../pages/orderer/CreateOrderStep2';
 import CreateOrderStep3 from '../pages/orderer/CreateOrderStep3';
@@ -52,6 +55,30 @@ const AppRoutes = () => {
               element={
                 <ProtectedRoute requiredRole="ORDERER">
                   <OrdererMyOrders />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/orderer/profile" 
+              element={
+                <ProtectedRoute requiredRole="ORDERER">
+                  <OrdererProfile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/orderer/profile/personal" 
+              element={
+                <ProtectedRoute requiredRole="ORDERER">
+                  <OrdererPersonalInformation />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/orderer/profile/settings" 
+              element={
+                <ProtectedRoute requiredRole="ORDERER">
+                  <OrdererSettings />
                 </ProtectedRoute>
               } 
             />
