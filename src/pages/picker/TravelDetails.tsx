@@ -17,7 +17,7 @@ const TravelDetails = () => {
   const navigate = useNavigate();
   const { avatarUrl, avatarError, handleAvatarError } = useUser();
   const [expandedHistory, setExpandedHistory] = useState(true);
-  const [weightCapacity, setWeightCapacity] = useState('10kg');
+  const [weightCapacity, setWeightCapacity] = useState('10');
   const [expandedCapacity, setExpandedCapacity] = useState(false);
 
   // Mock travel history data
@@ -97,32 +97,31 @@ const TravelDetails = () => {
             <div className="max-w-md mx-auto">
               <button
                 onClick={() => setExpandedCapacity(!expandedCapacity)}
-                className="w-full flex items-center justify-between pb-3 border-b-2 border-gray-300"
+                className="w-full flex items-center justify-between pb-3 border-b border-gray-300"
               >
                 <h2 className="text-base font-bold text-gray-900">Update weight capacity</h2>
                 <ChevronDown
                   size={18}
-                  className={`text-gray-600 transition-transform ${expandedCapacity ? 'rotate-180' : ''}`}
+                  className={`text-[#4D0013] transition-transform ${expandedCapacity ? 'rotate-180' : ''}`}
                 />
               </button>
 
               {expandedCapacity && (
-                <div className="space-y-3 pt-3">
+                <div className="space-y-3 pt-4">
                   <div>
                     <select
                       value={weightCapacity}
                       onChange={(e) => setWeightCapacity(e.target.value)}
-                      className="w-full bg-transparent border-b-2 border-gray-300 text-gray-900 font-semibold text-xs focus:outline-none focus:border-[#C41E3A] pb-1.5"
+                      className="w-full bg-transparent border-b border-gray-300 text-gray-900 font-semibold text-xs focus:outline-none focus:border-[#C41E3A] pb-2"
                     >
-                      <option value="5kg">5kg</option>
-                      <option value="10kg">10kg</option>
-                      <option value="15kg">15kg</option>
-                      <option value="20kg">20kg</option>
-                      <option value="25kg">25kg</option>
-                      <option value="30kg">30kg</option>
+                      <option value="5">5kg</option>
+                      <option value="10">10kg</option>
+                      <option value="15">15kg</option>
+                      <option value="20">20kg</option>
+                      <option value="25">25kg</option>
+                      <option value="30">30kg</option>
                     </select>
                   </div>
-                  <p className="text-xs font-semibold text-[#C41E3A]">{weightCapacity}</p>
                 </div>
               )}
             </div>

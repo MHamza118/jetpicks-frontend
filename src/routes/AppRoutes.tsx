@@ -22,7 +22,8 @@ import PickerChat from '../pages/picker/Chat';
 import PickerProfile from '../pages/picker/Profile';
 import PersonalInformation from '../pages/picker/PersonalInformation';
 import TravelDetails from '../pages/picker/TravelDetails';
-import Settings from '../pages/picker/PayoutMethods';
+import Settings from '../pages/picker/Settings';
+import PayoutMethods from '../pages/picker/PayoutMethods';
 import JetPickerDetails from '../pages/orderer/JetPickerDetails';
 import ProtectedRoute from '../components/ProtectedRoute';
 
@@ -188,7 +189,7 @@ const AppRoutes = () => {
               path="/picker/profile/payout" 
               element={
                 <ProtectedRoute requiredRole="PICKER">
-                  <Settings />
+                  <PayoutMethods />
                 </ProtectedRoute>
               } 
             />
