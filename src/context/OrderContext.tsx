@@ -20,6 +20,7 @@ export interface OrderData {
   items: OrderItem[];
   reward: string;
   orderId?: string;
+  selectedPickerId?: string;
 }
 
 interface OrderContextType {
@@ -38,6 +39,7 @@ const initialOrderData: OrderData = {
   specialNotes: '',
   items: [],
   reward: '',
+  selectedPickerId: undefined,
 };
 
 export const OrderProvider = ({ children }: { children: ReactNode }) => {

@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { profileApi } from '../../services';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useUser } from '../../context/UserContext';
 import { API_CONFIG } from '../../config/api';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
@@ -26,42 +25,27 @@ interface Picker {
 
 const JetPickerDetails = () => {
     const location = useLocation();
+    const navigate = useNavigate();
+    const { avatarUrl, avatarError, handleAvatarError } = useUser();
     const picker = location.state?.picker as Picker | undefined;
 
-    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-    const [avatarError, setAvatarError] = useState(false);
-
-    useEffect(() => {
-        const fetchUserProfile = async () => {
-            try {
-                const response = await profileApi.getProfile();
-                const profile = response.data;
-                if (profile?.avatar_url) {
-                    const avatarPath = profile.avatar_url;
-                    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
-                    const fullUrl = avatarPath.startsWith('http')
-                        ? avatarPath
-                        : `${baseUrl}${avatarPath.startsWith('/') ? '' : '/'}${avatarPath}`;
-                    setAvatarUrl(fullUrl);
-                    setAvatarError(false);
-                }
-            } catch (error) {
-                console.error('Failed to fetch profile:', error);
-            }
-        };
-
-        fetchUserProfile();
-
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') fetchUserProfile();
-        };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, []);
-
-    const handleAvatarError = () => {
-        setAvatarError(true);
-        setAvatarUrl(null);
+    const handleSelectPicker = () => {
+        if (picker) {
+            // Navigate to create order with picker data
+            navigate('/orderer/create-order', { 
+                state: { 
+                  selectedPicker: picker,
+                  pickerRoute: {
+                    departure_city: picker.departure_city,
+                    departure_country: picker.departure_country,
+                    arrival_city: picker.arrival_city,
+                    arrival_country: picker.arrival_country,
+                    departure_date: picker.departure_date,
+                    arrival_date: picker.arrival_date,
+                  }
+                } 
+            });
+        }
     };
 
     return (
@@ -131,7 +115,10 @@ const JetPickerDetails = () => {
                             )}
                         </div>
 
-                        <button className="w-full bg-[#FFDF57] text-gray-900 font-bold py-3 rounded-lg hover:bg-yellow-500 transition-colors shadow-sm">
+                        <button 
+                            onClick={handleSelectPicker}
+                            className="w-full bg-[#FFDF57] text-gray-900 font-bold py-3 rounded-lg hover:bg-yellow-500 transition-colors shadow-sm"
+                        >
                             Select JetPicker
                         </button>
                     </div>

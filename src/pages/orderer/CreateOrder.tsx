@@ -1,48 +1,43 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, ArrowLeft } from 'lucide-react';
-import { profileApi, ordersApi } from '../../services';
-import { API_CONFIG } from '../../config/api';
+import { ordersApi } from '../../services';
 import { useOrder } from '../../context/OrderContext';
+import { useUser } from '../../context/UserContext';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 
 const CreateOrder = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { orderData, updateOrderData } = useOrder();
+    const { avatarUrl, avatarError, handleAvatarError } = useUser();
+    
+    const selectedPicker = location.state?.selectedPicker;
+    const pickerRoute = location.state?.pickerRoute;
+    
     const [currentStep, setCurrentStep] = useState(1);
-    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-    const [avatarError, setAvatarError] = useState(false);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
-        originCountry: orderData.originCountry || '',
-        originCity: orderData.originCity || '',
-        destinationCountry: orderData.destinationCountry || '',
-        destinationCity: orderData.destinationCity || '',
+        originCountry: pickerRoute?.departure_country || orderData.originCountry || '',
+        originCity: pickerRoute?.departure_city || orderData.originCity || '',
+        destinationCountry: pickerRoute?.arrival_country || orderData.destinationCountry || '',
+        destinationCity: pickerRoute?.arrival_city || orderData.destinationCity || '',
         specialNotes: orderData.specialNotes || '',
     });
 
     useEffect(() => {
-        const fetchUserProfile = async () => {
-            try {
-                const response = await profileApi.getProfile();
-                const profile = response.data;
-                if (profile?.avatar_url) {
-                    const avatarPath = profile.avatar_url;
-                    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
-                    const fullUrl = avatarPath.startsWith('http')
-                        ? avatarPath
-                        : `${baseUrl}${avatarPath}`;
-                    setAvatarUrl(fullUrl);
-                    setAvatarError(false);
-                }
-            } catch (error) {
-                console.error('Failed to fetch profile:', error);
-            }
-        };
-
-        fetchUserProfile();
-    }, []);
+        // Pre-fill form if coming from picker selection
+        if (pickerRoute) {
+            setFormData(prev => ({
+                ...prev,
+                originCountry: pickerRoute.departure_country,
+                originCity: pickerRoute.departure_city,
+                destinationCountry: pickerRoute.arrival_country,
+                destinationCity: pickerRoute.arrival_city,
+            }));
+        }
+    }, [pickerRoute]);
 
     const handleInputChange = (field: string, value: string | boolean) => {
         setFormData(prev => ({
@@ -67,6 +62,11 @@ const CreateOrder = () => {
                     if (formData.specialNotes.trim()) {
                         orderPayload.special_notes = formData.specialNotes;
                     }
+
+                    // Add picker_id if this order was created from picker selection
+                    if (selectedPicker?.picker?.id) {
+                        orderPayload.picker_id = selectedPicker.picker.id;
+                    }
                     
                     const res = await ordersApi.createOrder(orderPayload);
 
@@ -78,6 +78,7 @@ const CreateOrder = () => {
                         destinationCity: formData.destinationCity,
                         specialNotes: formData.specialNotes,
                         orderId,
+                        selectedPickerId: selectedPicker?.picker?.id,
                     });
                     navigate('/orderer/create-order-step2');
                 } catch (error) {
@@ -98,11 +99,6 @@ const CreateOrder = () => {
         } else {
             navigate(-1);
         }
-    };
-
-    const handleAvatarError = () => {
-        setAvatarError(true);
-        setAvatarUrl(null);
     };
 
     const countries = ['UK', 'Spain', 'United States', 'France', 'Germany', 'Italy', 'Canada', 'Australia'];

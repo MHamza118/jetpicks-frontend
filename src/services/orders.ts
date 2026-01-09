@@ -6,6 +6,7 @@ export interface CreateOrderPayload {
   destination_country: string;
   destination_city: string;
   special_notes?: string;
+  picker_id?: string;
 }
 
 export interface AddOrderItemPayload {
