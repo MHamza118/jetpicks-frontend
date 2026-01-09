@@ -85,7 +85,9 @@ const PersonalInformation = () => {
           country: profile.country || '',
           password: '',
           password_confirmation: '',
-          languages: profile.languages || [],
+          languages: Array.isArray(profile.languages)
+            ? profile.languages.map((lang: any) => typeof lang === 'string' ? lang : lang?.language_name || lang?.name || '')
+            : [],
         }));
         // Also update avatar if changed
         await refetchAvatar();
