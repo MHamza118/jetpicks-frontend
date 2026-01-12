@@ -61,7 +61,7 @@ export const useAcceptedOrderPolling = () => {
 
     fetchNotificationsFromDB();
 
-    // Start polling for new notifications
+    //polling for new notifications
     pollIntervalRef.current = setInterval(async () => {
       try {
         const response = await notificationsApi.getNotifications(1, 10);
@@ -98,7 +98,7 @@ export const useAcceptedOrderPolling = () => {
       } catch (error) {
         console.error('Error polling for notifications:', error);
       }
-    }, 3000); // Poll every 3 seconds for real-time feel
+    }, 3000); // Poll every 3 seconds
 
     return () => {
       if (pollIntervalRef.current) {
@@ -148,7 +148,7 @@ export const useCounterOfferPolling = () => {
     if (isInitializedRef.current) return;
     isInitializedRef.current = true;
 
-    // Fetch counter offer notifications from database on mount
+    // Fetch counter offer notifications from databaseon load/mount
     const fetchCounterOfferHistory = async () => {
       try {
         const response = await notificationsApi.getNotifications(1, 100);

@@ -30,7 +30,7 @@ const PickerDashboardHeader = ({
 
     return (
         <div className="bg-[#4D0013] px-6 py-4 md:px-8 md:py-4">
-            {/* Mobile Header - Top Row */}
+            {/* Mobile Header */}
             <div className="flex justify-between items-center md:hidden mb-4">
                 <div className="flex items-center gap-4">
                     {showBackButton && (

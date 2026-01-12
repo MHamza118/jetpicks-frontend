@@ -37,7 +37,7 @@ export const useAuth = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await authApi.register(payload);  // Use 'register' not 'signup'
+      const response = await authApi.register(payload);
       const { user, token } = response.data;  // AuthResponse has data property
       
       storage.set(STORAGE_KEYS.AUTH_TOKEN, token);

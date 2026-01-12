@@ -31,7 +31,6 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     
     // Verify user has the required role
     if (!user.roles || !Array.isArray(user.roles) || !user.roles.includes(requiredRole)) {
-      // User doesn't have the required role, redirect to their actual dashboard
       if (user.roles && user.roles.includes('PICKER')) {
         return <Navigate to="/picker/dashboard" replace />;
       } else if (user.roles && user.roles.includes('ORDERER')) {

@@ -210,7 +210,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (newMessages.length > 0) {
           setMessages(prev => {
-            // Filter out duplicates by checking if message already exists
+            // Filter out duplicates mwessages
             const existingIds = new Set(prev.map(m => m.id));
             const uniqueNewMessages = newMessages.filter((msg: ChatMessage) => !existingIds.has(msg.id));
             

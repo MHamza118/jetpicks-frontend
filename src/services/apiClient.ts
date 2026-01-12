@@ -55,8 +55,6 @@ class ApiClient {
   async post<T>(endpoint: string, data?: any): Promise<T> {
     try {
       const config: any = {};
-      
-      // If data is FormData, remove Content-Type header so axios sets it with boundary
       if (data instanceof FormData) {
         config.headers = {
           'Content-Type': undefined,
@@ -79,7 +77,6 @@ class ApiClient {
         config.headers = {
           'Content-Type': undefined,
         };
-        // Keep Authorization header
         const token = storage.get(STORAGE_KEYS.AUTH_TOKEN);
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;

@@ -51,7 +51,7 @@ const CreateOrder = () => {
             if (currentStep === 1) {
                 setLoading(true);
                 try {
-                    // Save order to backend immediately
+                    // Save order to backend
                     const orderPayload: any = {
                         origin_country: formData.originCountry,
                         origin_city: formData.originCity,
