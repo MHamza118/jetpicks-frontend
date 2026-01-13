@@ -109,12 +109,12 @@ export const imageUtils = {
     
     // If it starts with /storage/, prepend the base URL without /api
     if (imagePath.startsWith('/storage/')) {
-      const base = baseUrl || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+      const base = baseUrl || import.meta.env.VITE_API_BASE_URL || 'https://api.jetpicks.com/api';
       return base.replace('/api', '') + imagePath;
     }
     
     // For other relative paths, prepend base URL without /api
-    const base = baseUrl || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+    const base = baseUrl || import.meta.env.VITE_API_BASE_URL || 'https://api.jetpicks.com/api';
     return base.replace('/api', '') + '/' + imagePath;
   },
 };
