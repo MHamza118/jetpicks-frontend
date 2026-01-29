@@ -10,6 +10,7 @@ interface PickerDashboardHeaderProps {
     avatarUrl?: string | null;
     avatarError?: boolean;
     onAvatarError?: () => void;
+    avatarLoading?: boolean;
 }
 
 const PickerDashboardHeader = ({
@@ -18,6 +19,7 @@ const PickerDashboardHeader = ({
     avatarUrl,
     avatarError,
     onAvatarError,
+    avatarLoading = false,
 }: PickerDashboardHeaderProps) => {
     const navigate = useNavigate();
     const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
@@ -39,7 +41,9 @@ const PickerDashboardHeader = ({
                         </button>
                     )}
                     <div>
-                        {avatarUrl && !avatarError ? (
+                        {avatarLoading ? (
+                            <div className="w-12 h-12 rounded-full bg-white/20 animate-pulse border-2 border-white/50"></div>
+                        ) : avatarUrl && !avatarError ? (
                             <img
                                 src={avatarUrl}
                                 alt="Profile"
@@ -99,7 +103,9 @@ const PickerDashboardHeader = ({
                         )}
                     </button>
                     <div>
-                        {avatarUrl && !avatarError ? (
+                        {avatarLoading ? (
+                            <div className="w-10 h-10 rounded-full bg-white/20 animate-pulse border-2 border-white/50"></div>
+                        ) : avatarUrl && !avatarError ? (
                             <img
                                 src={avatarUrl}
                                 alt="Profile"

@@ -53,6 +53,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     
     if (token) {
       setLoading(true);
+      // Fetch immediately without delay
       fetchAvatar();
     } else {
       setAvatarUrl(null);
@@ -60,6 +61,14 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     }
   }, []);
+
+  // Also fetch avatar when component first mounts to ensure it's loaded early
+  useEffect(() => {
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    if (token && !avatarUrl && !fetchInProgressRef.current) {
+      fetchAvatar();
+    }
+  }, [avatarUrl]);
 
   // Listen for storage changes (logout from other tabs)
   useEffect(() => {

@@ -10,6 +10,7 @@ interface DashboardHeaderProps {
   avatarUrl?: string | null;
   avatarError?: boolean;
   onAvatarError?: () => void;
+  avatarLoading?: boolean;
 }
 
 const DashboardHeader = ({
@@ -18,6 +19,7 @@ const DashboardHeader = ({
   avatarUrl,
   avatarError,
   onAvatarError,
+  avatarLoading = false,
 }: DashboardHeaderProps) => {
   const navigate = useNavigate();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -44,7 +46,9 @@ const DashboardHeader = ({
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
               className="focus:outline-none"
             >
-              {avatarUrl && !avatarError ? (
+              {avatarLoading ? (
+                <div className="w-12 h-12 rounded-full bg-gray-200 animate-pulse border-2 border-white/50"></div>
+              ) : avatarUrl && !avatarError ? (
                 <img
                   src={avatarUrl}
                   alt="Profile"
@@ -113,7 +117,9 @@ const DashboardHeader = ({
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
               className="focus:outline-none"
             >
-              {avatarUrl && !avatarError ? (
+              {avatarLoading ? (
+                <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse border-2 border-gray-900"></div>
+              ) : avatarUrl && !avatarError ? (
                 <img
                   src={avatarUrl}
                   alt="Profile"
