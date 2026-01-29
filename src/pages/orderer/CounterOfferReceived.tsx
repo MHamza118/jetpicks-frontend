@@ -73,7 +73,8 @@ const CounterOfferReceived = () => {
         const profile = profileRes.data;
         if (profile?.avatar_url) {
           const avatarPath = profile.avatar_url;
-          const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://api.jetpicks.com/api').replace('/api', '');
+          const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.jetpicks.com/api';
+          const baseUrl = apiBaseUrl.endsWith('/api') ? apiBaseUrl.slice(0, -4) : apiBaseUrl;
           const fullUrl = avatarPath.startsWith('http')
             ? avatarPath
             : `${baseUrl}${avatarPath}`;
@@ -118,7 +119,8 @@ const CounterOfferReceived = () => {
   const getImageUrl = (imagePath: string) => {
     if (!imagePath) return '';
     if (imagePath.startsWith('http')) return imagePath;
-    const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://api.jetpicks.com/api').replace('/api', '');
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.jetpicks.com/api';
+    const baseUrl = apiBaseUrl.endsWith('/api') ? apiBaseUrl.slice(0, -4) : apiBaseUrl;
     return `${baseUrl}${imagePath}`;
   };
 
