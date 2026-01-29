@@ -8,7 +8,7 @@ export const storage = {
       return null;
     }
   },
-  set: (key: string, value: any) => {
+  set: (key: string, value: unknown) => {
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch {
@@ -89,10 +89,13 @@ export const dateUtils = {
 
 // Error Utilities
 export const errorUtils = {
-  getErrorMessage: (error: any): string => {
+  getErrorMessage: (error: unknown): string => {
     if (typeof error === 'string') return error;
-    if (error?.message) return error.message;
-    if (error?.data?.message) return error.data.message;
+    if (error && typeof error === 'object' && 'message' in error) return (error as { message: string }).message;
+    if (error && typeof error === 'object' && 'data' in error) {
+      const data = (error as { data: unknown }).data;
+      if (data && typeof data === 'object' && 'message' in data) return (data as { message: string }).message;
+    }
     return 'An unexpected error occurred';
   },
 };

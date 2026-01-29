@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ordersApi } from '../../services';
-import { imageUtils } from '../../utils';
+import { ordersApi, profileApi } from '../../services';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
-import { profileApi } from '../../services';
 
 interface OrderItem {
   id: string;
@@ -75,7 +73,7 @@ const CounterOfferReceived = () => {
         const profile = profileRes.data;
         if (profile?.avatar_url) {
           const avatarPath = profile.avatar_url;
-          const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
+          const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://api.jetpicks.com/api').replace('/api', '');
           const fullUrl = avatarPath.startsWith('http')
             ? avatarPath
             : `${baseUrl}${avatarPath}`;
@@ -88,11 +86,11 @@ const CounterOfferReceived = () => {
         setOrder(orderData);
 
         // Get the latest offer
-        const offersData = (offersRes as any).data || offersRes;
-        const offers = offersData.data || offersData;
+        const offersResponse = offersRes as { data: Array<{ id: string; offer_type: string; status: string; offer_amount: number | string }> } | Array<{ id: string; offer_type: string; status: string; offer_amount: number | string }>;
+        const offers = Array.isArray(offersResponse) ? offersResponse : offersResponse.data;
         if (offers && Array.isArray(offers)) {
           // Find the COUNTER offer (not INITIAL)
-          const counterOffer = offers.find((o: any) => o.offer_type === 'COUNTER' && o.status === 'PENDING');
+          const counterOffer = offers.find((o: { offer_type: string; status: string }) => o.offer_type === 'COUNTER' && o.status === 'PENDING');
           if (counterOffer) {
             setOffer({
               id: counterOffer.id,
@@ -120,7 +118,7 @@ const CounterOfferReceived = () => {
   const getImageUrl = (imagePath: string) => {
     if (!imagePath) return '';
     if (imagePath.startsWith('http')) return imagePath;
-    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
+    const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://api.jetpicks.com/api').replace('/api', '');
     return `${baseUrl}${imagePath}`;
   };
 
