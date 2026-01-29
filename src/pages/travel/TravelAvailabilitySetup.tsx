@@ -101,11 +101,6 @@ const TravelAvailabilitySetup = () => {
         );
     };
 
-    const filterCities = (cities: string[], search: string) => {
-        if (!search) return cities;
-        return cities.filter(city => city.toLowerCase().includes(search.toLowerCase()));
-    };
-
     const handleContinue = async () => {
         if (!formData.departure_date || !formData.arrival_date) {
             setError('Please fill in all required fields');
