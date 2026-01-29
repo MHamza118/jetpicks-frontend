@@ -1,43 +1,82 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Camera, Flag, Globe, ChevronDown, X } from 'lucide-react';
 import Button from '../../components/ui/Button';
-import { ES, US, GB, FR, DE, IT, CA, AU } from 'country-flag-icons/react/3x2';
-import { profileApi } from '../../services';
+import { profileApi, locationsApi } from '../../services';
+import type { Country } from '../../services/locations';
 import { storage } from '../../utils';
+import FlagIcon from '../../components/FlagIcon';
 import { STORAGE_KEYS } from '../../constants';
 
 const ProfileSetup = () => {
     const navigate = useNavigate();
-    const [selectedNationality, setSelectedNationality] = useState('Spain');
-    const [selectedLanguages, setSelectedLanguages] = useState<string[]>(['Spanish', 'English']);
+    const [selectedNationality, setSelectedNationality] = useState('');
+    const [selectedLanguages, setSelectedLanguages] = useState<string[]>(['English']);
     const [isNationalityDropdownOpen, setIsNationalityDropdownOpen] = useState(false);
     const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [countries, setCountries] = useState<{ [key: string]: Country }>({});
+    const [countryList, setCountryList] = useState<string[]>([]);
+    const [countrySearchText, setCountrySearchText] = useState('');
 
-    const nationalities = [
-        { name: 'Spain', code: 'ES', icon: ES },
-        { name: 'United States', code: 'US', icon: US },
-        { name: 'United Kingdom', code: 'GB', icon: GB },
-        { name: 'France', code: 'FR', icon: FR },
-        { name: 'Germany', code: 'DE', icon: DE },
-        { name: 'Italy', code: 'IT', icon: IT },
-        { name: 'Canada', code: 'CA', icon: CA },
-        { name: 'Australia', code: 'AU', icon: AU },
-    ];
     const languages = ['Spanish', 'English', 'French', 'German', 'Italian', 'Portuguese', 'Dutch', 'Polish'];
 
-    const getNationalityIcon = (country: string) => {
-        return nationalities.find(n => n.name === country)?.icon || ES;
-    };
+    useEffect(() => {
+        const fetchCountries = async () => {
+            try {
+                const countriesData = await locationsApi.getCountries();
+                setCountries(countriesData);
+                const codes = Object.keys(countriesData);
+                setCountryList(codes);
+                // Set default to first country
+                if (codes.length > 0) {
+                    setSelectedNationality(codes[0]);
+                }
+            } catch (error) {
+                console.error('Failed to fetch countries:', error);
+            }
+        };
+
+        fetchCountries();
+    }, []);
 
     const toggleLanguage = (lang: string) => {
         setSelectedLanguages(prev =>
             prev.includes(lang) ? prev.filter(l => l !== lang) : [...prev, lang]
         );
+    };
+
+    const filterCountries = (search: string) => {
+        if (!search) return countryList;
+        return countryList.filter(code => 
+            countries[code]?.name.toLowerCase().includes(search.toLowerCase()) ||
+            code.toLowerCase().includes(search.toLowerCase())
+        );
+    };
+
+    const handleCountryKeyDown = (e: React.KeyboardEvent) => {
+        if (!isNationalityDropdownOpen) return;
+        
+        if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+            // Letter key pressed - add to search
+            const newSearch = countrySearchText + e.key;
+            setCountrySearchText(newSearch);
+            e.preventDefault();
+        } else if (e.key === 'Backspace') {
+            // Backspace - remove from search
+            setCountrySearchText(countrySearchText.slice(0, -1));
+            e.preventDefault();
+        } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            // Arrow keys - could be used for navigation if needed
+            e.preventDefault();
+        } else if (e.key === 'Escape') {
+            // Escape - close dropdown
+            setIsNationalityDropdownOpen(false);
+            setCountrySearchText('');
+        }
     };
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +103,9 @@ const ProfileSetup = () => {
         try {
             const formData = new FormData();
 
-            formData.append('country', selectedNationality);
+            // Get the country name from the code
+            const countryName = countries[selectedNationality]?.name || selectedNationality;
+            formData.append('country', countryName);
             selectedLanguages.forEach((lang, index) => {
                 formData.append(`languages[${index}]`, lang);
             });
@@ -96,8 +137,6 @@ const ProfileSetup = () => {
             setLoading(false);
         }
     };
-
-    const SelectedFlag = getNationalityIcon(selectedNationality);
 
     return (
         <div className="min-h-screen w-full flex items-center justify-center bg-white overflow-hidden py-6">
@@ -149,36 +188,54 @@ const ProfileSetup = () => {
 
                     <div className="relative">
                         <button
-                            onClick={() => setIsNationalityDropdownOpen(!isNationalityDropdownOpen)}
-                            className="w-full flex items-center gap-3 mb-4 pb-4 border-b border-gray-300 hover:opacity-80 transition-opacity"
+                            onClick={() => {
+                                setIsNationalityDropdownOpen(!isNationalityDropdownOpen);
+                                setCountrySearchText('');
+                            }}
+                            onKeyDown={handleCountryKeyDown}
+                            className="w-full flex items-center gap-3 mb-4 pb-4 border-b border-gray-300 hover:opacity-80 transition-opacity focus:outline-none"
                         >
-                            <SelectedFlag className="w-8 h-6 rounded" />
-                            <span className="text-gray-900 font-semibold text-lg">{selectedNationality}</span>
+                            <FlagIcon countryCode={selectedNationality} className="w-6 h-6" />
+                            <span className="text-gray-900 font-semibold text-lg">{countries[selectedNationality]?.name || 'Select country'}</span>
                             <ChevronDown size={20} className={`text-gray-900 ml-auto transition-transform ${isNationalityDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {/* Nationality Dropdown */}
                         {isNationalityDropdownOpen && (
-                            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
-                                {nationalities.map(nat => {
-                                    const FlagIcon = nat.icon;
-                                    return (
-                                        <button
-                                            key={nat.name}
-                                            onClick={() => {
-                                                setSelectedNationality(nat.name);
-                                                setIsNationalityDropdownOpen(false);
-                                            }}
-                                            className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${selectedNationality === nat.name
-                                                    ? 'bg-yellow-50 text-gray-900'
-                                                    : 'text-gray-700 hover:bg-gray-50'
-                                                }`}
-                                        >
-                                            <FlagIcon className="w-6 h-4 rounded" />
-                                            {nat.name}
-                                        </button>
-                                    );
-                                })}
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-20">
+                                {countrySearchText && (
+                                    <div className="px-4 py-2 border-b border-gray-200 bg-gray-50 text-sm text-gray-600">
+                                        Searching: <span className="font-semibold">{countrySearchText}</span>
+                                    </div>
+                                )}
+                                <div className="max-h-48 overflow-y-auto">
+                                    {filterCountries(countrySearchText).length > 0 ? (
+                                        filterCountries(countrySearchText).map(code => {
+                                            const country = countries[code];
+                                            return (
+                                                <button
+                                                    key={code}
+                                                    onClick={() => {
+                                                        setSelectedNationality(code);
+                                                        setIsNationalityDropdownOpen(false);
+                                                        setCountrySearchText('');
+                                                    }}
+                                                    className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${selectedNationality === code
+                                                            ? 'bg-yellow-50 text-gray-900'
+                                                            : 'text-gray-700 hover:bg-gray-50'
+                                                        }`}
+                                                >
+                                                    <FlagIcon countryCode={code} className="w-6 h-6" />
+                                                    {country.name}
+                                                </button>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="px-4 py-3 text-center text-gray-500 text-sm">
+                                            No countries found for "{countrySearchText}"
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>

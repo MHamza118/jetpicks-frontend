@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, ArrowLeft } from 'lucide-react';
+import { MapPin, ArrowLeft, ChevronDown } from 'lucide-react';
 import { ordersApi } from '../../services';
+import { locationsApi } from '../../services/locations';
+import type { Country } from '../../services/locations';
 import { useOrder } from '../../context/OrderContext';
 import { useUser } from '../../context/UserContext';
+import FlagIcon from '../../components/FlagIcon';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 
@@ -18,6 +21,10 @@ const CreateOrder = () => {
     
     const [currentStep, setCurrentStep] = useState(1);
     const [loading, setLoading] = useState(false);
+    const [countries, setCountries] = useState<{ [key: string]: Country }>({});
+    const [countryList, setCountryList] = useState<string[]>([]);
+    const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+    const [searchText, setSearchText] = useState<{ [key: string]: string }>({});
     const [formData, setFormData] = useState({
         originCountry: pickerRoute?.departure_country || orderData.originCountry || '',
         originCity: pickerRoute?.departure_city || orderData.originCity || '',
@@ -25,6 +32,20 @@ const CreateOrder = () => {
         destinationCity: pickerRoute?.arrival_city || orderData.destinationCity || '',
         specialNotes: orderData.specialNotes || '',
     });
+
+    useEffect(() => {
+        const fetchCountries = async () => {
+            try {
+                const countriesData = await locationsApi.getCountries();
+                setCountries(countriesData);
+                setCountryList(Object.keys(countriesData));
+            } catch (error) {
+                console.error('Failed to fetch countries:', error);
+            }
+        };
+
+        fetchCountries();
+    }, []);
 
     useEffect(() => {
         // Pre-fill form if coming from picker selection
@@ -101,17 +122,25 @@ const CreateOrder = () => {
         }
     };
 
-    const countries = ['UK', 'Spain', 'United States', 'France', 'Germany', 'Italy', 'Canada', 'Australia'];
-    
-    const cityMap: { [key: string]: string[] } = {
-        'UK': ['London'],
-        'Spain': ['Madrid', 'Barcelona'],
-        'United States': ['New York', 'Los Angeles'],
-        'France': ['Paris'],
-        'Germany': ['Berlin'],
-        'Italy': ['Rome'],
-        'Canada': ['Toronto'],
-        'Australia': ['Sydney'],
+    const getCountryName = (code: string) => {
+        return countries[code]?.name || code;
+    };
+
+    const getCitiesForCountry = (countryCode: string) => {
+        return countries[countryCode]?.cities || [];
+    };
+
+    const filterCountries = (search: string) => {
+        if (!search) return countryList;
+        return countryList.filter(code => 
+            getCountryName(code).toLowerCase().includes(search.toLowerCase()) ||
+            code.toLowerCase().includes(search.toLowerCase())
+        );
+    };
+
+    const filterCities = (cities: string[], search: string) => {
+        if (!search) return cities;
+        return cities.filter(city => city.toLowerCase().includes(search.toLowerCase()));
     };
 
     return (
@@ -190,29 +219,99 @@ const CreateOrder = () => {
                                     <div className="space-y-3">
                                         <div>
                                             <label className="block text-xs md:text-sm font-medium text-gray-600 mb-2">Country</label>
-                                            <select
-                                                value={formData.originCountry}
-                                                onChange={(e) => handleInputChange('originCountry', e.target.value)}
-                                                className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base"
-                                            >
-                                                <option value="">Select country</option>
-                                                {countries.map(country => (
-                                                    <option key={country} value={country}>{country}</option>
-                                                ))}
-                                            </select>
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => {
+                                                        setOpenDropdown(openDropdown === 'originCountry' ? null : 'originCountry');
+                                                        setSearchText(prev => ({ ...prev, originCountry: '' }));
+                                                    }}
+                                                    className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base flex items-center justify-between bg-white hover:bg-gray-50"
+                                                >
+                                                    <span className="flex items-center gap-2">
+                                                        {formData.originCountry && (
+                                                            <>
+                                                                <FlagIcon countryCode={formData.originCountry} className="w-5 h-5" />
+                                                                {getCountryName(formData.originCountry)}
+                                                            </>
+                                                        )}
+                                                        {!formData.originCountry && <span className="text-gray-500">Select country</span>}
+                                                    </span>
+                                                    <ChevronDown size={16} className={`transition-transform ${openDropdown === 'originCountry' ? 'rotate-180' : ''}`} />
+                                                </button>
+                                                {openDropdown === 'originCountry' && (
+                                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Search countries..."
+                                                            value={searchText.originCountry || ''}
+                                                            onChange={(e) => setSearchText(prev => ({ ...prev, originCountry: e.target.value }))}
+                                                            className="w-full px-3 py-2 border-b border-gray-200 focus:outline-none text-sm"
+                                                            autoFocus
+                                                        />
+                                                        <div className="max-h-48 overflow-y-auto">
+                                                            {filterCountries(searchText.originCountry || '').map(code => (
+                                                                <button
+                                                                    key={code}
+                                                                    onClick={() => {
+                                                                        handleInputChange('originCountry', code);
+                                                                        setOpenDropdown(null);
+                                                                        setSearchText(prev => ({ ...prev, originCountry: '' }));
+                                                                    }}
+                                                                    className="w-full px-3 md:px-4 py-2.5 text-left flex items-center gap-2 hover:bg-yellow-50 transition-colors"
+                                                                >
+                                                                    <FlagIcon countryCode={code} className="w-5 h-5" />
+                                                                    {getCountryName(code)}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                         <div>
                                             <label className="block text-xs md:text-sm font-medium text-gray-600 mb-2">City</label>
-                                            <select
-                                                value={formData.originCity}
-                                                onChange={(e) => handleInputChange('originCity', e.target.value)}
-                                                className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base"
-                                            >
-                                                <option value="">Select city</option>
-                                                {cityMap[formData.originCountry]?.map(city => (
-                                                    <option key={city} value={city}>{city}</option>
-                                                ))}
-                                            </select>
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => {
+                                                        setOpenDropdown(openDropdown === 'originCity' ? null : 'originCity');
+                                                        setSearchText(prev => ({ ...prev, originCity: '' }));
+                                                    }}
+                                                    className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base flex items-center justify-between bg-white hover:bg-gray-50"
+                                                >
+                                                    <span className="flex items-center gap-2">
+                                                        {formData.originCity && <span>{formData.originCity}</span>}
+                                                        {!formData.originCity && <span className="text-gray-500">Select city</span>}
+                                                    </span>
+                                                    <ChevronDown size={16} className={`transition-transform ${openDropdown === 'originCity' ? 'rotate-180' : ''}`} />
+                                                </button>
+                                                {openDropdown === 'originCity' && (
+                                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Search cities..."
+                                                            value={searchText.originCity || ''}
+                                                            onChange={(e) => setSearchText(prev => ({ ...prev, originCity: e.target.value }))}
+                                                            className="w-full px-3 py-2 border-b border-gray-200 focus:outline-none text-sm"
+                                                            autoFocus
+                                                        />
+                                                        <div className="max-h-48 overflow-y-auto">
+                                                            {filterCities(getCitiesForCountry(formData.originCountry), searchText.originCity || '').map(city => (
+                                                                <button
+                                                                    key={city}
+                                                                    onClick={() => {
+                                                                        handleInputChange('originCity', city);
+                                                                        setOpenDropdown(null);
+                                                                        setSearchText(prev => ({ ...prev, originCity: '' }));
+                                                                    }}
+                                                                    className="w-full px-3 md:px-4 py-2.5 text-left hover:bg-yellow-50 transition-colors"
+                                                                >
+                                                                    {city}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -226,29 +325,99 @@ const CreateOrder = () => {
                                     <div className="space-y-3">
                                         <div>
                                             <label className="block text-xs md:text-sm font-medium text-gray-600 mb-2">Country</label>
-                                            <select
-                                                value={formData.destinationCountry}
-                                                onChange={(e) => handleInputChange('destinationCountry', e.target.value)}
-                                                className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base"
-                                            >
-                                                <option value="">Select country</option>
-                                                {countries.map(country => (
-                                                    <option key={country} value={country}>{country}</option>
-                                                ))}
-                                            </select>
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => {
+                                                        setOpenDropdown(openDropdown === 'destinationCountry' ? null : 'destinationCountry');
+                                                        setSearchText(prev => ({ ...prev, destinationCountry: '' }));
+                                                    }}
+                                                    className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base flex items-center justify-between bg-white hover:bg-gray-50"
+                                                >
+                                                    <span className="flex items-center gap-2">
+                                                        {formData.destinationCountry && (
+                                                            <>
+                                                                <FlagIcon countryCode={formData.destinationCountry} className="w-5 h-5" />
+                                                                {getCountryName(formData.destinationCountry)}
+                                                            </>
+                                                        )}
+                                                        {!formData.destinationCountry && <span className="text-gray-500">Select country</span>}
+                                                    </span>
+                                                    <ChevronDown size={16} className={`transition-transform ${openDropdown === 'destinationCountry' ? 'rotate-180' : ''}`} />
+                                                </button>
+                                                {openDropdown === 'destinationCountry' && (
+                                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Search countries..."
+                                                            value={searchText.destinationCountry || ''}
+                                                            onChange={(e) => setSearchText(prev => ({ ...prev, destinationCountry: e.target.value }))}
+                                                            className="w-full px-3 py-2 border-b border-gray-200 focus:outline-none text-sm"
+                                                            autoFocus
+                                                        />
+                                                        <div className="max-h-48 overflow-y-auto">
+                                                            {filterCountries(searchText.destinationCountry || '').map(code => (
+                                                                <button
+                                                                    key={code}
+                                                                    onClick={() => {
+                                                                        handleInputChange('destinationCountry', code);
+                                                                        setOpenDropdown(null);
+                                                                        setSearchText(prev => ({ ...prev, destinationCountry: '' }));
+                                                                    }}
+                                                                    className="w-full px-3 md:px-4 py-2.5 text-left flex items-center gap-2 hover:bg-yellow-50 transition-colors"
+                                                                >
+                                                                    <FlagIcon countryCode={code} className="w-5 h-5" />
+                                                                    {getCountryName(code)}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                         <div>
                                             <label className="block text-xs md:text-sm font-medium text-gray-600 mb-2">City</label>
-                                            <select
-                                                value={formData.destinationCity}
-                                                onChange={(e) => handleInputChange('destinationCity', e.target.value)}
-                                                className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base"
-                                            >
-                                                <option value="">Select city</option>
-                                                {cityMap[formData.destinationCountry]?.map(city => (
-                                                    <option key={city} value={city}>{city}</option>
-                                                ))}
-                                            </select>
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => {
+                                                        setOpenDropdown(openDropdown === 'destinationCity' ? null : 'destinationCity');
+                                                        setSearchText(prev => ({ ...prev, destinationCity: '' }));
+                                                    }}
+                                                    className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base flex items-center justify-between bg-white hover:bg-gray-50"
+                                                >
+                                                    <span className="flex items-center gap-2">
+                                                        {formData.destinationCity && <span>{formData.destinationCity}</span>}
+                                                        {!formData.destinationCity && <span className="text-gray-500">Select city</span>}
+                                                    </span>
+                                                    <ChevronDown size={16} className={`transition-transform ${openDropdown === 'destinationCity' ? 'rotate-180' : ''}`} />
+                                                </button>
+                                                {openDropdown === 'destinationCity' && (
+                                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Search cities..."
+                                                            value={searchText.destinationCity || ''}
+                                                            onChange={(e) => setSearchText(prev => ({ ...prev, destinationCity: e.target.value }))}
+                                                            className="w-full px-3 py-2 border-b border-gray-200 focus:outline-none text-sm"
+                                                            autoFocus
+                                                        />
+                                                        <div className="max-h-48 overflow-y-auto">
+                                                            {filterCities(getCitiesForCountry(formData.destinationCountry), searchText.destinationCity || '').map(city => (
+                                                                <button
+                                                                    key={city}
+                                                                    onClick={() => {
+                                                                        handleInputChange('destinationCity', city);
+                                                                        setOpenDropdown(null);
+                                                                        setSearchText(prev => ({ ...prev, destinationCity: '' }));
+                                                                    }}
+                                                                    className="w-full px-3 md:px-4 py-2.5 text-left hover:bg-yellow-50 transition-colors"
+                                                                >
+                                                                    {city}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
