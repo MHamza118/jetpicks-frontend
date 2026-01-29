@@ -11,13 +11,13 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   // Check if token exists
   const token = storage.get(STORAGE_KEYS.AUTH_TOKEN);
   if (!token) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   // Check if user data exists
   const userData = storage.get(STORAGE_KEYS.USER);
   if (!userData) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   try {
@@ -37,14 +37,14 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
         return <Navigate to="/orderer/dashboard" replace />;
       }
       // If no valid role, redirect to login
-      return <Navigate to="/login" replace />;
+      return <Navigate to="/" replace />;
     }
 
     // User has the required role, render the component
     return <>{children}</>;
   } catch (error) {
     console.error('Error parsing user data:', error);
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 };
 

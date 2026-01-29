@@ -17,8 +17,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const lastTokenRef = useRef<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const fetchInProgressRef = useRef(false);
 
   const fetchAvatar = async () => {
@@ -31,8 +30,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       
       if (profile?.avatar_url) {
         const fullUrl = imageUtils.getImageUrl(profile.avatar_url);
-        console.log('Avatar URL from backend:', profile.avatar_url);
-        console.log('Full avatar URL:', fullUrl);
         setAvatarUrl(fullUrl);
         setAvatarError(false);
       } else {
@@ -40,54 +37,20 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error('Failed to fetch avatar:', error);
+      setAvatarError(true);
     } finally {
       setLoading(false);
       fetchInProgressRef.current = false;
     }
   };
 
-  // Initial fetch on mount
-  useEffect(() => {
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-    lastTokenRef.current = token;
-    
-    if (token) {
-      setLoading(true);
-      // Fetch immediately without delay
-      fetchAvatar();
-    } else {
-      setAvatarUrl(null);
-      setAvatarError(false);
-      setLoading(false);
-    }
-  }, []);
-
-  // Also fetch avatar when component first mounts to ensure it's loaded early
-  useEffect(() => {
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-    if (token && !avatarUrl && !fetchInProgressRef.current) {
-      fetchAvatar();
-    }
-  }, [avatarUrl]);
-
-  // Listen for storage changes (logout from other tabs)
+  // Listen for logout from other tabs
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEYS.AUTH_TOKEN) {
-        const newToken = e.newValue;
-        
-        if (newToken && newToken !== lastTokenRef.current) {
-          // Token changed to a new one
-          lastTokenRef.current = newToken;
-          setLoading(true);
-          fetchAvatar();
-        } else if (!newToken) {
-          // Token was cleared
-          lastTokenRef.current = null;
-          setAvatarUrl(null);
-          setAvatarError(false);
-          setLoading(false);
-        }
+      if (e.key === STORAGE_KEYS.AUTH_TOKEN && !e.newValue) {
+        setAvatarUrl(null);
+        setAvatarError(false);
+        setLoading(false);
       }
     };
 

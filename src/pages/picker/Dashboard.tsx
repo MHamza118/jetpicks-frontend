@@ -12,13 +12,18 @@ import dashboardHero from '../../assets/dashboard.jpeg';
 
 const PickerDashboard = () => {
     const navigate = useNavigate();
-    const { avatarUrl, avatarError, handleAvatarError } = useUser();
+    const { avatarUrl, avatarError, handleAvatarError, refetchAvatar } = useUser();
     const [dashboardData, setDashboardData] = useState<PickerDashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const { pickerCachedData, setPickerCachedData, isPickerCacheValid } = useDashboardCache();
     const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const fetchInProgressRef = useRef(false);
     const visibilityHandlerRef = useRef<(() => void) | null>(null);
+
+    // Refetch avatar on mount to ensure it's loaded
+    useEffect(() => {
+        refetchAvatar();
+    }, [refetchAvatar]);
 
     const fetchData = async (skipCache = false) => {
         // Prevent duplicate fetches

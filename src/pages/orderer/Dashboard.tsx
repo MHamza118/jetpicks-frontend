@@ -30,7 +30,7 @@ interface Picker {
 
 const OrdererDashboard = () => {
     const navigate = useNavigate();
-    const { avatarUrl, avatarError, handleAvatarError } = useUser();
+    const { avatarUrl, avatarError, handleAvatarError, refetchAvatar } = useUser();
     const [pickers, setPickers] = useState<Picker[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -40,6 +40,11 @@ const OrdererDashboard = () => {
 
     // Start polling for accepted orders
     useAcceptedOrderPolling();
+
+    // Refetch avatar on mount to ensure it's loaded
+    useEffect(() => {
+        refetchAvatar();
+    }, [refetchAvatar]);
 
     useEffect(() => {
         const fetchDashboardData = async (skipCache = false) => {

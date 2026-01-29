@@ -85,7 +85,7 @@ const OrdererProfile = () => {
     clearAvatar();
     storage.remove(STORAGE_KEYS.AUTH_TOKEN);
     storage.remove(STORAGE_KEYS.USER);
-    navigate('/login');
+    navigate('/');
   };
 
   const handleCameraClick = () => {
