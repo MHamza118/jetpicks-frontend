@@ -242,6 +242,13 @@ const Chat = () => {
                   </div>
                 </div>
 
+                {/* Transparency Notice */}
+                <div className="bg-yellow-50 border-b border-yellow-200 px-6 py-3">
+                  <p className="text-sm text-yellow-900 font-medium">
+                    For transparency and protection, please keep all communication and order details within the app.
+                  </p>
+                </div>
+
                 {/* Messages Area */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-white">
                   {messages.length === 0 ? (

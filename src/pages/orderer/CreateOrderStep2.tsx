@@ -16,6 +16,11 @@ interface OrderItem {
     quantity: string;
     notes: string;
     images: File[];
+    errors?: {
+        name?: string;
+        quantity?: string;
+        price?: string;
+    };
 }
 
 const CreateOrderStep2 = () => {
@@ -24,6 +29,7 @@ const CreateOrderStep2 = () => {
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [avatarError, setAvatarError] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [validationError, setValidationError] = useState<string | null>(null);
     const [items, setItems] = useState<OrderItem[]>(
         orderData.items.length > 0 ? orderData.items : [
             {
@@ -35,6 +41,7 @@ const CreateOrderStep2 = () => {
                 quantity: '',
                 notes: '',
                 images: [],
+                errors: {},
             },
         ]
     );
@@ -67,12 +74,18 @@ const CreateOrderStep2 = () => {
             quantity: '',
             notes: '',
             images: [],
+            errors: {},
         }]);
     };
 
     const handleItemChange = (id: string, field: string, value: string) => {
+        setValidationError(null);
         setItems(items.map(item =>
-            item.id === id ? { ...item, [field]: value } : item
+            item.id === id ? { 
+                ...item, 
+                [field]: value,
+                errors: { ...item.errors, [field]: undefined }
+            } : item
         ));
     };
 
@@ -96,15 +109,52 @@ const CreateOrderStep2 = () => {
             return;
         }
 
+        // Validate required fields
+        let hasErrors = false;
+        const updatedItems = items.map(item => {
+            const errors: { name?: string; quantity?: string; price?: string } = {};
+            
+            if (!item.name.trim()) {
+                errors.name = 'Item Name is required';
+                hasErrors = true;
+            }
+            if (!item.quantity.trim()) {
+                errors.quantity = 'Quantity is required';
+                hasErrors = true;
+            }
+            if (!item.price.trim()) {
+                errors.price = 'Price is required';
+                hasErrors = true;
+            }
+            
+            return { ...item, errors };
+        });
+
+        setItems(updatedItems);
+
+        if (hasErrors) {
+            setValidationError('Please fill out all the required boxes');
+            // Scroll to first error
+            const firstErrorItem = updatedItems.find(item => Object.keys(item.errors || {}).length > 0);
+            if (firstErrorItem) {
+                const element = document.getElementById(`item-${firstErrorItem.id}`);
+                element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+        }
+
         setLoading(true);
         try {
             // Save all items to backend
             for (const item of items) {
                 const formData = new FormData();
                 formData.append('item_name', item.name);
-                formData.append('weight', item.weight);
-                formData.append('price', item.price);
                 formData.append('quantity', (parseInt(item.quantity) || 1).toString());
+                formData.append('price', item.price);
+
+                if (item.weight?.trim()) {
+                    formData.append('weight', item.weight.trim());
+                }
 
                 if (item.notes?.trim()) {
                     formData.append('special_notes', item.notes.trim());
@@ -127,7 +177,8 @@ const CreateOrderStep2 = () => {
             navigate('/orderer/create-order-step3');
         } catch (error) {
             console.error('Failed to save items:', error);
-            alert('Failed to save items. Please try again.');
+            setValidationError('Something went wrong. Please try again.');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } finally {
             setLoading(false);
         }
@@ -176,11 +227,18 @@ const CreateOrderStep2 = () => {
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-4 md:p-12 pb-32 md:pb-20 bg-white">
                     <div className="max-w-2xl mx-auto">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Order Information</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Information</h2>
+                        <p className="text-gray-600 text-sm mb-6">Please provide as much details as possible so that your Jetpickers can find & purchase your item.</p>
+
+                        {validationError && (
+                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                <p className="text-red-700 font-medium text-sm">{validationError}</p>
+                            </div>
+                        )}
 
                         <div className="space-y-6">
                             {items.map((item) => (
-                                <div key={item.id}>
+                                <div key={item.id} id={`item-${item.id}`}>
                                     <label className="block text-sm font-medium text-gray-600 mb-3">Upload product images</label>
                                     <div className="flex gap-3 mb-6 flex-wrap">
                                         {item.images.map((image, idx) => (
@@ -203,14 +261,21 @@ const CreateOrderStep2 = () => {
 
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-600 mb-2">Item Name</label>
+                                            <label className="block text-sm font-medium text-gray-600 mb-2">Item Name <span className="text-red-500">*</span></label>
                                             <input
                                                 type="text"
                                                 value={item.name}
                                                 onChange={(e) => handleItemChange(item.id, 'name', e.target.value)}
                                                 placeholder="Watch"
-                                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm"
+                                                className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
+                                                    item.errors?.name
+                                                        ? 'border-red-500 focus:ring-red-500'
+                                                        : 'border-gray-300 focus:ring-[#FFDF57]'
+                                                }`}
                                             />
+                                            {item.errors?.name && (
+                                                <p className="text-red-500 text-xs mt-1">{item.errors.name}</p>
+                                            )}
                                         </div>
 
                                         <div>
@@ -219,7 +284,7 @@ const CreateOrderStep2 = () => {
                                                 type="text"
                                                 value={item.storeLink}
                                                 onChange={(e) => handleItemChange(item.id, 'storeLink', e.target.value)}
-                                                placeholder="e.g https://example.com"
+                                                placeholder="Enter store link or product name"
                                                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm"
                                             />
                                         </div>
@@ -236,25 +301,39 @@ const CreateOrderStep2 = () => {
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-600 mb-2">Price of Item</label>
+                                            <label className="block text-sm font-medium text-gray-600 mb-2">Price of Item <span className="text-red-500">*</span></label>
                                             <input
                                                 type="text"
                                                 value={item.price}
                                                 onChange={(e) => handleItemChange(item.id, 'price', e.target.value)}
                                                 placeholder="$ 50"
-                                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm"
+                                                className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
+                                                    item.errors?.price
+                                                        ? 'border-red-500 focus:ring-red-500'
+                                                        : 'border-gray-300 focus:ring-[#FFDF57]'
+                                                }`}
                                             />
+                                            {item.errors?.price && (
+                                                <p className="text-red-500 text-xs mt-1">{item.errors.price}</p>
+                                            )}
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-600 mb-2">Quantity</label>
+                                            <label className="block text-sm font-medium text-gray-600 mb-2">Quantity <span className="text-red-500">*</span></label>
                                             <input
                                                 type="text"
                                                 value={item.quantity}
                                                 onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value)}
                                                 placeholder="01"
-                                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm"
+                                                className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
+                                                    item.errors?.quantity
+                                                        ? 'border-red-500 focus:ring-red-500'
+                                                        : 'border-gray-300 focus:ring-[#FFDF57]'
+                                                }`}
                                             />
+                                            {item.errors?.quantity && (
+                                                <p className="text-red-500 text-xs mt-1">{item.errors.quantity}</p>
+                                            )}
                                         </div>
 
                                         <div>

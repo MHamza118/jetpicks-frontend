@@ -110,7 +110,8 @@ const CreateOrderStep3 = () => {
         {/* Mobile Layout */}
         <div className="md:hidden flex-1 overflow-y-auto p-4 pb-24 bg-white flex flex-col">
           <div className="flex-1">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Enter delivery Reward</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Enter delivery Reward</h2>
+            <p className="text-gray-600 text-sm mb-6">This is the amount you are willing to pay your Jetpicker to bring you the goods. They have one chance to submit a counteroffer</p>
 
             <input
               type="number"
@@ -133,7 +134,8 @@ const CreateOrderStep3 = () => {
         {/* Desktop Layout */}
         <div className="hidden md:flex flex-1 overflow-y-auto p-8 pb-0 bg-white items-center justify-center">
           <div className="w-full max-w-md">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Enter delivery Reward</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Enter delivery Reward</h2>
+            <p className="text-gray-600 text-sm mb-6 text-center">This is the amount you are willing to pay your Jetpicker to bring you the goods. They have one chance to submit a counteroffer</p>
 
             <div className="mb-6">
               <input
