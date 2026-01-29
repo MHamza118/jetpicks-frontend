@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import PickerDashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
@@ -8,7 +7,6 @@ import { useUser } from '../../context/UserContext';
 type PayoutMethodType = 'bank' | 'paypal' | 'mobile';
 
 const PayoutMethods = () => {
-  const navigate = useNavigate();
   const { avatarUrl, avatarError, handleAvatarError } = useUser();
   const [selectedMethod, setSelectedMethod] = useState<PayoutMethodType>('bank');
   const [formData, setFormData] = useState({

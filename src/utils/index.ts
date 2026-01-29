@@ -99,7 +99,7 @@ export const errorUtils = {
 
 // Image URL Utilities
 export const imageUtils = {
-  getImageUrl: (imagePath: string | null | undefined, baseUrl?: string): string => {
+  getImageUrl: (imagePath: string | null | undefined): string => {
     if (!imagePath) return '';
     
     // If it's already an absolute URL, return as-is
@@ -107,14 +107,20 @@ export const imageUtils = {
       return imagePath;
     }
     
-    // If it starts with /storage/, prepend the base URL without /api
-    if (imagePath.startsWith('/storage/')) {
-      const base = baseUrl || import.meta.env.VITE_API_BASE_URL || 'https://api.jetpicks.com/api';
-      return base.replace('/api', '') + imagePath;
+    // Get the base URL from environment
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.jetpicks.com/api';
+    
+    // Remove /api from the end to get the domain
+    const domain = apiBaseUrl.replace('/api', '');
+    
+    // Ensure imagePath starts with /
+    const path = imagePath.startsWith('/') ? imagePath : '/' + imagePath;
+    
+    // Add cache-busting query parameter for avatars
+    if (path.includes('/avatars/')) {
+      return domain + path + '?t=' + Date.now();
     }
     
-    // For other relative paths, prepend base URL without /api
-    const base = baseUrl || import.meta.env.VITE_API_BASE_URL || 'https://api.jetpicks.com/api';
-    return base.replace('/api', '') + '/' + imagePath;
+    return domain + path;
   },
 };

@@ -4,7 +4,7 @@ import { dashboardApi } from '../../services';
 import { useAcceptedOrderPolling } from '../../context/OrderNotificationContext';
 import { useDashboardCache } from '../../context/DashboardCacheContext';
 import { useUser } from '../../context/UserContext';
-import { API_CONFIG } from '../../config/api';
+import { imageUtils } from '../../utils';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
@@ -157,9 +157,7 @@ const OrdererDashboard = () => {
                                             <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-100">
                                                 {item.picker.avatar_url ? (
                                                     <img 
-                                                        src={item.picker.avatar_url.startsWith('http') 
-                                                            ? item.picker.avatar_url 
-                                                            : `${API_CONFIG.BASE_URL.replace('/api', '')}${item.picker.avatar_url}`}
+                                                        src={imageUtils.getImageUrl(item.picker.avatar_url)}
                                                         alt={item.picker.full_name} 
                                                         className="w-full h-full object-cover" 
                                                     />

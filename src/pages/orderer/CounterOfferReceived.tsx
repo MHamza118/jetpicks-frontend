@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ordersApi } from '../../services';
-import { API_CONFIG } from '../../config/api';
+import { imageUtils } from '../../utils';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
@@ -52,7 +52,7 @@ interface OfferData {
 }
 
 const CounterOfferReceived = () => {
-  const { orderId, offerId } = useParams<{ orderId: string; offerId: string }>();
+  const { orderId } = useParams<{ orderId: string; offerId: string }>();
   const navigate = useNavigate();
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [offer, setOffer] = useState<OfferData | null>(null);

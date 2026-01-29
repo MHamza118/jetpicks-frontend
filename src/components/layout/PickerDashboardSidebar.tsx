@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import logo from '../../assets/logo.jpg';
 import { storage } from '../../utils';
@@ -11,7 +11,6 @@ interface PickerDashboardSidebarProps {
 
 const PickerDashboardSidebar = ({ activeTab = 'dashboard' }: PickerDashboardSidebarProps) => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { clearAvatar } = useUser();
 
   const navItems = [

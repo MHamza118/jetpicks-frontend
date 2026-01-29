@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { profileApi, ordersApi } from '../../services';
-import { API_CONFIG } from '../../config/api';
 import { imageUtils } from '../../utils';
 import { useOrder } from '../../context/OrderContext';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
@@ -26,11 +25,7 @@ const CreateOrderStep4 = () => {
         const response = await profileApi.getProfile();
         const profile = response.data;
         if (profile?.avatar_url) {
-          const avatarPath = profile.avatar_url;
-          const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
-          const fullUrl = avatarPath.startsWith('http')
-            ? avatarPath
-            : `${baseUrl}${avatarPath}`;
+          const fullUrl = imageUtils.getImageUrl(profile.avatar_url);
           setAvatarUrl(fullUrl);
           setAvatarError(false);
         }
@@ -167,7 +162,7 @@ const CreateOrderStep4 = () => {
                     {orderDetails.items.map((item: any, itemIdx: number) =>
                       item.product_images && item.product_images.length > 0 ? (
                         item.product_images.map((imagePath: string, imgIdx: number) => {
-                          const fullUrl = imageUtils.getImageUrl(imagePath, API_CONFIG.BASE_URL);
+                          const fullUrl = imageUtils.getImageUrl(imagePath);
                           return (
                             <div key={`${itemIdx}-${imgIdx}`} className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200">
                               <img src={fullUrl} alt={`Product ${itemIdx + 1}-${imgIdx + 1}`} className="w-full h-full object-cover" />
@@ -297,7 +292,7 @@ const CreateOrderStep4 = () => {
                   {orderDetails.items.map((item: any, itemIdx: number) =>
                     item.product_images && item.product_images.length > 0 ? (
                       item.product_images.map((imagePath: string, imgIdx: number) => {
-                        const fullUrl = imageUtils.getImageUrl(imagePath, API_CONFIG.BASE_URL);
+                        const fullUrl = imageUtils.getImageUrl(imagePath);
                         return (
                           <div key={`${itemIdx}-${imgIdx}`} className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200">
                             <img src={fullUrl} alt={`Product ${itemIdx + 1}-${imgIdx + 1}`} className="w-full h-full object-cover" />

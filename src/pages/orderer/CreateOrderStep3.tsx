@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { profileApi, ordersApi } from '../../services';
-import { API_CONFIG } from '../../config/api';
+import { imageUtils } from '../../utils';
 import { useOrder } from '../../context/OrderContext';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
@@ -21,11 +21,7 @@ const CreateOrderStep3 = () => {
         const response = await profileApi.getProfile();
         const profile = response.data;
         if (profile?.avatar_url) {
-          const avatarPath = profile.avatar_url;
-          const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
-          const fullUrl = avatarPath.startsWith('http')
-            ? avatarPath
-            : `${baseUrl}${avatarPath}`;
+          const fullUrl = imageUtils.getImageUrl(profile.avatar_url);
           setAvatarUrl(fullUrl);
           setAvatarError(false);
         }

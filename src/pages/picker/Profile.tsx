@@ -12,7 +12,6 @@ import MobileFooter from '../../components/layout/MobileFooter';
 import { useUser } from '../../context/UserContext';
 import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
-import { API_CONFIG } from '../../config/api';
 import { profileApi } from '../../services';
 
 const PickerProfile = () => {
@@ -121,11 +120,15 @@ const PickerProfile = () => {
       const formData = new FormData();
       formData.append('image', file);
 
+      // Get the API base URL from environment
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.jetpicks.com/api';
+      const token = storage.get(STORAGE_KEYS.AUTH_TOKEN);
+
       // Use the avatar endpoint
-      const response = await fetch(`${API_CONFIG.BASE_URL}/user/avatar`, {
+      const response = await fetch(`${apiBaseUrl}/user/avatar`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${storage.get(STORAGE_KEYS.AUTH_TOKEN)}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: formData,
       });

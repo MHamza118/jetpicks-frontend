@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ordersApi } from '../../services/orders';
-import { API_CONFIG } from '../../config/api';
 import { imageUtils } from '../../utils';
 import DashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
@@ -61,11 +60,7 @@ const PickerOrderDetails = () => {
         // Set picker avatar
         const profile = profileRes.data;
         if (profile?.avatar_url) {
-          const avatarPath = profile.avatar_url;
-          const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
-          const fullUrl = avatarPath.startsWith('http')
-            ? avatarPath
-            : `${baseUrl}${avatarPath}`;
+          const fullUrl = imageUtils.getImageUrl(profile.avatar_url);
           setAvatarUrl(fullUrl);
           setAvatarError(false);
         }
@@ -102,7 +97,7 @@ const PickerOrderDetails = () => {
   };
 
   const getImageUrl = (imagePath: string) => {
-    return imageUtils.getImageUrl(imagePath, API_CONFIG.BASE_URL);
+    return imageUtils.getImageUrl(imagePath);
   };
 
   const calculateTotalCost = () => {

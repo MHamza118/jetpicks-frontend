@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
 import { profileApi } from '../services';
-import { API_CONFIG } from '../config/api';
 import { imageUtils } from '../utils';
 import { STORAGE_KEYS } from '../constants';
 
@@ -31,7 +30,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       const profile = response.data;
       
       if (profile?.avatar_url) {
-        const fullUrl = imageUtils.getImageUrl(profile.avatar_url, API_CONFIG.BASE_URL);
+        const fullUrl = imageUtils.getImageUrl(profile.avatar_url);
+        console.log('Avatar URL from backend:', profile.avatar_url);
+        console.log('Full avatar URL:', fullUrl);
         setAvatarUrl(fullUrl);
         setAvatarError(false);
       } else {

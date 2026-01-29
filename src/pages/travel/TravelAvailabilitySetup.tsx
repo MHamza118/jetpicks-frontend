@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, Luggage, Calendar } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { travelApi, profileApi } from '../../services';
-import { API_CONFIG } from '../../config/api';
+import { imageUtils } from '../../utils';
 import DashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
@@ -47,11 +47,7 @@ const TravelAvailabilitySetup = () => {
                 const response = await profileApi.getProfile();
                 const profile = response.data;
                 if (profile?.avatar_url) {
-                    const avatarPath = profile.avatar_url;
-                    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
-                    const fullUrl = avatarPath.startsWith('http')
-                        ? avatarPath
-                        : `${baseUrl}${avatarPath}`;
+                    const fullUrl = imageUtils.getImageUrl(profile.avatar_url);
                     setAvatarUrl(fullUrl);
                     setAvatarError(false);
                 }

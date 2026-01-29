@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
-import { API_CONFIG } from '../../config/api';
+import { imageUtils } from '../../utils';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
@@ -72,9 +72,7 @@ const JetPickerDetails = () => {
                                         <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100">
                                             {picker.picker.avatar_url ? (
                                                 <img 
-                                                    src={picker.picker.avatar_url.startsWith('http') 
-                                                        ? picker.picker.avatar_url 
-                                                        : `${API_CONFIG.BASE_URL.replace('/api', '')}${picker.picker.avatar_url}`}
+                                                    src={imageUtils.getImageUrl(picker.picker.avatar_url)}
                                                     alt={picker.picker.full_name} 
                                                     className="w-full h-full object-cover" 
                                                 />

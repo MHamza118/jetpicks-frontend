@@ -5,7 +5,6 @@ import type { PickerDashboardData } from '../../services/dashboard';
 import { useDashboardCache } from '../../context/DashboardCacheContext';
 import { useUser } from '../../context/UserContext';
 import { imageUtils } from '../../utils';
-import { API_CONFIG } from '../../config/api';
 import PickerDashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
@@ -140,7 +139,7 @@ const PickerDashboard = () => {
                                         <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0 overflow-hidden">
                                             {order.orderer.avatar_url ? (
                                                 <img
-                                                    src={imageUtils.getImageUrl(order.orderer.avatar_url, API_CONFIG.BASE_URL)}
+                                                    src={imageUtils.getImageUrl(order.orderer.avatar_url)}
                                                     alt={order.orderer.full_name}
                                                     className="w-full h-full object-cover"
                                                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
@@ -164,7 +163,7 @@ const PickerDashboard = () => {
                                         <div className="flex gap-2">
                                             {order.items_images && order.items_images.length > 0 && order.items_images.slice(0, 3).map((img, idx) => (
                                                 <div key={idx} className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                                                    <img src={imageUtils.getImageUrl(img, API_CONFIG.BASE_URL)} alt="Item" className="w-full h-full object-cover" />
+                                                    <img src={imageUtils.getImageUrl(img)} alt="Item" className="w-full h-full object-cover" />
                                                 </div>
                                             ))}
                                             {order.items_count > 3 && (

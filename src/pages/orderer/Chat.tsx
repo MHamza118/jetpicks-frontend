@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Paperclip, Phone, Plus } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { imageUtils } from '../../utils';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
 import { useChat } from '../../context/ChatContext';
 import { useUser } from '../../context/UserContext';
-import { API_CONFIG } from '../../config/api';
 
 const Chat = () => {
   const { roomId } = useParams<{ roomId?: string }>();
@@ -111,10 +111,7 @@ const Chat = () => {
   };
 
   const getImageUrl = (imagePath?: string) => {
-    if (!imagePath) return '';
-    if (imagePath.startsWith('http')) return imagePath;
-    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
-    return `${baseUrl}${imagePath}`;
+    return imageUtils.getImageUrl(imagePath);
   };
 
   const toggleTranslation = (messageId: string) => {
