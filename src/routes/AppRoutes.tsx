@@ -1,5 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import Auth from '../pages/auth/Auth';
+import ForgotPassword from '../pages/auth/ForgotPassword';
+import ResetPassword from '../pages/auth/ResetPassword';
 import ProfileSetup from '../pages/profile/ProfileSetup';
 import TravelAvailabilitySetup from '../pages/travel/TravelAvailabilitySetup';
 import OrdererDashboard from '../pages/orderer/Dashboard';
@@ -35,6 +37,8 @@ const AppRoutes = () => {
             <Route path="/" element={<Auth />} />
             <Route path="/signup" element={<Auth />} />
             <Route path="/login" element={<Auth />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile-setup" element={<ProfileSetup />} />
             
             {/* Travel Availability - Used during signup and in dashboard */}

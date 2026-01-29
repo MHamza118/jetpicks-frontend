@@ -366,6 +366,15 @@ const Auth = () => {
                     </Button>
                 </div>
 
+                <div className="mt-4 text-center text-xs text-gray-600">
+                    <button
+                        onClick={() => navigate('/forgot-password')}
+                        className="text-gray-900 font-semibold hover:underline"
+                    >
+                        Forgot Password?
+                    </button>
+                </div>
+
                 <div className="mt-6 text-center text-sm text-gray-600">
                     <span>Don't have an account? </span>
                     <button

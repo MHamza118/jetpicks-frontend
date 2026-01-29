@@ -6,6 +6,7 @@ export { ordersApi } from './orders';
 export { dashboardApi } from './dashboard';
 export { notificationsApi } from './notifications';
 export { chatApi } from './chat';
+export { passwordResetApi } from './passwordReset';
 export { pickerOrdersApi } from './picker/orders';
 export { pickerProfileApi } from './picker/profile';
 export { ordererOrdersApi } from './orderer/orders';
