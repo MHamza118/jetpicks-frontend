@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search, Bell, User, ArrowLeft, SlidersHorizontal, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { notificationsApi } from '../../services';
 import { useAcceptedOrderPolling, useCounterOfferPolling } from '../../context/OrderNotificationContext';
 
@@ -22,10 +22,14 @@ const DashboardHeader = ({
   avatarLoading = false,
 }: DashboardHeaderProps) => {
   const navigate = useNavigate();
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const location = useLocation();
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   const { notification, acceptedOrdersHistory, showNotificationModal, setShowNotificationModal, handleNotificationClick } = useAcceptedOrderPolling();
   const { counterOfferNotification, counterOffersHistory, showCounterOfferModal, setShowCounterOfferModal, handleCounterOfferClick } = useCounterOfferPolling();
+
+  // Determine if user is a picker or orderer based on current route
+  const isPickerRoute = location.pathname.includes('/picker/');
+  const profilePath = isPickerRoute ? '/picker/profile' : '/orderer/profile';
 
   // Combine all notifications
   const allNotifications = [...acceptedOrdersHistory, ...counterOffersHistory];
@@ -41,31 +45,25 @@ const DashboardHeader = ({
               <ArrowLeft size={24} className="text-gray-900" />
             </button>
           )}
-          <div className="relative">
-            <button
-              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-              className="focus:outline-none"
-            >
-              {avatarLoading ? (
-                <div className="w-12 h-12 rounded-full bg-gray-200 animate-pulse border-2 border-white/50"></div>
-              ) : avatarUrl && !avatarError ? (
-                <img
-                  src={avatarUrl}
-                  alt="Profile"
-                  className="w-12 h-12 rounded-full object-cover border-2 border-white/50"
-                  onError={onAvatarError}
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center border-2 border-white/50">
-                  <User size={24} className="text-gray-600" />
-                </div>
-              )}
-            </button>
-            {showProfileDropdown && (
-              <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+          <button
+            onClick={() => navigate(profilePath)}
+            className="focus:outline-none"
+          >
+            {avatarLoading ? (
+              <div className="w-12 h-12 rounded-full bg-gray-200 animate-pulse border-2 border-white/50"></div>
+            ) : avatarUrl && !avatarError ? (
+              <img
+                src={avatarUrl}
+                alt="Profile"
+                className="w-12 h-12 rounded-full object-cover border-2 border-white/50 cursor-pointer hover:opacity-80 transition-opacity"
+                onError={onAvatarError}
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center border-2 border-white/50 cursor-pointer hover:opacity-80 transition-opacity">
+                <User size={24} className="text-gray-600" />
               </div>
             )}
-          </div>
+          </button>
         </div>
         <button 
           onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
@@ -112,9 +110,9 @@ const DashboardHeader = ({
               <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">{unreadCount}</span>
             )}
           </button>
-          <div className="relative">
+          <div>
             <button
-              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+              onClick={() => navigate(profilePath)}
               className="focus:outline-none"
             >
               {avatarLoading ? (
@@ -132,10 +130,6 @@ const DashboardHeader = ({
                 </div>
               )}
             </button>
-            {showProfileDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-              </div>
-            )}
           </div>
         </div>
       </div>

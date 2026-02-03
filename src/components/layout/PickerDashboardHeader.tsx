@@ -40,22 +40,25 @@ const PickerDashboardHeader = ({
                             <ArrowLeft size={24} className="text-white" />
                         </button>
                     )}
-                    <div>
+                    <button
+                        onClick={() => navigate('/picker/profile')}
+                        className="focus:outline-none"
+                    >
                         {avatarLoading ? (
                             <div className="w-12 h-12 rounded-full bg-white/20 animate-pulse border-2 border-white/50"></div>
                         ) : avatarUrl && !avatarError ? (
                             <img
                                 src={avatarUrl}
                                 alt="Profile"
-                                className="w-12 h-12 rounded-full object-cover border-2 border-white/50"
+                                className="w-12 h-12 rounded-full object-cover border-2 border-white/50 cursor-pointer hover:opacity-80 transition-opacity"
                                 onError={onAvatarError}
                             />
                         ) : (
-                            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center border-2 border-white/50">
+                            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center border-2 border-white/50 cursor-pointer hover:opacity-80 transition-opacity">
                                 <User size={24} className="text-white" />
                             </div>
                         )}
-                    </div>
+                    </button>
                 </div>
                 <button
                     onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
@@ -102,22 +105,25 @@ const PickerDashboardHeader = ({
                             <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">{unreadCount}</span>
                         )}
                     </button>
-                    <div>
+                    <button
+                        onClick={() => navigate('/picker/profile')}
+                        className="focus:outline-none"
+                    >
                         {avatarLoading ? (
                             <div className="w-10 h-10 rounded-full bg-white/20 animate-pulse border-2 border-white/50"></div>
                         ) : avatarUrl && !avatarError ? (
                             <img
                                 src={avatarUrl}
                                 alt="Profile"
-                                className="w-10 h-10 rounded-full object-cover border-2 border-white/50"
+                                className="w-10 h-10 rounded-full object-cover border-2 border-white/50 cursor-pointer hover:opacity-80 transition-opacity"
                                 onError={onAvatarError}
                             />
                         ) : (
-                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border-2 border-white/50">
+                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border-2 border-white/50 cursor-pointer hover:opacity-80 transition-opacity">
                                 <span className="text-white text-sm font-semibold">U</span>
                             </div>
                         )}
-                    </div>
+                    </button>
                 </div>
             </div>
 
