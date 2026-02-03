@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Paperclip, Phone, Plus } from 'lucide-react';
+import { Send, Paperclip, Phone } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { imageUtils } from '../../utils';
 import PickerDashboardSidebar from '../../components/layout/PickerDashboardSidebar';
@@ -15,15 +15,11 @@ const Chat = () => {
   const { chatRooms, currentRoom, messages, fetchChatRooms, fetchChatRoom, fetchMessages, sendMessage } = useChat();
 
   const [messageInput, setMessageInput] = useState('');
-  const [fabPosition, setFabPosition] = useState({ x: 304, y: window.innerHeight - 120 });
-  const [isDragging, setIsDragging] = useState(false);
   const [showTranslated, setShowTranslated] = useState<{ [key: string]: boolean }>({});
   const [sending, setSending] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const fabRef = useRef<HTMLDivElement>(null);
-  const dragOffsetRef = useRef({ x: 0, y: 0 });
 
   // Fetch chat rooms on mount
   useEffect(() => {
@@ -44,46 +40,7 @@ const Chat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleFabMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    const rect = fabRef.current?.getBoundingClientRect();
-    if (rect) {
-      dragOffsetRef.current = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      };
-    }
-  };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging || !fabRef.current) return;
-
-    const newX = e.clientX - dragOffsetRef.current.x;
-    const newY = e.clientY - dragOffsetRef.current.y;
-
-    const maxX = window.innerWidth - fabRef.current.offsetWidth;
-    const maxY = window.innerHeight - fabRef.current.offsetHeight;
-
-    setFabPosition({
-      x: Math.max(0, Math.min(newX, maxX)),
-      y: Math.max(0, Math.min(newY, maxY)),
-    });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging]);
 
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !roomId || sending) return;
@@ -344,20 +301,7 @@ const Chat = () => {
         <MobileFooter activeTab="chat" />
       </div>
 
-      {/* Draggable FAB Button */}
-      <div
-        ref={fabRef}
-        onMouseDown={handleFabMouseDown}
-        style={{
-          position: 'fixed',
-          left: `${fabPosition.x}px`,
-          top: `${fabPosition.y}px`,
-          cursor: isDragging ? 'grabbing' : 'grab',
-        }}
-        className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center hover:bg-gray-800 transition-colors shadow-lg z-40"
-      >
-        <Plus size={28} className="text-white" />
-      </div>
+
     </div>
   );
 };
