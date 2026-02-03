@@ -19,6 +19,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [avatarError, setAvatarError] = useState(false);
   const [loading, setLoading] = useState(false);
   const fetchInProgressRef = useRef(false);
+  const lastTokenRef = useRef<string | null>(localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN));
 
   const fetchAvatar = async () => {
     if (fetchInProgressRef.current) return;
@@ -57,13 +58,52 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // Monitor token changes (for login/logout in same tab)
+  useEffect(() => {
+    const checkTokenChange = setInterval(() => {
+      const currentToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      
+      if (currentToken !== lastTokenRef.current) {
+        lastTokenRef.current = currentToken;
+        
+        if (!currentToken) {
+          // Logout detected
+          setAvatarUrl(null);
+          setAvatarError(false);
+          setLoading(false);
+          fetchInProgressRef.current = false;
+        } else {
+          // Login detected - reset and fetch new avatar
+          setAvatarUrl(null);
+          setAvatarError(false);
+          fetchInProgressRef.current = false;
+          fetchAvatar();
+        }
+      }
+    }, 500);
+
+    return () => clearInterval(checkTokenChange);
+  }, []);
+
   // Listen for logout from other tabs
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEYS.AUTH_TOKEN && !e.newValue) {
-        setAvatarUrl(null);
-        setAvatarError(false);
-        setLoading(false);
+      if (e.key === STORAGE_KEYS.AUTH_TOKEN) {
+        if (!e.newValue) {
+          // Logout detected
+          setAvatarUrl(null);
+          setAvatarError(false);
+          setLoading(false);
+          fetchInProgressRef.current = false;
+          lastTokenRef.current = null;
+        } else {
+          // Login detected - reset and fetch new avatar
+          setAvatarUrl(null);
+          setAvatarError(false);
+          fetchInProgressRef.current = false;
+          lastTokenRef.current = e.newValue;
+          fetchAvatar();
+        }
       }
     };
 
