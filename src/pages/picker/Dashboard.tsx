@@ -12,7 +12,7 @@ import dashboardHero from '../../assets/dashboard.jpeg';
 
 const PickerDashboard = () => {
     const navigate = useNavigate();
-    const { avatarUrl, avatarError, handleAvatarError, refetchAvatar } = useUser();
+    const { avatarUrl, avatarError, handleAvatarError } = useUser();
     const [dashboardData, setDashboardData] = useState<PickerDashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const { pickerCachedData, setPickerCachedData, isPickerCacheValid } = useDashboardCache();

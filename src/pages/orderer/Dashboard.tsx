@@ -30,7 +30,7 @@ interface Picker {
 
 const OrdererDashboard = () => {
     const navigate = useNavigate();
-    const { avatarUrl, avatarError, handleAvatarError, refetchAvatar } = useUser();
+    const { avatarUrl, avatarError, handleAvatarError } = useUser();
     const [pickers, setPickers] = useState<Picker[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
