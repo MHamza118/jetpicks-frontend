@@ -51,9 +51,16 @@ const Auth = () => {
 
     const handleSignupInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+        let finalValue = value;
+
+        // Only allow numbers for phone_number field
+        if (name === 'phone_number') {
+            finalValue = value.replace(/[^0-9]/g, '');
+        }
+
         setSignupFormData(prev => ({
             ...prev,
-            [name]: value,
+            [name]: finalValue,
         }));
         setError(null);
     };
