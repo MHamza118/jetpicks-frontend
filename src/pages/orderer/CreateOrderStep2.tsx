@@ -280,10 +280,12 @@ const CreateOrderStep2 = () => {
                                         <div>
                                             <label className="block text-sm font-medium text-gray-600 mb-2">Price of Item <span className="text-red-500">*</span></label>
                                             <input
-                                                type="text"
+                                                type="number"
                                                 value={item.price}
                                                 onChange={(e) => handleItemChange(item.id, 'price', e.target.value)}
-                                                placeholder="$ 50"
+                                                placeholder="50"
+                                                step="0.01"
+                                                min="0"
                                                 className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
                                                     item.errors?.price
                                                         ? 'border-red-500 focus:ring-red-500'
@@ -298,10 +300,12 @@ const CreateOrderStep2 = () => {
                                         <div>
                                             <label className="block text-sm font-medium text-gray-600 mb-2">Quantity <span className="text-red-500">*</span></label>
                                             <input
-                                                type="text"
+                                                type="number"
                                                 value={item.quantity}
                                                 onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value)}
-                                                placeholder="01"
+                                                placeholder="1"
+                                                step="1"
+                                                min="1"
                                                 className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
                                                     item.errors?.quantity
                                                         ? 'border-red-500 focus:ring-red-500'

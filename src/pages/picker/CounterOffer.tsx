@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ordersApi } from '../../services/orders';
 import { apiClient } from '../../services/apiClient';
-import { imageUtils } from '../../utils';
 import DashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
-import { profileApi } from '../../services';
+import { useUser } from '../../context/UserContext';
 
 interface OrderDetails {
   id: string;
@@ -32,30 +31,16 @@ interface OrderDetails {
 const PickerCounterOffer = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
+  const { avatarUrl, avatarError, handleAvatarError } = useUser();
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarError, setAvatarError] = useState(false);
   const [counterOfferAmount, setCounterOfferAmount] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [profileRes, orderRes] = await Promise.all([
-          profileApi.getProfile(),
-          ordersApi.getOrderDetails(orderId!)
-        ]);
-
-        // Set picker avatar
-        const profile = profileRes.data;
-        if (profile?.avatar_url) {
-          const fullUrl = imageUtils.getImageUrl(profile.avatar_url);
-          setAvatarUrl(fullUrl);
-          setAvatarError(false);
-        }
-
-        // Set order data
+        const orderRes = await ordersApi.getOrderDetails(orderId!);
         const orderData = (orderRes as any).data || orderRes;
         setOrder(orderData);
       } catch (error) {
@@ -69,11 +54,6 @@ const PickerCounterOffer = () => {
       fetchData();
     }
   }, [orderId]);
-
-  const handleAvatarError = () => {
-    setAvatarError(true);
-    setAvatarUrl(null);
-  };
 
   const handleSendCounterOffer = async () => {
     if (!counterOfferAmount || parseFloat(counterOfferAmount) <= 0) {
