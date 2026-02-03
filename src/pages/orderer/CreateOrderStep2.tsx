@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, Plus } from 'lucide-react';
-import { ordersApi, profileApi } from '../../services';
+import { ordersApi } from '../../services';
 import { imageUtils } from '../../utils';
 import { useOrder } from '../../context/OrderContext';
+import { useUser } from '../../context/UserContext';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 
@@ -26,8 +27,7 @@ interface OrderItem {
 const CreateOrderStep2 = () => {
     const navigate = useNavigate();
     const { orderData, updateOrderData } = useOrder();
-    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-    const [avatarError, setAvatarError] = useState(false);
+    const { avatarUrl, avatarError, handleAvatarError } = useUser();
     const [loading, setLoading] = useState(false);
     const [validationError, setValidationError] = useState<string | null>(null);
     const [items, setItems] = useState<OrderItem[]>(
@@ -45,24 +45,6 @@ const CreateOrderStep2 = () => {
             },
         ]
     );
-
-    useEffect(() => {
-        const fetchUserProfile = async () => {
-            try {
-                const response = await profileApi.getProfile();
-                const profile = response.data;
-                if (profile?.avatar_url) {
-                    const fullUrl = imageUtils.getImageUrl(profile.avatar_url);
-                    setAvatarUrl(fullUrl);
-                    setAvatarError(false);
-                }
-            } catch (error) {
-                console.error('Failed to fetch profile:', error);
-            }
-        };
-
-        fetchUserProfile();
-    }, []);
 
     const handleAddItem = () => {
         setItems([...items, {
@@ -182,11 +164,6 @@ const CreateOrderStep2 = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleAvatarError = () => {
-        setAvatarError(true);
-        setAvatarUrl(null);
     };
 
     return (

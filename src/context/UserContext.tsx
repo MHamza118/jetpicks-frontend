@@ -23,7 +23,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const fetchAvatar = async () => {
     if (fetchInProgressRef.current) return;
     
+    // Only fetch if user is authenticated
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    if (!token) return;
+    
     fetchInProgressRef.current = true;
+    setLoading(true);
     try {
       const response = await profileApi.getProfile();
       const profile = response.data;
@@ -43,6 +48,14 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       fetchInProgressRef.current = false;
     }
   };
+
+  // Fetch avatar on mount only if authenticated
+  useEffect(() => {
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    if (token) {
+      fetchAvatar();
+    }
+  }, []);
 
   // Listen for logout from other tabs
   useEffect(() => {

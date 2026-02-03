@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { profileApi, ordersApi } from '../../services';
+import { ordersApi } from '../../services';
 import { imageUtils } from '../../utils';
 import { useOrder } from '../../context/OrderContext';
+import { useUser } from '../../context/UserContext';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 import placeOrderImage from '../../assets/placeorder.png';
@@ -11,31 +12,12 @@ import placeOrderImage from '../../assets/placeorder.png';
 const CreateOrderStep4 = () => {
   const navigate = useNavigate();
   const { orderData, resetOrderData } = useOrder();
+  const { avatarUrl, avatarError, handleAvatarError } = useUser();
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [lawsAgreed, setLawsAgreed] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarError, setAvatarError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [orderDetails, setOrderDetails] = useState<any>(null);
-
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const response = await profileApi.getProfile();
-        const profile = response.data;
-        if (profile?.avatar_url) {
-          const fullUrl = imageUtils.getImageUrl(profile.avatar_url);
-          setAvatarUrl(fullUrl);
-          setAvatarError(false);
-        }
-      } catch (error) {
-        console.error('Failed to fetch profile:', error);
-      }
-    };
-
-    fetchUserProfile();
-  }, []);
 
   useEffect(() => {
     if (orderData.orderId) {
@@ -82,11 +64,6 @@ const CreateOrderStep4 = () => {
 
   const handleCancelOrder = () => {
     navigate('/orderer/dashboard');
-  };
-
-  const handleAvatarError = () => {
-    setAvatarError(true);
-    setAvatarUrl(null);
   };
 
   if (orderPlaced) {
@@ -222,7 +199,12 @@ const CreateOrderStep4 = () => {
 
         {/* Desktop Header */}
         <div className="hidden md:block">
-          <DashboardHeader title="Dashboard" />
+          <DashboardHeader 
+            title="Dashboard" 
+            avatarUrl={avatarUrl}
+            avatarError={avatarError}
+            onAvatarError={handleAvatarError}
+          />
         </div>
 
         {/* Content */}

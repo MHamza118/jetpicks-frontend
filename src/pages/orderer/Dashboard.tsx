@@ -41,11 +41,6 @@ const OrdererDashboard = () => {
     // Start polling for accepted orders
     useAcceptedOrderPolling();
 
-    // Refetch avatar on mount to ensure it's loaded
-    useEffect(() => {
-        refetchAvatar();
-    }, [refetchAvatar]);
-
     useEffect(() => {
         const fetchDashboardData = async (skipCache = false) => {
             // Prevent duplicate fetches

@@ -20,11 +20,6 @@ const PickerDashboard = () => {
     const fetchInProgressRef = useRef(false);
     const visibilityHandlerRef = useRef<(() => void) | null>(null);
 
-    // Refetch avatar on mount to ensure it's loaded
-    useEffect(() => {
-        refetchAvatar();
-    }, [refetchAvatar]);
-
     const fetchData = async (skipCache = false) => {
         // Prevent duplicate fetches
         if (fetchInProgressRef.current) return;

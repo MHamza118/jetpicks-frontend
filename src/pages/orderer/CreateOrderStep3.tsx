@@ -1,37 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { profileApi, ordersApi } from '../../services';
-import { imageUtils } from '../../utils';
+import { ordersApi } from '../../services';
 import { useOrder } from '../../context/OrderContext';
+import { useUser } from '../../context/UserContext';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 
 const CreateOrderStep3 = () => {
   const navigate = useNavigate();
   const { orderData, updateOrderData } = useOrder();
+  const { avatarUrl, avatarError, handleAvatarError } = useUser();
   const [reward, setReward] = useState(orderData.reward || '');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarError, setAvatarError] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const response = await profileApi.getProfile();
-        const profile = response.data;
-        if (profile?.avatar_url) {
-          const fullUrl = imageUtils.getImageUrl(profile.avatar_url);
-          setAvatarUrl(fullUrl);
-          setAvatarError(false);
-        }
-      } catch (error) {
-        console.error('Failed to fetch profile:', error);
-      }
-    };
-
-    fetchUserProfile();
-  }, []);
 
   const handleNext = async () => {
     if (!reward.trim()) {
@@ -63,11 +44,6 @@ const CreateOrderStep3 = () => {
 
   const handleBack = () => {
     navigate(-1);
-  };
-
-  const handleAvatarError = () => {
-    setAvatarError(true);
-    setAvatarUrl(null);
   };
 
   return (

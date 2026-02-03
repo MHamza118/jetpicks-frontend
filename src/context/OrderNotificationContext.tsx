@@ -31,7 +31,9 @@ export const useAcceptedOrderPolling = () => {
   const isInitializedRef = useRef(false);
 
   useEffect(() => {
-    if (isInitializedRef.current) return;
+    // Only initialize if user is authenticated
+    const token = localStorage.getItem('auth_token');
+    if (!token || isInitializedRef.current) return;
     isInitializedRef.current = true;
 
     // Fetch notifications from database on mount
@@ -145,7 +147,9 @@ export const useCounterOfferPolling = () => {
   const isInitializedRef = useRef(false);
 
   useEffect(() => {
-    if (isInitializedRef.current) return;
+    // Only initialize if user is authenticated
+    const token = localStorage.getItem('auth_token');
+    if (!token || isInitializedRef.current) return;
     isInitializedRef.current = true;
 
     // Fetch counter offer notifications from databaseon load/mount

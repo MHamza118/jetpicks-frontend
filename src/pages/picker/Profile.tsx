@@ -49,8 +49,11 @@ const PickerProfile = () => {
 
   // Initialize on mount
   useEffect(() => {
-    refetchAvatar();
-  }, []);
+    // If avatar is not loaded yet, refetch it
+    if (!avatarUrl && !avatarError) {
+      refetchAvatar();
+    }
+  }, [avatarUrl, avatarError, refetchAvatar]);
 
   // Start polling for profile changes after successful upload
   const startPolling = () => {
