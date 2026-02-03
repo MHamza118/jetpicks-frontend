@@ -3,6 +3,7 @@ import { Search, Bell, User, ArrowLeft, SlidersHorizontal, X } from 'lucide-reac
 import { useNavigate } from 'react-router-dom';
 import { notificationsApi } from '../../services';
 import { useAcceptedOrderPolling, useCounterOfferPolling } from '../../context/OrderNotificationContext';
+import { memo } from 'react';
 
 interface PickerDashboardHeaderProps {
     title: string;
@@ -236,4 +237,4 @@ const PickerDashboardHeader = ({
     );
 };
 
-export default PickerDashboardHeader;
+export default memo(PickerDashboardHeader);

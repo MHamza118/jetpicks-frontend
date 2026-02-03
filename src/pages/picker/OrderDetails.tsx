@@ -5,7 +5,7 @@ import { imageUtils } from '../../utils';
 import DashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
-import { profileApi } from '../../services';
+import { useUser } from '../../context/UserContext';
 
 interface OrderItem {
   id: string;
@@ -42,32 +42,28 @@ interface OrderDetails {
 const PickerOrderDetails = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
+  const { avatarUrl, avatarError, handleAvatarError } = useUser();
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarError, setAvatarError] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToCustomLaws, setAgreedToCustomLaws] = useState(false);
+  const [hasCounterOffer, setHasCounterOffer] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [profileRes, orderRes] = await Promise.all([
-          profileApi.getProfile(),
-          ordersApi.getOrderDetails(orderId!)
-        ]);
-
-        // Set picker avatar
-        const profile = profileRes.data;
-        if (profile?.avatar_url) {
-          const fullUrl = imageUtils.getImageUrl(profile.avatar_url);
-          setAvatarUrl(fullUrl);
-          setAvatarError(false);
-        }
-
-        // Set order data
+        const orderRes = await ordersApi.getOrderDetails(orderId!);
         const orderData = (orderRes as any).data || orderRes;
         setOrder(orderData);
+
+        // Check if counter offer exists for THIS specific order
+        const offersRes = await ordersApi.getOfferHistory(orderId!, 1, 100);
+        const offersData = (offersRes as any).data || offersRes;
+        const offers = offersData.data || offersData;
+        
+        // Check if any counter offer exists for THIS order
+        const counterOfferExists = offers.some((offer: any) => offer.offer_type === 'COUNTER');
+        setHasCounterOffer(counterOfferExists);
       } catch (error) {
         console.error('Failed to fetch order details:', error);
       } finally {
@@ -79,11 +75,6 @@ const PickerOrderDetails = () => {
       fetchData();
     }
   }, [orderId]);
-
-  const handleAvatarError = () => {
-    setAvatarError(true);
-    setAvatarUrl(null);
-  };
 
   const handleAcceptDelivery = async () => {
     try {
@@ -322,9 +313,10 @@ const PickerOrderDetails = () => {
               </button>
               <button
                 onClick={() => navigate(`/picker/orders/${orderId}/counter-offer`)}
-                disabled={!agreedToTerms || !agreedToCustomLaws}
+                disabled={!agreedToTerms || !agreedToCustomLaws || hasCounterOffer}
+                title={hasCounterOffer ? 'You have already sent a counter offer for this order' : ''}
                 className={`flex-1 py-3 rounded-lg font-bold text-base transition-colors ${
-                  agreedToTerms && agreedToCustomLaws
+                  agreedToTerms && agreedToCustomLaws && !hasCounterOffer
                     ? 'border-2 border-gray-300 text-gray-900 hover:bg-gray-50 cursor-pointer'
                     : 'border-2 border-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
