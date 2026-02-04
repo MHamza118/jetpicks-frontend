@@ -248,17 +248,47 @@ const TravelAvailabilitySetup = () => {
                                     {loadingCities[formData.departure_country] ? (
                                         <div className="text-gray-500 text-sm py-2">Loading cities...</div>
                                     ) : (
-                                        <select
-                                            name="departure_city"
-                                            value={formData.departure_city}
-                                            onChange={handleInputChange}
-                                            className="w-full bg-transparent text-gray-700 font-semibold text-sm focus:outline-none pb-1 border-b-2 border-yellow-400"
-                                        >
-                                            <option value="">Select city</option>
-                                            {(citiesMap[formData.departure_country] || []).map(city => (
-                                                <option key={city} value={city}>{city}</option>
-                                            ))}
-                                        </select>
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => {
+                                                    setOpenDropdown(openDropdown === 'departure_city' ? null : 'departure_city');
+                                                    setSearchText(prev => ({ ...prev, departure_city: '' }));
+                                                }}
+                                                className="w-full bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1 flex items-center justify-between hover:opacity-80"
+                                            >
+                                                <span>{formData.departure_city || 'Select city'}</span>
+                                                <ChevronDown size={14} className={`transition-transform ${openDropdown === 'departure_city' ? 'rotate-180' : ''}`} />
+                                            </button>
+                                            {openDropdown === 'departure_city' && (
+                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Search cities..."
+                                                        value={searchText.departure_city || ''}
+                                                        onChange={(e) => setSearchText(prev => ({ ...prev, departure_city: e.target.value }))}
+                                                        className="w-full px-3 py-2 border-b border-gray-200 focus:outline-none text-sm"
+                                                        autoFocus
+                                                    />
+                                                    <div className="max-h-48 overflow-y-auto">
+                                                        {(citiesMap[formData.departure_country] || [])
+                                                            .filter(city => !searchText.departure_city || city.toLowerCase().includes(searchText.departure_city.toLowerCase()))
+                                                            .map(city => (
+                                                                <button
+                                                                    key={city}
+                                                                    onClick={() => {
+                                                                        setFormData(prev => ({ ...prev, departure_city: city }));
+                                                                        setOpenDropdown(null);
+                                                                        setSearchText(prev => ({ ...prev, departure_city: '' }));
+                                                                    }}
+                                                                    className="w-full px-3 py-2 text-left hover:bg-yellow-50 transition-colors text-sm"
+                                                                >
+                                                                    {city}
+                                                                </button>
+                                                            ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -325,17 +355,47 @@ const TravelAvailabilitySetup = () => {
                                     {loadingCities[formData.arrival_country] ? (
                                         <div className="text-gray-500 text-sm py-2">Loading cities...</div>
                                     ) : (
-                                        <select
-                                            name="arrival_city"
-                                            value={formData.arrival_city}
-                                            onChange={handleInputChange}
-                                            className="w-full bg-transparent text-gray-700 font-semibold text-sm focus:outline-none pb-1 border-b-2 border-yellow-400"
-                                        >
-                                            <option value="">Select city</option>
-                                            {(citiesMap[formData.arrival_country] || []).map(city => (
-                                                <option key={city} value={city}>{city}</option>
-                                            ))}
-                                        </select>
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => {
+                                                    setOpenDropdown(openDropdown === 'arrival_city' ? null : 'arrival_city');
+                                                    setSearchText(prev => ({ ...prev, arrival_city: '' }));
+                                                }}
+                                                className="w-full bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1 flex items-center justify-between hover:opacity-80"
+                                            >
+                                                <span>{formData.arrival_city || 'Select city'}</span>
+                                                <ChevronDown size={14} className={`transition-transform ${openDropdown === 'arrival_city' ? 'rotate-180' : ''}`} />
+                                            </button>
+                                            {openDropdown === 'arrival_city' && (
+                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Search cities..."
+                                                        value={searchText.arrival_city || ''}
+                                                        onChange={(e) => setSearchText(prev => ({ ...prev, arrival_city: e.target.value }))}
+                                                        className="w-full px-3 py-2 border-b border-gray-200 focus:outline-none text-sm"
+                                                        autoFocus
+                                                    />
+                                                    <div className="max-h-48 overflow-y-auto">
+                                                        {(citiesMap[formData.arrival_country] || [])
+                                                            .filter(city => !searchText.arrival_city || city.toLowerCase().includes(searchText.arrival_city.toLowerCase()))
+                                                            .map(city => (
+                                                                <button
+                                                                    key={city}
+                                                                    onClick={() => {
+                                                                        setFormData(prev => ({ ...prev, arrival_city: city }));
+                                                                        setOpenDropdown(null);
+                                                                        setSearchText(prev => ({ ...prev, arrival_city: '' }));
+                                                                    }}
+                                                                    className="w-full px-3 py-2 text-left hover:bg-yellow-50 transition-colors text-sm"
+                                                                >
+                                                                    {city}
+                                                                </button>
+                                                            ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>

@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React from 'react';
+import * as CountryFlags from 'country-flag-icons/react/3x2';
 
 interface FlagIconProps {
   countryCode: string;
@@ -7,21 +8,19 @@ interface FlagIconProps {
 }
 
 export const FlagIcon: React.FC<FlagIconProps> = ({ countryCode, className = '', title }) => {
-  const FlagComponent = useMemo(() => {
-    if (!countryCode || countryCode.length !== 2) {
-      return null;
-    }
+  if (!countryCode || countryCode.length !== 2) {
+    return (
+      <span 
+        className={`inline-flex items-center justify-center bg-gray-200 rounded text-xs font-bold text-gray-600 ${className}`}
+        title={title}
+      >
+        {countryCode}
+      </span>
+    );
+  }
 
-    try {
-      // Dynamically import the flag component
-      const code = countryCode.toUpperCase();
-      // Use require to dynamically load the flag
-      const flagModule = require(`country-flag-icons/react/3x2/${code}`);
-      return flagModule.default || flagModule[code];
-    } catch (error) {
-      return null;
-    }
-  }, [countryCode]);
+  const code = countryCode.toUpperCase();
+  const FlagComponent = (CountryFlags as any)[code];
 
   if (!FlagComponent) {
     return (
@@ -29,7 +28,7 @@ export const FlagIcon: React.FC<FlagIconProps> = ({ countryCode, className = '',
         className={`inline-flex items-center justify-center bg-gray-200 rounded text-xs font-bold text-gray-600 ${className}`}
         title={title}
       >
-        {countryCode.toUpperCase()}
+        {code}
       </span>
     );
   }
