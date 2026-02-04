@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Search, Bell, User, ArrowLeft, SlidersHorizontal, X, Loader } from 'lucide-react';
+import { Search, Bell, User, ArrowLeft, X, Loader } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { notificationsApi, searchApi } from '../../services';
 import { useAcceptedOrderPolling, useCounterOfferPolling } from '../../context/OrderNotificationContext';
