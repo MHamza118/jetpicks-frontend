@@ -19,10 +19,11 @@ const TravelAvailabilitySetup = () => {
     const [error, setError] = useState<string | null>(null);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [avatarError, setAvatarError] = useState(false);
-    const [countries, setCountries] = useState<{ [key: string]: Country }>({});
-    const [countryList, setCountryList] = useState<string[]>([]);
+    const [countries, setCountries] = useState<Country[]>([]);
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const [searchText, setSearchText] = useState<{ [key: string]: string }>({});
+    const [loadingCities, setLoadingCities] = useState<{ [key: string]: boolean }>({});
+    const [citiesMap, setCitiesMap] = useState<{ [key: string]: string[] }>({});
 
     const [formData, setFormData] = useState({
         departure_country: '',
@@ -39,20 +40,16 @@ const TravelAvailabilitySetup = () => {
             try {
                 const countriesData = await locationsApi.getCountries();
                 setCountries(countriesData);
-                const codes = Object.keys(countriesData);
-                setCountryList(codes);
-                // Set default values
-                if (codes.length > 0) {
+                if (countriesData.length > 0) {
                     setFormData(prev => ({
                         ...prev,
-                        departure_country: codes[0],
-                        departure_city: countriesData[codes[0]].cities[0],
-                        arrival_country: codes[1] || codes[0],
-                        arrival_city: countriesData[codes[1] || codes[0]].cities[0],
+                        departure_country: countriesData[0].name,
+                        arrival_country: countriesData[1]?.name || countriesData[0].name,
                     }));
                 }
             } catch (error) {
                 console.error('Failed to fetch countries:', error);
+                setError('Failed to load countries');
             }
         };
 
@@ -85,20 +82,42 @@ const TravelAvailabilitySetup = () => {
         }));
     };
 
-    const getCountryName = (code: string) => {
-        return countries[code]?.name || code;
-    };
-
-    const getCitiesForCountry = (countryCode: string) => {
-        return countries[countryCode]?.cities || [];
-    };
-
     const filterCountries = (search: string) => {
-        if (!search) return countryList;
-        return countryList.filter(code => 
-            getCountryName(code).toLowerCase().includes(search.toLowerCase()) ||
-            code.toLowerCase().includes(search.toLowerCase())
+        if (!search) return countries;
+        return countries.filter(country => 
+            country.name.toLowerCase().includes(search.toLowerCase()) ||
+            country.code.toLowerCase().includes(search.toLowerCase())
         );
+    };
+
+    const getCitiesForCountry = async (countryName: string) => {
+        if (citiesMap[countryName]) {
+            return citiesMap[countryName];
+        }
+
+        setLoadingCities(prev => ({ ...prev, [countryName]: true }));
+        try {
+            const cities = await locationsApi.getCities(countryName);
+            setCitiesMap(prev => ({ ...prev, [countryName]: cities }));
+            return cities;
+        } catch (error) {
+            console.error('Failed to fetch cities:', error);
+            return [];
+        } finally {
+            setLoadingCities(prev => ({ ...prev, [countryName]: false }));
+        }
+    };
+
+    const handleCountrySelect = async (fieldName: string, countryName: string) => {
+        setFormData(prev => ({
+            ...prev,
+            [fieldName]: countryName,
+            [fieldName === 'departure_country' ? 'departure_city' : 'arrival_city']: '',
+        }));
+        setOpenDropdown(null);
+        setSearchText(prev => ({ ...prev, [fieldName]: '' }));
+        
+        await getCitiesForCountry(countryName);
     };
 
     const handleContinue = async () => {
@@ -121,12 +140,9 @@ const TravelAvailabilitySetup = () => {
                 luggage_weight_capacity: formData.luggage_weight_capacity,
             };
 
-            console.log('Sending payload:', payload);
-            const response = await travelApi.createJourney(payload);
-            console.log('Response:', response);
+            await travelApi.createJourney(payload);
             navigate('/picker/dashboard');
         } catch (err: any) {
-            console.error('Error:', err);
             const errorMessage = err?.message || 'Failed to save travel details. Please try again.';
             setError(errorMessage);
         } finally {
@@ -192,8 +208,8 @@ const TravelAvailabilitySetup = () => {
                                             <span className="flex items-center gap-2">
                                                 {formData.departure_country && (
                                                     <>
-                                                        <FlagIcon countryCode={formData.departure_country} className="w-4 h-4" />
-                                                        {getCountryName(formData.departure_country)}
+                                                        <FlagIcon countryCode={countries.find(c => c.name === formData.departure_country)?.code || ''} className="w-4 h-4" />
+                                                        {formData.departure_country}
                                                     </>
                                                 )}
                                                 {!formData.departure_country && <span className="text-gray-500">Select country</span>}
@@ -211,18 +227,14 @@ const TravelAvailabilitySetup = () => {
                                                     autoFocus
                                                 />
                                                 <div className="max-h-48 overflow-y-auto">
-                                                    {filterCountries(searchText.departure_country || '').map(code => (
+                                                    {filterCountries(searchText.departure_country || '').map(country => (
                                                         <button
-                                                            key={code}
-                                                            onClick={() => {
-                                                                handleInputChange({ target: { name: 'departure_country', value: code } } as any);
-                                                                setOpenDropdown(null);
-                                                                setSearchText(prev => ({ ...prev, departure_country: '' }));
-                                                            }}
+                                                            key={country.code}
+                                                            onClick={() => handleCountrySelect('departure_country', country.name)}
                                                             className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-yellow-50 transition-colors"
                                                         >
-                                                            <FlagIcon countryCode={code} className="w-4 h-4" />
-                                                            {getCountryName(code)}
+                                                            <FlagIcon countryCode={country.code} className="w-4 h-4" />
+                                                            {country.name}
                                                         </button>
                                                     ))}
                                                 </div>
@@ -233,16 +245,21 @@ const TravelAvailabilitySetup = () => {
 
                                 <div>
                                     <label className="text-gray-700 font-bold text-xs mb-0.5 block">City</label>
-                                    <select
-                                        name="departure_city"
-                                        value={formData.departure_city}
-                                        onChange={handleInputChange}
-                                        className="w-full bg-transparent text-gray-700 font-semibold text-sm focus:outline-none pb-1"
-                                    >
-                                        {getCitiesForCountry(formData.departure_country).map(city => (
-                                            <option key={city} value={city}>{city}</option>
-                                        ))}
-                                    </select>
+                                    {loadingCities[formData.departure_country] ? (
+                                        <div className="text-gray-500 text-sm py-2">Loading cities...</div>
+                                    ) : (
+                                        <select
+                                            name="departure_city"
+                                            value={formData.departure_city}
+                                            onChange={handleInputChange}
+                                            className="w-full bg-transparent text-gray-700 font-semibold text-sm focus:outline-none pb-1 border-b-2 border-yellow-400"
+                                        >
+                                            <option value="">Select city</option>
+                                            {(citiesMap[formData.departure_country] || []).map(city => (
+                                                <option key={city} value={city}>{city}</option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -268,8 +285,8 @@ const TravelAvailabilitySetup = () => {
                                             <span className="flex items-center gap-2">
                                                 {formData.arrival_country && (
                                                     <>
-                                                        <FlagIcon countryCode={formData.arrival_country} className="w-4 h-4" />
-                                                        {getCountryName(formData.arrival_country)}
+                                                        <FlagIcon countryCode={countries.find(c => c.name === formData.arrival_country)?.code || ''} className="w-4 h-4" />
+                                                        {formData.arrival_country}
                                                     </>
                                                 )}
                                                 {!formData.arrival_country && <span className="text-gray-500">Select country</span>}
@@ -287,18 +304,14 @@ const TravelAvailabilitySetup = () => {
                                                     autoFocus
                                                 />
                                                 <div className="max-h-48 overflow-y-auto">
-                                                    {filterCountries(searchText.arrival_country || '').map(code => (
+                                                    {filterCountries(searchText.arrival_country || '').map(country => (
                                                         <button
-                                                            key={code}
-                                                            onClick={() => {
-                                                                handleInputChange({ target: { name: 'arrival_country', value: code } } as any);
-                                                                setOpenDropdown(null);
-                                                                setSearchText(prev => ({ ...prev, arrival_country: '' }));
-                                                            }}
+                                                            key={country.code}
+                                                            onClick={() => handleCountrySelect('arrival_country', country.name)}
                                                             className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-yellow-50 transition-colors"
                                                         >
-                                                            <FlagIcon countryCode={code} className="w-4 h-4" />
-                                                            {getCountryName(code)}
+                                                            <FlagIcon countryCode={country.code} className="w-4 h-4" />
+                                                            {country.name}
                                                         </button>
                                                     ))}
                                                 </div>
@@ -309,16 +322,21 @@ const TravelAvailabilitySetup = () => {
 
                                 <div>
                                     <label className="text-gray-700 font-bold text-xs mb-0.5 block">City</label>
-                                    <select
-                                        name="arrival_city"
-                                        value={formData.arrival_city}
-                                        onChange={handleInputChange}
-                                        className="w-full bg-transparent text-gray-700 font-semibold text-sm focus:outline-none pb-1"
-                                    >
-                                        {getCitiesForCountry(formData.arrival_country).map(city => (
-                                            <option key={city} value={city}>{city}</option>
-                                        ))}
-                                    </select>
+                                    {loadingCities[formData.arrival_country] ? (
+                                        <div className="text-gray-500 text-sm py-2">Loading cities...</div>
+                                    ) : (
+                                        <select
+                                            name="arrival_city"
+                                            value={formData.arrival_city}
+                                            onChange={handleInputChange}
+                                            className="w-full bg-transparent text-gray-700 font-semibold text-sm focus:outline-none pb-1 border-b-2 border-yellow-400"
+                                        >
+                                            <option value="">Select city</option>
+                                            {(citiesMap[formData.arrival_country] || []).map(city => (
+                                                <option key={city} value={city}>{city}</option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </div>
                             </div>
                         </div>

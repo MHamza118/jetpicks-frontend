@@ -21,10 +21,11 @@ const CreateOrder = () => {
     
     const [currentStep, setCurrentStep] = useState(1);
     const [loading, setLoading] = useState(false);
-    const [countries, setCountries] = useState<{ [key: string]: Country }>({});
-    const [countryList, setCountryList] = useState<string[]>([]);
+    const [countries, setCountries] = useState<Country[]>([]);
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const [searchText, setSearchText] = useState<{ [key: string]: string }>({});
+    const [loadingCities, setLoadingCities] = useState<{ [key: string]: boolean }>({});
+    const [citiesMap, setCitiesMap] = useState<{ [key: string]: string[] }>({});
     const [formData, setFormData] = useState({
         originCountry: pickerRoute?.departure_country || orderData.originCountry || '',
         originCity: pickerRoute?.departure_city || orderData.originCity || '',
@@ -38,7 +39,6 @@ const CreateOrder = () => {
             try {
                 const countriesData = await locationsApi.getCountries();
                 setCountries(countriesData);
-                setCountryList(Object.keys(countriesData));
             } catch (error) {
                 console.error('Failed to fetch countries:', error);
             }
@@ -123,18 +123,32 @@ const CreateOrder = () => {
     };
 
     const getCountryName = (code: string) => {
-        return countries[code]?.name || code;
+        return countries.find(c => c.code === code)?.name || code;
     };
 
-    const getCitiesForCountry = (countryCode: string) => {
-        return countries[countryCode]?.cities || [];
+    const getCitiesForCountry = async (countryName: string) => {
+        if (citiesMap[countryName]) {
+            return citiesMap[countryName];
+        }
+
+        setLoadingCities(prev => ({ ...prev, [countryName]: true }));
+        try {
+            const cities = await locationsApi.getCities(countryName);
+            setCitiesMap(prev => ({ ...prev, [countryName]: cities }));
+            return cities;
+        } catch (error) {
+            console.error('Failed to fetch cities:', error);
+            return [];
+        } finally {
+            setLoadingCities(prev => ({ ...prev, [countryName]: false }));
+        }
     };
 
     const filterCountries = (search: string) => {
-        if (!search) return countryList;
-        return countryList.filter(code => 
-            getCountryName(code).toLowerCase().includes(search.toLowerCase()) ||
-            code.toLowerCase().includes(search.toLowerCase())
+        if (!search) return countries;
+        return countries.filter(country =>
+            country.name.toLowerCase().includes(search.toLowerCase()) ||
+            country.code.toLowerCase().includes(search.toLowerCase())
         );
     };
 
@@ -249,18 +263,19 @@ const CreateOrder = () => {
                                                             autoFocus
                                                         />
                                                         <div className="max-h-48 overflow-y-auto">
-                                                            {filterCountries(searchText.originCountry || '').map(code => (
+                                                            {filterCountries(searchText.originCountry || '').map(country => (
                                                                 <button
-                                                                    key={code}
+                                                                    key={country.code}
                                                                     onClick={() => {
-                                                                        handleInputChange('originCountry', code);
+                                                                        handleInputChange('originCountry', country.name);
                                                                         setOpenDropdown(null);
                                                                         setSearchText(prev => ({ ...prev, originCountry: '' }));
+                                                                        getCitiesForCountry(country.name);
                                                                     }}
                                                                     className="w-full px-3 md:px-4 py-2.5 text-left flex items-center gap-2 hover:bg-yellow-50 transition-colors"
                                                                 >
-                                                                    <FlagIcon countryCode={code} className="w-5 h-5" />
-                                                                    {getCountryName(code)}
+                                                                    <FlagIcon countryCode={country.code} className="w-5 h-5" />
+                                                                    {country.name}
                                                                 </button>
                                                             ))}
                                                         </div>
@@ -270,48 +285,52 @@ const CreateOrder = () => {
                                         </div>
                                         <div>
                                             <label className="block text-xs md:text-sm font-medium text-gray-600 mb-2">City</label>
-                                            <div className="relative">
-                                                <button
-                                                    onClick={() => {
-                                                        setOpenDropdown(openDropdown === 'originCity' ? null : 'originCity');
-                                                        setSearchText(prev => ({ ...prev, originCity: '' }));
-                                                    }}
-                                                    className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base flex items-center justify-between bg-white hover:bg-gray-50"
-                                                >
-                                                    <span className="flex items-center gap-2">
-                                                        {formData.originCity && <span>{formData.originCity}</span>}
-                                                        {!formData.originCity && <span className="text-gray-500">Select city</span>}
-                                                    </span>
-                                                    <ChevronDown size={16} className={`transition-transform ${openDropdown === 'originCity' ? 'rotate-180' : ''}`} />
-                                                </button>
-                                                {openDropdown === 'originCity' && (
-                                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Search cities..."
-                                                            value={searchText.originCity || ''}
-                                                            onChange={(e) => setSearchText(prev => ({ ...prev, originCity: e.target.value }))}
-                                                            className="w-full px-3 py-2 border-b border-gray-200 focus:outline-none text-sm"
-                                                            autoFocus
-                                                        />
-                                                        <div className="max-h-48 overflow-y-auto">
-                                                            {filterCities(getCitiesForCountry(formData.originCountry), searchText.originCity || '').map(city => (
-                                                                <button
-                                                                    key={city}
-                                                                    onClick={() => {
-                                                                        handleInputChange('originCity', city);
-                                                                        setOpenDropdown(null);
-                                                                        setSearchText(prev => ({ ...prev, originCity: '' }));
-                                                                    }}
-                                                                    className="w-full px-3 md:px-4 py-2.5 text-left hover:bg-yellow-50 transition-colors"
-                                                                >
-                                                                    {city}
-                                                                </button>
-                                                            ))}
+                                            {loadingCities[formData.originCountry] ? (
+                                                <div className="text-gray-500 text-sm py-2">Loading cities...</div>
+                                            ) : (
+                                                <div className="relative">
+                                                    <button
+                                                        onClick={() => {
+                                                            setOpenDropdown(openDropdown === 'originCity' ? null : 'originCity');
+                                                            setSearchText(prev => ({ ...prev, originCity: '' }));
+                                                        }}
+                                                        className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base flex items-center justify-between bg-white hover:bg-gray-50"
+                                                    >
+                                                        <span className="flex items-center gap-2">
+                                                            {formData.originCity && <span>{formData.originCity}</span>}
+                                                            {!formData.originCity && <span className="text-gray-500">Select city</span>}
+                                                        </span>
+                                                        <ChevronDown size={16} className={`transition-transform ${openDropdown === 'originCity' ? 'rotate-180' : ''}`} />
+                                                    </button>
+                                                    {openDropdown === 'originCity' && (
+                                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Search cities..."
+                                                                value={searchText.originCity || ''}
+                                                                onChange={(e) => setSearchText(prev => ({ ...prev, originCity: e.target.value }))}
+                                                                className="w-full px-3 py-2 border-b border-gray-200 focus:outline-none text-sm"
+                                                                autoFocus
+                                                            />
+                                                            <div className="max-h-48 overflow-y-auto">
+                                                                {filterCities(citiesMap[formData.originCountry] || [], searchText.originCity || '').map(city => (
+                                                                    <button
+                                                                        key={city}
+                                                                        onClick={() => {
+                                                                            handleInputChange('originCity', city);
+                                                                            setOpenDropdown(null);
+                                                                            setSearchText(prev => ({ ...prev, originCity: '' }));
+                                                                        }}
+                                                                        className="w-full px-3 md:px-4 py-2.5 text-left hover:bg-yellow-50 transition-colors"
+                                                                    >
+                                                                        {city}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                )}
-                                            </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -355,18 +374,19 @@ const CreateOrder = () => {
                                                             autoFocus
                                                         />
                                                         <div className="max-h-48 overflow-y-auto">
-                                                            {filterCountries(searchText.destinationCountry || '').map(code => (
+                                                            {filterCountries(searchText.destinationCountry || '').map(country => (
                                                                 <button
-                                                                    key={code}
+                                                                    key={country.code}
                                                                     onClick={() => {
-                                                                        handleInputChange('destinationCountry', code);
+                                                                        handleInputChange('destinationCountry', country.name);
                                                                         setOpenDropdown(null);
                                                                         setSearchText(prev => ({ ...prev, destinationCountry: '' }));
+                                                                        getCitiesForCountry(country.name);
                                                                     }}
                                                                     className="w-full px-3 md:px-4 py-2.5 text-left flex items-center gap-2 hover:bg-yellow-50 transition-colors"
                                                                 >
-                                                                    <FlagIcon countryCode={code} className="w-5 h-5" />
-                                                                    {getCountryName(code)}
+                                                                    <FlagIcon countryCode={country.code} className="w-5 h-5" />
+                                                                    {country.name}
                                                                 </button>
                                                             ))}
                                                         </div>
@@ -376,48 +396,52 @@ const CreateOrder = () => {
                                         </div>
                                         <div>
                                             <label className="block text-xs md:text-sm font-medium text-gray-600 mb-2">City</label>
-                                            <div className="relative">
-                                                <button
-                                                    onClick={() => {
-                                                        setOpenDropdown(openDropdown === 'destinationCity' ? null : 'destinationCity');
-                                                        setSearchText(prev => ({ ...prev, destinationCity: '' }));
-                                                    }}
-                                                    className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base flex items-center justify-between bg-white hover:bg-gray-50"
-                                                >
-                                                    <span className="flex items-center gap-2">
-                                                        {formData.destinationCity && <span>{formData.destinationCity}</span>}
-                                                        {!formData.destinationCity && <span className="text-gray-500">Select city</span>}
-                                                    </span>
-                                                    <ChevronDown size={16} className={`transition-transform ${openDropdown === 'destinationCity' ? 'rotate-180' : ''}`} />
-                                                </button>
-                                                {openDropdown === 'destinationCity' && (
-                                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Search cities..."
-                                                            value={searchText.destinationCity || ''}
-                                                            onChange={(e) => setSearchText(prev => ({ ...prev, destinationCity: e.target.value }))}
-                                                            className="w-full px-3 py-2 border-b border-gray-200 focus:outline-none text-sm"
-                                                            autoFocus
-                                                        />
-                                                        <div className="max-h-48 overflow-y-auto">
-                                                            {filterCities(getCitiesForCountry(formData.destinationCountry), searchText.destinationCity || '').map(city => (
-                                                                <button
-                                                                    key={city}
-                                                                    onClick={() => {
-                                                                        handleInputChange('destinationCity', city);
-                                                                        setOpenDropdown(null);
-                                                                        setSearchText(prev => ({ ...prev, destinationCity: '' }));
-                                                                    }}
-                                                                    className="w-full px-3 md:px-4 py-2.5 text-left hover:bg-yellow-50 transition-colors"
-                                                                >
-                                                                    {city}
-                                                                </button>
-                                                            ))}
+                                            {loadingCities[formData.destinationCountry] ? (
+                                                <div className="text-gray-500 text-sm py-2">Loading cities...</div>
+                                            ) : (
+                                                <div className="relative">
+                                                    <button
+                                                        onClick={() => {
+                                                            setOpenDropdown(openDropdown === 'destinationCity' ? null : 'destinationCity');
+                                                            setSearchText(prev => ({ ...prev, destinationCity: '' }));
+                                                        }}
+                                                        className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base flex items-center justify-between bg-white hover:bg-gray-50"
+                                                    >
+                                                        <span className="flex items-center gap-2">
+                                                            {formData.destinationCity && <span>{formData.destinationCity}</span>}
+                                                            {!formData.destinationCity && <span className="text-gray-500">Select city</span>}
+                                                        </span>
+                                                        <ChevronDown size={16} className={`transition-transform ${openDropdown === 'destinationCity' ? 'rotate-180' : ''}`} />
+                                                    </button>
+                                                    {openDropdown === 'destinationCity' && (
+                                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Search cities..."
+                                                                value={searchText.destinationCity || ''}
+                                                                onChange={(e) => setSearchText(prev => ({ ...prev, destinationCity: e.target.value }))}
+                                                                className="w-full px-3 py-2 border-b border-gray-200 focus:outline-none text-sm"
+                                                                autoFocus
+                                                            />
+                                                            <div className="max-h-48 overflow-y-auto">
+                                                                {filterCities(citiesMap[formData.destinationCountry] || [], searchText.destinationCity || '').map(city => (
+                                                                    <button
+                                                                        key={city}
+                                                                        onClick={() => {
+                                                                            handleInputChange('destinationCity', city);
+                                                                            setOpenDropdown(null);
+                                                                            setSearchText(prev => ({ ...prev, destinationCity: '' }));
+                                                                        }}
+                                                                        className="w-full px-3 md:px-4 py-2.5 text-left hover:bg-yellow-50 transition-colors"
+                                                                    >
+                                                                        {city}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                )}
-                                            </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

@@ -23,8 +23,7 @@ const ProfileSetup = () => {
     const [error, setError] = useState<string | null>(null);
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-    const [countries, setCountries] = useState<{ [key: string]: Country }>({});
-    const [countryList, setCountryList] = useState<string[]>([]);
+    const [countries, setCountries] = useState<Country[]>([]);
     const [countrySearchText, setCountrySearchText] = useState('');
     const [travelFromSearchText, setTravelFromSearchText] = useState('');
     const [travelToSearchText, setTravelToSearchText] = useState('');
@@ -32,7 +31,6 @@ const ProfileSetup = () => {
     const languages = ['Spanish', 'English', 'French', 'German', 'Italian', 'Portuguese', 'Dutch', 'Polish'];
 
     useEffect(() => {
-        // Get user role from localStorage
         const user = storage.get(STORAGE_KEYS.USER);
         if (user && user.roles && user.roles.length > 0) {
             setUserRole(user.roles[0] as 'ORDERER' | 'PICKER');
@@ -44,13 +42,10 @@ const ProfileSetup = () => {
             try {
                 const countriesData = await locationsApi.getCountries();
                 setCountries(countriesData);
-                const codes = Object.keys(countriesData);
-                setCountryList(codes);
-                // Set default to first country
-                if (codes.length > 0) {
-                    setSelectedNationality(codes[0]);
-                    setSelectedTravelFrom(codes[0]);
-                    setSelectedTravelTo(codes[1] || codes[0]);
+                if (countriesData.length > 0) {
+                    setSelectedNationality(countriesData[0].name);
+                    setSelectedTravelFrom(countriesData[0].name);
+                    setSelectedTravelTo(countriesData[1]?.name || countriesData[0].name);
                 }
             } catch (error) {
                 console.error('Failed to fetch countries:', error);
@@ -78,13 +73,20 @@ const ProfileSetup = () => {
         );
     };
 
+    const filterCountries = (search: string) => {
+        if (!search) return countries;
+        return countries.filter(country =>
+            country.name.toLowerCase().includes(search.toLowerCase()) ||
+            country.code.toLowerCase().includes(search.toLowerCase())
+        );
+    };
+
     const handleContinue = async () => {
         if (selectedLanguages.length === 0) {
             setError('Please select at least one language');
             return;
         }
 
-        // Validate country selections based on role
         if (userRole === 'ORDERER' && !selectedNationality) {
             setError('Please select your current residing country');
             return;
@@ -101,37 +103,28 @@ const ProfileSetup = () => {
         try {
             const formData = new FormData();
 
-            // Add country based on role
             if (userRole === 'ORDERER') {
-                const countryName = countries[selectedNationality]?.name || selectedNationality;
-                formData.append('country', countryName);
+                formData.append('country', selectedNationality);
             } else if (userRole === 'PICKER') {
-                // For picker, store travel from country
-                const travelFromCountry = countries[selectedTravelFrom]?.name || selectedTravelFrom;
-                formData.append('country', travelFromCountry);
+                formData.append('country', selectedTravelFrom);
             }
 
             selectedLanguages.forEach((lang, index) => {
                 formData.append(`languages[${index}]`, lang);
             });
 
-            // Always append image, even if null (backend will handle it)
             if (avatarFile) {
                 formData.append('image', avatarFile);
             }
 
-            // Use profileApi with FormData
             await profileApi.setupProfile(formData as any);
 
-            // Fetch the updated profile from backend to get the avatar_url
             const profileResponse = await profileApi.getProfile();
             const updatedUser = profileResponse.data;
 
-            // Update localStorage with the complete updated user data
             storage.set(STORAGE_KEYS.USER, updatedUser);
 
             if (userRole === 'PICKER') {
-                // Store travel countries for the next step
                 storage.set('TRAVEL_FROM_COUNTRY', selectedTravelFrom);
                 storage.set('TRAVEL_TO_COUNTRY', selectedTravelTo);
                 navigate('/travel-availability-setup');
@@ -195,71 +188,51 @@ const ProfileSetup = () => {
                             <label className="text-gray-700 font-semibold text-base">Current residing country</label>
                         </div>
 
-                        <div className="relative">
+                        <div className="relative z-30">
                             <button
                                 onClick={() => {
                                     setIsNationalityDropdownOpen(!isNationalityDropdownOpen);
                                     setCountrySearchText('');
                                 }}
-                                onKeyDown={(e) => {
-                                    if (!isNationalityDropdownOpen) return;
-                                    if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
-                                        const newSearch = countrySearchText + e.key;
-                                        setCountrySearchText(newSearch);
-                                        e.preventDefault();
-                                    } else if (e.key === 'Backspace') {
-                                        setCountrySearchText(countrySearchText.slice(0, -1));
-                                        e.preventDefault();
-                                    } else if (e.key === 'Escape') {
-                                        setIsNationalityDropdownOpen(false);
-                                        setCountrySearchText('');
-                                    }
-                                }}
                                 className="w-full flex items-center gap-3 mb-3 pb-3 border-b border-gray-300 hover:opacity-80 transition-opacity focus:outline-none"
                             >
-                                <FlagIcon countryCode={selectedNationality} className="w-6 h-6" />
-                                <span className="text-gray-900 font-semibold text-lg">{countries[selectedNationality]?.name || 'Select country'}</span>
-                                <ChevronDown size={20} className={`text-gray-900 ml-auto transition-transform ${isNationalityDropdownOpen ? 'rotate-180' : ''}`} />
+                                <FlagIcon countryCode={countries.find(c => c.name === selectedNationality)?.code || ''} className="w-6 h-6 flex-shrink-0" />
+                                <span className="text-gray-900 font-semibold text-lg">{selectedNationality || 'Select country'}</span>
+                                <ChevronDown size={20} className={`text-gray-900 transition-transform flex-shrink-0 ml-auto ${isNationalityDropdownOpen ? 'rotate-180' : ''}`} />
                             </button>
 
                             {isNationalityDropdownOpen && (
-                                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-20">
-                                    {countrySearchText && (
-                                        <div className="px-4 py-2 border-b border-gray-200 bg-gray-50 text-sm text-gray-600">
-                                            Searching: <span className="font-semibold">{countrySearchText}</span>
-                                        </div>
-                                    )}
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
+                                    <input
+                                        type="text"
+                                        placeholder="Search countries..."
+                                        value={countrySearchText}
+                                        onChange={(e) => setCountrySearchText(e.target.value)}
+                                        className="w-full px-4 py-2 border-b border-gray-200 focus:outline-none text-sm"
+                                        autoFocus
+                                    />
                                     <div className="max-h-48 overflow-y-auto">
-                                        {countryList.filter(code => 
-                                            !countrySearchText || countries[code]?.name.toLowerCase().includes(countrySearchText.toLowerCase()) ||
-                                            code.toLowerCase().includes(countrySearchText.toLowerCase())
-                                        ).length > 0 ? (
-                                            countryList.filter(code => 
-                                                !countrySearchText || countries[code]?.name.toLowerCase().includes(countrySearchText.toLowerCase()) ||
-                                                code.toLowerCase().includes(countrySearchText.toLowerCase())
-                                            ).map(code => {
-                                                const country = countries[code];
-                                                return (
-                                                    <button
-                                                        key={code}
-                                                        onClick={() => {
-                                                            setSelectedNationality(code);
-                                                            setIsNationalityDropdownOpen(false);
-                                                            setCountrySearchText('');
-                                                        }}
-                                                        className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${selectedNationality === code
-                                                                ? 'bg-yellow-50 text-gray-900'
-                                                                : 'text-gray-700 hover:bg-gray-50'
-                                                            }`}
-                                                    >
-                                                        <FlagIcon countryCode={code} className="w-6 h-6" />
-                                                        {country.name}
-                                                    </button>
-                                                );
-                                            })
+                                        {filterCountries(countrySearchText).length > 0 ? (
+                                            filterCountries(countrySearchText).map(country => (
+                                                <button
+                                                    key={country.code}
+                                                    onClick={() => {
+                                                        setSelectedNationality(country.name);
+                                                        setIsNationalityDropdownOpen(false);
+                                                        setCountrySearchText('');
+                                                    }}
+                                                    className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${selectedNationality === country.name
+                                                        ? 'bg-yellow-50 text-gray-900'
+                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                        }`}
+                                                >
+                                                    <FlagIcon countryCode={country.code} className="w-6 h-6 flex-shrink-0" />
+                                                    <span className="truncate">{country.name}</span>
+                                                </button>
+                                            ))
                                         ) : (
                                             <div className="px-4 py-3 text-center text-gray-500 text-sm">
-                                                No countries found for "{countrySearchText}"
+                                                No countries found
                                             </div>
                                         )}
                                     </div>
@@ -280,71 +253,51 @@ const ProfileSetup = () => {
                                 <label className="text-gray-700 font-semibold text-base">Country of travel from</label>
                             </div>
 
-                            <div className="relative">
+                            <div className="relative z-20">
                                 <button
                                     onClick={() => {
                                         setIsTravelFromDropdownOpen(!isTravelFromDropdownOpen);
                                         setTravelFromSearchText('');
                                     }}
-                                    onKeyDown={(e) => {
-                                        if (!isTravelFromDropdownOpen) return;
-                                        if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
-                                            const newSearch = travelFromSearchText + e.key;
-                                            setTravelFromSearchText(newSearch);
-                                            e.preventDefault();
-                                        } else if (e.key === 'Backspace') {
-                                            setTravelFromSearchText(travelFromSearchText.slice(0, -1));
-                                            e.preventDefault();
-                                        } else if (e.key === 'Escape') {
-                                            setIsTravelFromDropdownOpen(false);
-                                            setTravelFromSearchText('');
-                                        }
-                                    }}
                                     className="w-full flex items-center gap-3 mb-3 pb-3 border-b border-gray-300 hover:opacity-80 transition-opacity focus:outline-none"
                                 >
-                                    <FlagIcon countryCode={selectedTravelFrom} className="w-6 h-6" />
-                                    <span className="text-gray-900 font-semibold text-lg">{countries[selectedTravelFrom]?.name || 'Select country'}</span>
-                                    <ChevronDown size={20} className={`text-gray-900 ml-auto transition-transform ${isTravelFromDropdownOpen ? 'rotate-180' : ''}`} />
+                                    <FlagIcon countryCode={countries.find(c => c.name === selectedTravelFrom)?.code || ''} className="w-6 h-6 flex-shrink-0" />
+                                    <span className="text-gray-900 font-semibold text-lg">{selectedTravelFrom || 'Select country'}</span>
+                                    <ChevronDown size={20} className={`text-gray-900 transition-transform flex-shrink-0 ml-auto ${isTravelFromDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {isTravelFromDropdownOpen && (
-                                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-20">
-                                        {travelFromSearchText && (
-                                            <div className="px-4 py-2 border-b border-gray-200 bg-gray-50 text-sm text-gray-600">
-                                                Searching: <span className="font-semibold">{travelFromSearchText}</span>
-                                            </div>
-                                        )}
+                                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
+                                        <input
+                                            type="text"
+                                            placeholder="Search countries..."
+                                            value={travelFromSearchText}
+                                            onChange={(e) => setTravelFromSearchText(e.target.value)}
+                                            className="w-full px-4 py-2 border-b border-gray-200 focus:outline-none text-sm"
+                                            autoFocus
+                                        />
                                         <div className="max-h-48 overflow-y-auto">
-                                            {countryList.filter(code => 
-                                                !travelFromSearchText || countries[code]?.name.toLowerCase().includes(travelFromSearchText.toLowerCase()) ||
-                                                code.toLowerCase().includes(travelFromSearchText.toLowerCase())
-                                            ).length > 0 ? (
-                                                countryList.filter(code => 
-                                                    !travelFromSearchText || countries[code]?.name.toLowerCase().includes(travelFromSearchText.toLowerCase()) ||
-                                                    code.toLowerCase().includes(travelFromSearchText.toLowerCase())
-                                                ).map(code => {
-                                                    const country = countries[code];
-                                                    return (
-                                                        <button
-                                                            key={code}
-                                                            onClick={() => {
-                                                                setSelectedTravelFrom(code);
-                                                                setIsTravelFromDropdownOpen(false);
-                                                                setTravelFromSearchText('');
-                                                            }}
-                                                            className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${selectedTravelFrom === code
-                                                                    ? 'bg-yellow-50 text-gray-900'
-                                                                    : 'text-gray-700 hover:bg-gray-50'
-                                                                }`}
-                                                        >
-                                                            <FlagIcon countryCode={code} className="w-6 h-6" />
-                                                            {country.name}
-                                                        </button>
-                                                    );
-                                                })
+                                            {filterCountries(travelFromSearchText).length > 0 ? (
+                                                filterCountries(travelFromSearchText).map(country => (
+                                                    <button
+                                                        key={country.code}
+                                                        onClick={() => {
+                                                            setSelectedTravelFrom(country.name);
+                                                            setIsTravelFromDropdownOpen(false);
+                                                            setTravelFromSearchText('');
+                                                        }}
+                                                        className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${selectedTravelFrom === country.name
+                                                            ? 'bg-yellow-50 text-gray-900'
+                                                            : 'text-gray-700 hover:bg-gray-50'
+                                                            }`}
+                                                    >
+                                                        <FlagIcon countryCode={country.code} className="w-6 h-6 flex-shrink-0" />
+                                                        <span className="truncate">{country.name}</span>
+                                                    </button>
+                                                ))
                                             ) : (
                                                 <div className="px-4 py-3 text-center text-gray-500 text-sm">
-                                                    No countries found for "{travelFromSearchText}"
+                                                    No countries found
                                                 </div>
                                             )}
                                         </div>
@@ -362,71 +315,51 @@ const ProfileSetup = () => {
                                 <label className="text-gray-700 font-semibold text-base">Country of travel to</label>
                             </div>
 
-                            <div className="relative">
+                            <div className="relative z-10">
                                 <button
                                     onClick={() => {
                                         setIsTravelToDropdownOpen(!isTravelToDropdownOpen);
                                         setTravelToSearchText('');
                                     }}
-                                    onKeyDown={(e) => {
-                                        if (!isTravelToDropdownOpen) return;
-                                        if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
-                                            const newSearch = travelToSearchText + e.key;
-                                            setTravelToSearchText(newSearch);
-                                            e.preventDefault();
-                                        } else if (e.key === 'Backspace') {
-                                            setTravelToSearchText(travelToSearchText.slice(0, -1));
-                                            e.preventDefault();
-                                        } else if (e.key === 'Escape') {
-                                            setIsTravelToDropdownOpen(false);
-                                            setTravelToSearchText('');
-                                        }
-                                    }}
                                     className="w-full flex items-center gap-3 mb-3 pb-3 border-b border-gray-300 hover:opacity-80 transition-opacity focus:outline-none"
                                 >
-                                    <FlagIcon countryCode={selectedTravelTo} className="w-6 h-6" />
-                                    <span className="text-gray-900 font-semibold text-lg">{countries[selectedTravelTo]?.name || 'Select country'}</span>
-                                    <ChevronDown size={20} className={`text-gray-900 ml-auto transition-transform ${isTravelToDropdownOpen ? 'rotate-180' : ''}`} />
+                                    <FlagIcon countryCode={countries.find(c => c.name === selectedTravelTo)?.code || ''} className="w-6 h-6 flex-shrink-0" />
+                                    <span className="text-gray-900 font-semibold text-lg">{selectedTravelTo || 'Select country'}</span>
+                                    <ChevronDown size={20} className={`text-gray-900 transition-transform flex-shrink-0 ml-auto ${isTravelToDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {isTravelToDropdownOpen && (
-                                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-20">
-                                        {travelToSearchText && (
-                                            <div className="px-4 py-2 border-b border-gray-200 bg-gray-50 text-sm text-gray-600">
-                                                Searching: <span className="font-semibold">{travelToSearchText}</span>
-                                            </div>
-                                        )}
+                                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
+                                        <input
+                                            type="text"
+                                            placeholder="Search countries..."
+                                            value={travelToSearchText}
+                                            onChange={(e) => setTravelToSearchText(e.target.value)}
+                                            className="w-full px-4 py-2 border-b border-gray-200 focus:outline-none text-sm"
+                                            autoFocus
+                                        />
                                         <div className="max-h-48 overflow-y-auto">
-                                            {countryList.filter(code => 
-                                                !travelToSearchText || countries[code]?.name.toLowerCase().includes(travelToSearchText.toLowerCase()) ||
-                                                code.toLowerCase().includes(travelToSearchText.toLowerCase())
-                                            ).length > 0 ? (
-                                                countryList.filter(code => 
-                                                    !travelToSearchText || countries[code]?.name.toLowerCase().includes(travelToSearchText.toLowerCase()) ||
-                                                    code.toLowerCase().includes(travelToSearchText.toLowerCase())
-                                                ).map(code => {
-                                                    const country = countries[code];
-                                                    return (
-                                                        <button
-                                                            key={code}
-                                                            onClick={() => {
-                                                                setSelectedTravelTo(code);
-                                                                setIsTravelToDropdownOpen(false);
-                                                                setTravelToSearchText('');
-                                                            }}
-                                                            className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${selectedTravelTo === code
-                                                                    ? 'bg-yellow-50 text-gray-900'
-                                                                    : 'text-gray-700 hover:bg-gray-50'
-                                                                }`}
-                                                        >
-                                                            <FlagIcon countryCode={code} className="w-6 h-6" />
-                                                            {country.name}
-                                                        </button>
-                                                    );
-                                                })
+                                            {filterCountries(travelToSearchText).length > 0 ? (
+                                                filterCountries(travelToSearchText).map(country => (
+                                                    <button
+                                                        key={country.code}
+                                                        onClick={() => {
+                                                            setSelectedTravelTo(country.name);
+                                                            setIsTravelToDropdownOpen(false);
+                                                            setTravelToSearchText('');
+                                                        }}
+                                                        className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${selectedTravelTo === country.name
+                                                            ? 'bg-yellow-50 text-gray-900'
+                                                            : 'text-gray-700 hover:bg-gray-50'
+                                                            }`}
+                                                    >
+                                                        <FlagIcon countryCode={country.code} className="w-6 h-6 flex-shrink-0" />
+                                                        <span className="truncate">{country.name}</span>
+                                                    </button>
+                                                ))
                                             ) : (
                                                 <div className="px-4 py-3 text-center text-gray-500 text-sm">
-                                                    No countries found for "{travelToSearchText}"
+                                                    No countries found
                                                 </div>
                                             )}
                                         </div>
@@ -446,8 +379,7 @@ const ProfileSetup = () => {
                         <label className="text-gray-700 font-semibold text-base">Languages</label>
                     </div>
 
-                    {/* Selected Languages Tags - Inside the field */}
-                    <div className="relative">
+                    <div className="relative z-5">
                         <div
                             onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
                             className="w-full flex items-center gap-2 mb-3 pb-3 border-b border-gray-300 flex-wrap cursor-pointer hover:opacity-80 transition-opacity"
@@ -472,27 +404,26 @@ const ProfileSetup = () => {
                             <ChevronDown size={20} className={`text-gray-900 ml-auto transition-transform ${isLanguageDropdownOpen ? 'rotate-180' : ''}`} />
                         </div>
 
-                        {/* Language Dropdown */}
                         {isLanguageDropdownOpen && (
-                            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
                                 {languages.map(lang => (
                                     <button
                                         key={lang}
                                         onClick={() => toggleLanguage(lang)}
                                         className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${selectedLanguages.includes(lang)
-                                                ? 'bg-yellow-50 text-gray-900'
-                                                : 'text-gray-700 hover:bg-gray-50'
+                                            ? 'bg-yellow-50 text-gray-900'
+                                            : 'text-gray-700 hover:bg-gray-50'
                                             }`}
                                     >
                                         {selectedLanguages.includes(lang) && (
-                                            <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                            <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                             </svg>
                                         )}
                                         {!selectedLanguages.includes(lang) && (
-                                            <div className="w-4 h-4 border-2 border-gray-300 rounded"></div>
+                                            <div className="w-4 h-4 border-2 border-gray-300 rounded flex-shrink-0"></div>
                                         )}
-                                        {lang}
+                                        <span className="truncate">{lang}</span>
                                     </button>
                                 ))}
                             </div>
