@@ -36,6 +36,22 @@ const DashboardHeader = ({
   const { notification, acceptedOrdersHistory, showNotificationModal, setShowNotificationModal, handleNotificationClick } = useAcceptedOrderPolling();
   const { counterOfferNotification, counterOffersHistory, showCounterOfferModal, setShowCounterOfferModal, handleCounterOfferClick } = useCounterOfferPolling();
 
+  // Get user's first letter from localStorage
+  const getUserInitial = () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user.full_name) {
+          return user.full_name.charAt(0).toUpperCase();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to get user initial:', error);
+    }
+    return 'U';
+  };
+
   // Determine if user is a picker or orderer based on current route
   const isPickerRoute = location.pathname.includes('/picker/');
   const profilePath = isPickerRoute ? '/picker/profile' : '/orderer/profile';
@@ -155,7 +171,7 @@ const DashboardHeader = ({
               />
             ) : (
               <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center border-2 border-white/50 cursor-pointer hover:opacity-80 transition-opacity">
-                <User size={24} className="text-gray-600" />
+                <span className="text-gray-600 text-lg font-semibold">{getUserInitial()}</span>
               </div>
             )}
           </button>
@@ -321,7 +337,7 @@ const DashboardHeader = ({
                 />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
-                  <span className="text-gray-600 text-sm font-semibold">U</span>
+                  <span className="text-gray-600 text-sm font-semibold">{getUserInitial()}</span>
                 </div>
               )}
             </button>

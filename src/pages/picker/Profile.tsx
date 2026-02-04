@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, ChevronRight, HelpCircle, LogOut } from 'lucide-react';
+import { ChevronRight, HelpCircle, LogOut } from 'lucide-react';
 import personalInfoSvg from '../../assets/perrsonalinfo.svg';
 import travelDetailsSvg from '../../assets/3dcube.svg';
 import settingsSvg from '../../assets/settings.svg';
@@ -124,7 +124,7 @@ const PickerProfile = () => {
       formData.append('image', file);
 
       // Get the API base URL from environment
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.jetpicks.com/api';
       const token = storage.get(STORAGE_KEYS.AUTH_TOKEN);
 
       // Use the avatar endpoint
@@ -240,7 +240,7 @@ const PickerProfile = () => {
                       onError={handleAvatarError}
                     />
                   ) : (
-                    <User size={48} className="text-gray-600" />
+                    <span className="text-3xl font-semibold text-gray-600">{userProfile.name.charAt(0).toUpperCase()}</span>
                   )}
                 </div>
                 {/* Edit Avatar Button */}

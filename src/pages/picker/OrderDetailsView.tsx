@@ -190,14 +190,21 @@ const PickerOrderDetailsView = () => {
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 mb-6">JetOrderer</h3>
                     <div className="flex items-center gap-4">
-                      <img
-                        src={imageUtils.getImageUrl(order.orderer.avatar_url)}
-                        alt={order.orderer.full_name}
-                        className="w-16 h-16 rounded-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"%3E%3Ccircle cx="12" cy="12" r="10"/%3E%3Cpath d="M12 16c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"/%3E%3C/svg%3E';
-                        }}
-                      />
+                      <div className="relative w-16 h-16 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {order.orderer.avatar_url ? (
+                          <img
+                            src={imageUtils.getImageUrl(order.orderer.avatar_url)}
+                            alt={order.orderer.full_name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : null}
+                        {!order.orderer.avatar_url || (order.orderer as any).avatarError ? (
+                          <span className="text-lg font-semibold text-gray-600">{order.orderer.full_name.charAt(0).toUpperCase()}</span>
+                        ) : null}
+                      </div>
                       <div>
                         <p className="font-semibold text-gray-900">{order.orderer.full_name}</p>
                         <p className="text-sm text-gray-600">{order.orderer.rating} ⭐</p>

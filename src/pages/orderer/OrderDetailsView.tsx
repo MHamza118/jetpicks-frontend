@@ -74,7 +74,7 @@ const OrdererOrderDetailsView = () => {
           picker: data.picker ? {
             id: data.picker.id,
             name: data.picker.full_name,
-            rating: 4.8,
+            rating: data.picker.rating || 0,
             avatar_url: data.picker.avatar_url,
           } : {
             id: '',
@@ -221,97 +221,152 @@ const OrdererOrderDetailsView = () => {
           </div>
 
           {/* Product Image and Picker Info Section */}
-          <div className="flex items-center justify-center gap-6 mb-6">
-            {/* Product Image */}
-            <div className="w-40 h-40 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center">
-              <img
-                src={imageUtils.getImageUrl(order.items[0]?.image_url)}
-                alt="Product"
-                className="w-full h-full object-cover rounded-lg"
-              />
-            </div>
-
-            {/* Picker Info Section */}
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                <img
-                  src={imageUtils.getImageUrl(order.picker.avatar_url)}
-                  alt={order.picker.name}
-                  className="w-full h-full object-cover"
-                />
+          {order.picker.id ? (
+            <div className="flex items-center justify-center gap-6 mb-6">
+              {/* Product Image */}
+              <div className="w-40 h-40 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
+                {order.items[0]?.image_url ? (
+                  <img
+                    src={imageUtils.getImageUrl(order.items[0].image_url)}
+                    alt="Product"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                ) : null}
+                {!order.items[0]?.image_url || (order.items[0] as any).imageError ? (
+                  <div className="flex flex-col items-center justify-center text-gray-400">
+                    <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-xs font-medium">No image</span>
+                  </div>
+                ) : null}
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">JetPicker</h3>
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-gray-900">{order.picker.name}</p>
-                  <div className="flex items-center gap-1">
-                    <Star size={16} className="fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm font-semibold text-gray-900">{order.picker.rating}</span>
+
+              {/* Picker Info Section */}
+              <div className="flex items-center gap-4">
+                <div className="relative w-16 h-16 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                  {order.picker.avatar_url ? (
+                    <img
+                      src={imageUtils.getImageUrl(order.picker.avatar_url)}
+                      alt={order.picker.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                  {!order.picker.avatar_url || (order.picker as any).avatarError ? (
+                    <span className="text-lg font-semibold text-gray-600">{order.picker.name.charAt(0).toUpperCase()}</span>
+                  ) : null}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">JetPicker</h3>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-gray-900">{order.picker.name}</p>
+                    <div className="flex items-center gap-1">
+                      <Star size={16} className="fill-yellow-400 text-yellow-400" />
+                      <span className="text-sm font-semibold text-gray-900">{order.picker.rating}</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Delivery Status Section */}
-          <div className="mb-6">
-            <h3 className="font-bold text-gray-900 mb-4 text-base">ORDER MARKED AS DELIVERED BY JETPICKER</h3>
-
-            {/* Status Indicators */}
-            <div className="space-y-3 mb-6">
-              <button
-                onClick={async () => {
-                  try {
-                    if (!deliveryCompleted && orderId) {
-                      await ordererOrdersApi.confirmDelivery(orderId);
-                    }
-                    setDeliveryCompleted(!deliveryCompleted);
-                  } catch (err) {
-                    console.error('Failed to confirm delivery:', err);
-                  }
-                }}
-                className="flex items-center gap-3 cursor-pointer"
-              >
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                  deliveryCompleted
-                    ? 'border-green-500 bg-white'
-                    : 'border-gray-300 bg-white'
-                }`}>
-                  {deliveryCompleted && <div className="w-3 h-3 rounded-full bg-green-500"></div>}
-                </div>
-                <p className="font-semibold text-gray-900 text-base">Delivery Completed</p>
-              </button>
-              <button
-                onClick={() => setIssueWithDelivery(!issueWithDelivery)}
-                className="flex items-center gap-3 cursor-pointer"
-              >
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                  issueWithDelivery
-                    ? 'border-red-500 bg-white'
-                    : 'border-gray-300 bg-white'
-                }`}>
-                  {issueWithDelivery && <div className="w-3 h-3 rounded-full bg-red-500"></div>}
-                </div>
-                <p className="font-semibold text-gray-900 text-base">Issue with delivery</p>
-              </button>
-            </div>
-
-            {/* Remaining Time */}
-            {order.remaining_time && (
-              <div className="rounded-lg p-3 mb-6 text-center w-full" style={{ backgroundColor: '#FFF3BD' }}>
-                <p className="font-semibold text-gray-900 text-sm">Remaining Time: {order.remaining_time}</p>
+          ) : (
+            <div className="flex items-center justify-center gap-6 mb-6">
+              {/* Product Image */}
+              <div className="w-40 h-40 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
+                {order.items[0]?.image_url ? (
+                  <img
+                    src={imageUtils.getImageUrl(order.items[0].image_url)}
+                    alt="Product"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                ) : null}
+                {!order.items[0]?.image_url || (order.items[0] as any).imageError ? (
+                  <div className="flex flex-col items-center justify-center text-gray-400">
+                    <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-xs font-medium">No image</span>
+                  </div>
+                ) : null}
               </div>
-            )}
 
-            {/* Confirmation Message */}
-            <p className="text-center text-gray-900 text-base">
-              You have 48 hours to confirm. Otherwise money will be transferred automatically
-            </p>
-          </div>
+              {/* Waiting for Picker Message */}
+              <div className="flex items-center justify-center">
+                <p className="text-gray-600 font-semibold text-center">Waiting for a picker to accept your order...</p>
+              </div>
+            </div>
+          )}
 
-          {/* Rate and Tip Section */}
-          <div className="rounded-2xl p-8 mb-6" style={{ backgroundColor: '#FFFACD' }}>
-            <h3 className="text-center font-bold text-gray-900 mb-6 text-lg">Rate your experience with {order.picker.name}</h3>
+          {/* Delivery Status Section - Only show when picker is assigned */}
+          {order.picker.id && (
+            <div className="mb-6">
+              <h3 className="font-bold text-gray-900 mb-4 text-base">ORDER MARKED AS DELIVERED BY JETPICKER</h3>
+
+              {/* Status Indicators */}
+              <div className="space-y-3 mb-6">
+                <button
+                  onClick={async () => {
+                    try {
+                      if (!deliveryCompleted && orderId) {
+                        await ordererOrdersApi.confirmDelivery(orderId);
+                      }
+                      setDeliveryCompleted(!deliveryCompleted);
+                    } catch (err) {
+                      console.error('Failed to confirm delivery:', err);
+                    }
+                  }}
+                  className="flex items-center gap-3 cursor-pointer"
+                >
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                    deliveryCompleted
+                      ? 'border-green-500 bg-white'
+                      : 'border-gray-300 bg-white'
+                  }`}>
+                    {deliveryCompleted && <div className="w-3 h-3 rounded-full bg-green-500"></div>}
+                  </div>
+                  <p className="font-semibold text-gray-900 text-base">Delivery Completed</p>
+                </button>
+                <button
+                  onClick={() => setIssueWithDelivery(!issueWithDelivery)}
+                  className="flex items-center gap-3 cursor-pointer"
+                >
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                    issueWithDelivery
+                      ? 'border-red-500 bg-white'
+                      : 'border-gray-300 bg-white'
+                  }`}>
+                    {issueWithDelivery && <div className="w-3 h-3 rounded-full bg-red-500"></div>}
+                  </div>
+                  <p className="font-semibold text-gray-900 text-base">Issue with delivery</p>
+                </button>
+              </div>
+
+              {/* Remaining Time */}
+              {order.remaining_time && (
+                <div className="rounded-lg p-3 mb-6 text-center w-full" style={{ backgroundColor: '#FFF3BD' }}>
+                  <p className="font-semibold text-gray-900 text-sm">Remaining Time: {order.remaining_time}</p>
+                </div>
+              )}
+
+              {/* Confirmation Message */}
+              <p className="text-center text-gray-900 text-base">
+                You have 48 hours to confirm. Otherwise money will be transferred automatically
+              </p>
+            </div>
+          )}
+
+          {/* Rate and Tip Section - Only show when picker is assigned */}
+          {order.picker.id && (
+            <div className="rounded-2xl p-8 mb-6" style={{ backgroundColor: '#FFFACD' }}>
+              <h3 className="text-center font-bold text-gray-900 mb-6 text-lg">Rate your experience with {order.picker.name}</h3>
 
             {/* Star Rating */}
             <div className="flex justify-center gap-3 mb-8">
@@ -408,7 +463,8 @@ const OrdererOrderDetailsView = () => {
             >
               {submitting ? 'Submitting...' : 'Submit'}
             </button>
-          </div>
+            </div>
+          )}
           </div>
             </>
           )}

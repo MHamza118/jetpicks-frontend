@@ -35,6 +35,22 @@ const PickerDashboardHeader = ({
     const { notification, acceptedOrdersHistory, showNotificationModal, setShowNotificationModal, handleNotificationClick } = useAcceptedOrderPolling();
     const { counterOfferNotification, counterOffersHistory, showCounterOfferModal, setShowCounterOfferModal, handleCounterOfferClick } = useCounterOfferPolling();
 
+    // Get user's first letter from localStorage
+    const getUserInitial = () => {
+        try {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                if (user.full_name) {
+                    return user.full_name.charAt(0).toUpperCase();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to get user initial:', error);
+        }
+        return 'U';
+    };
+
     // Combine all notifications
     const allNotifications = [...acceptedOrdersHistory, ...counterOffersHistory];
     const unreadCount = allNotifications.filter(n => !n.isRead).length;
@@ -129,7 +145,7 @@ const PickerDashboardHeader = ({
                             />
                         ) : (
                             <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center border-2 border-white/50 cursor-pointer hover:opacity-80 transition-opacity">
-                                <User size={24} className="text-white" />
+                                <span className="text-white text-lg font-semibold">{getUserInitial()}</span>
                             </div>
                         )}
                     </button>
@@ -292,7 +308,7 @@ const PickerDashboardHeader = ({
                             />
                         ) : (
                             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border-2 border-white/50 cursor-pointer hover:opacity-80 transition-opacity">
-                                <span className="text-white text-sm font-semibold">U</span>
+                                <span className="text-white text-sm font-semibold">{getUserInitial()}</span>
                             </div>
                         )}
                     </button>
