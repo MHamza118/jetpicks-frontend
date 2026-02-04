@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Camera, Flag, Globe, ChevronDown, X } from 'lucide-react';
 import Button from '../../components/ui/Button';
-import { profileApi, locationsApi } from '../../services';
-import type { Country } from '../../services/locations';
+import { profileApi } from '../../services';
 import { storage } from '../../utils';
 import FlagIcon from '../../components/FlagIcon';
 import { STORAGE_KEYS } from '../../constants';
+import { useLocations } from '../../hooks';
 
 const ProfileSetup = () => {
     const navigate = useNavigate();
+    const { countries, fetchCities } = useLocations();
     const [userRole, setUserRole] = useState<'ORDERER' | 'PICKER' | null>(null);
     const [selectedNationality, setSelectedNationality] = useState('');
     const [selectedTravelFrom, setSelectedTravelFrom] = useState('');
@@ -23,7 +24,6 @@ const ProfileSetup = () => {
     const [error, setError] = useState<string | null>(null);
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-    const [countries, setCountries] = useState<Country[]>([]);
     const [countrySearchText, setCountrySearchText] = useState('');
     const [travelFromSearchText, setTravelFromSearchText] = useState('');
     const [travelToSearchText, setTravelToSearchText] = useState('');
@@ -38,22 +38,12 @@ const ProfileSetup = () => {
     }, []);
 
     useEffect(() => {
-        const fetchCountries = async () => {
-            try {
-                const countriesData = await locationsApi.getCountries();
-                setCountries(countriesData);
-                if (countriesData.length > 0) {
-                    setSelectedNationality(countriesData[0].name);
-                    setSelectedTravelFrom(countriesData[0].name);
-                    setSelectedTravelTo(countriesData[1]?.name || countriesData[0].name);
-                }
-            } catch (error) {
-                console.error('Failed to fetch countries:', error);
-            }
-        };
-
-        fetchCountries();
-    }, []);
+        if (countries.length > 0) {
+            setSelectedNationality(countries[0].name);
+            setSelectedTravelFrom(countries[0].name);
+            setSelectedTravelTo(countries[1]?.name || countries[0].name);
+        }
+    }, [countries]);
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -220,6 +210,7 @@ const ProfileSetup = () => {
                                                         setSelectedNationality(country.name);
                                                         setIsNationalityDropdownOpen(false);
                                                         setCountrySearchText('');
+                                                        fetchCities(country.name);
                                                     }}
                                                     className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${selectedNationality === country.name
                                                         ? 'bg-yellow-50 text-gray-900'
@@ -285,6 +276,7 @@ const ProfileSetup = () => {
                                                             setSelectedTravelFrom(country.name);
                                                             setIsTravelFromDropdownOpen(false);
                                                             setTravelFromSearchText('');
+                                                            fetchCities(country.name);
                                                         }}
                                                         className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${selectedTravelFrom === country.name
                                                             ? 'bg-yellow-50 text-gray-900'
@@ -347,6 +339,7 @@ const ProfileSetup = () => {
                                                             setSelectedTravelTo(country.name);
                                                             setIsTravelToDropdownOpen(false);
                                                             setTravelToSearchText('');
+                                                            fetchCities(country.name);
                                                         }}
                                                         className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${selectedTravelTo === country.name
                                                             ? 'bg-yellow-50 text-gray-900'

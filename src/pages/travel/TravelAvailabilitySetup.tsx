@@ -2,59 +2,36 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, Luggage, Calendar, ChevronDown } from 'lucide-react';
 import Button from '../../components/ui/Button';
-import { travelApi, profileApi, locationsApi } from '../../services';
-import type { Country } from '../../services/locations';
+import { travelApi, profileApi } from '../../services';
 import { imageUtils } from '../../utils';
 import FlagIcon from '../../components/FlagIcon';
 import DashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
 import type { TravelJourneyPayload } from '../../@types/index';
+import { useLocations } from '../../hooks';
 
 const TravelAvailabilitySetup = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const isFromDashboard = location.pathname === '/picker/create-journey';
+    const { countries, citiesMap, loadingCities, fetchCities } = useLocations();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [avatarError, setAvatarError] = useState(false);
-    const [countries, setCountries] = useState<Country[]>([]);
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const [searchText, setSearchText] = useState<{ [key: string]: string }>({});
-    const [loadingCities, setLoadingCities] = useState<{ [key: string]: boolean }>({});
-    const [citiesMap, setCitiesMap] = useState<{ [key: string]: string[] }>({});
 
     const [formData, setFormData] = useState({
-        departure_country: '',
+        departure_country: countries[0]?.name || '',
         departure_city: '',
         departure_date: '',
-        arrival_country: '',
+        arrival_country: countries[1]?.name || countries[0]?.name || '',
         arrival_city: '',
         arrival_date: '',
         luggage_weight_capacity: '5',
     });
-
-    useEffect(() => {
-        const fetchCountries = async () => {
-            try {
-                const countriesData = await locationsApi.getCountries();
-                setCountries(countriesData);
-                if (countriesData.length > 0) {
-                    setFormData(prev => ({
-                        ...prev,
-                        departure_country: countriesData[0].name,
-                        arrival_country: countriesData[1]?.name || countriesData[0].name,
-                    }));
-                }
-            } catch (error) {
-                console.error('Failed to fetch countries:', error);
-                setError('Failed to load countries');
-            }
-        };
-
-        fetchCountries();
-    }, []);
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -82,32 +59,6 @@ const TravelAvailabilitySetup = () => {
         }));
     };
 
-    const filterCountries = (search: string) => {
-        if (!search) return countries;
-        return countries.filter(country => 
-            country.name.toLowerCase().includes(search.toLowerCase()) ||
-            country.code.toLowerCase().includes(search.toLowerCase())
-        );
-    };
-
-    const getCitiesForCountry = async (countryName: string) => {
-        if (citiesMap[countryName]) {
-            return citiesMap[countryName];
-        }
-
-        setLoadingCities(prev => ({ ...prev, [countryName]: true }));
-        try {
-            const cities = await locationsApi.getCities(countryName);
-            setCitiesMap(prev => ({ ...prev, [countryName]: cities }));
-            return cities;
-        } catch (error) {
-            console.error('Failed to fetch cities:', error);
-            return [];
-        } finally {
-            setLoadingCities(prev => ({ ...prev, [countryName]: false }));
-        }
-    };
-
     const handleCountrySelect = async (fieldName: string, countryName: string) => {
         setFormData(prev => ({
             ...prev,
@@ -117,7 +68,15 @@ const TravelAvailabilitySetup = () => {
         setOpenDropdown(null);
         setSearchText(prev => ({ ...prev, [fieldName]: '' }));
         
-        await getCitiesForCountry(countryName);
+        await fetchCities(countryName);
+    };
+
+    const filterCountries = (search: string) => {
+        if (!search) return countries;
+        return countries.filter(country => 
+            country.name.toLowerCase().includes(search.toLowerCase()) ||
+            country.code.toLowerCase().includes(search.toLowerCase())
+        );
     };
 
     const handleContinue = async () => {
