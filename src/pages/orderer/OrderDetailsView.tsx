@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Star } from 'lucide-react';
+import { Star, ChevronRight } from 'lucide-react';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
@@ -16,6 +16,7 @@ interface OrderItem {
   weight: string;
   reward: number;
   image_url?: string;
+  product_images?: string[];
 }
 
 interface Picker {
@@ -50,6 +51,7 @@ const OrdererOrderDetailsView = () => {
   const [customTipAmount, setCustomTipAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -70,6 +72,7 @@ const OrdererOrderDetailsView = () => {
             weight: item.weight,
             reward: data.reward_amount,
             image_url: item.product_images?.[0],
+            product_images: item.product_images || [],
           })),
           picker: data.picker ? {
             id: data.picker.id,
@@ -223,19 +226,30 @@ const OrdererOrderDetailsView = () => {
           {/* Product Image and Picker Info Section */}
           {order.picker.id ? (
             <div className="flex items-center justify-center gap-6 mb-6">
-              {/* Product Image */}
-              <div className="w-40 h-40 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
-                {order.items[0]?.image_url ? (
-                  <img
-                    src={imageUtils.getImageUrl(order.items[0].image_url)}
-                    alt="Product"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
+              {/* Product Image Carousel */}
+              <div className="relative w-56 h-56 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
+                {order.items[0]?.product_images && order.items[0].product_images.length > 0 ? (
+                  <>
+                    <img
+                      src={imageUtils.getImageUrl(order.items[0].product_images[currentImageIndex])}
+                      alt="Product"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    {/* Forward Arrow Only */}
+                    {order.items[0].product_images.length > 1 && (
+                      <button
+                        onClick={() => setCurrentImageIndex((prev) => (prev === order.items[0].product_images!.length - 1 ? 0 : prev + 1))}
+                        className="absolute bottom-3 right-3 bg-[#FFDF57] hover:bg-yellow-500 text-gray-900 p-2 rounded-full transition-all shadow-lg"
+                      >
+                        <ChevronRight size={24} />
+                      </button>
+                    )}
+                  </>
                 ) : null}
-                {!order.items[0]?.image_url || (order.items[0] as any).imageError ? (
+                {!order.items[0]?.product_images || order.items[0].product_images.length === 0 || (order.items[0] as any).imageError ? (
                   <div className="flex flex-col items-center justify-center text-gray-400">
                     <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -276,19 +290,30 @@ const OrdererOrderDetailsView = () => {
             </div>
           ) : (
             <div className="flex items-center justify-center gap-6 mb-6">
-              {/* Product Image */}
-              <div className="w-40 h-40 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
-                {order.items[0]?.image_url ? (
-                  <img
-                    src={imageUtils.getImageUrl(order.items[0].image_url)}
-                    alt="Product"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
+              {/* Product Image Carousel */}
+              <div className="relative w-56 h-56 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
+                {order.items[0]?.product_images && order.items[0].product_images.length > 0 ? (
+                  <>
+                    <img
+                      src={imageUtils.getImageUrl(order.items[0].product_images[currentImageIndex])}
+                      alt="Product"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    {/* Forward Arrow Only */}
+                    {order.items[0].product_images.length > 1 && (
+                      <button
+                        onClick={() => setCurrentImageIndex((prev) => (prev === order.items[0].product_images!.length - 1 ? 0 : prev + 1))}
+                        className="absolute bottom-3 right-3 bg-[#FFDF57] hover:bg-yellow-500 text-gray-900 p-2 rounded-full transition-all shadow-lg"
+                      >
+                        <ChevronRight size={24} />
+                      </button>
+                    )}
+                  </>
                 ) : null}
-                {!order.items[0]?.image_url || (order.items[0] as any).imageError ? (
+                {!order.items[0]?.product_images || order.items[0].product_images.length === 0 || (order.items[0] as any).imageError ? (
                   <div className="flex flex-col items-center justify-center text-gray-400">
                     <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
