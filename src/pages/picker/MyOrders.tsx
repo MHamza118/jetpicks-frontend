@@ -48,7 +48,7 @@ const PickerMyOrders = () => {
         // Map filter to API status format
         const statusMap: Record<string, string | undefined> = {
           'all': undefined,
-          'pending': 'ACCEPTED',
+          'pending': 'PENDING',
           'delivered': 'DELIVERED',
           'cancelled': 'CANCELLED',
         };
@@ -213,39 +213,43 @@ const PickerMyOrders = () => {
                   </div>
 
                   {/* Items Preview */}
-                  <div className="mb-6 pb-6 border-b border-gray-200">
-                    <div className="flex items-center gap-3">
-                      <div className="flex gap-2">
-                        {order.items.slice(0, 3).map((item) => (
-                          <div
-                            key={item.id}
-                            className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0"
-                          >
-                            <img
-                              src={imageUtils.getImageUrl(item.product_images?.[0])}
-                              alt={item.item_name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"%3E%3Crect x="3" y="3" width="18" height="18" rx="2"/%3E%3Ccircle cx="8.5" cy="8.5" r="1.5"/%3E%3Cpath d="M21 15l-5-5L5 21"/%3E%3C/svg%3E';
-                              }}
-                            />
-                          </div>
-                        ))}
-                        {order.items_count > 3 && (
-                          <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs font-semibold text-gray-700">+{order.items_count - 3}</span>
-                          </div>
-                        )}
+                  <div className="mb-6 pb-6 border-b border-gray-200 h-16 flex items-center">
+                    {order.items && order.items.length > 0 ? (
+                      <div className="flex items-center gap-3 w-full">
+                        <div className="flex gap-2">
+                          {order.items.slice(0, 3).map((item) => (
+                            <div
+                              key={item.id}
+                              className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0"
+                            >
+                              <img
+                                src={imageUtils.getImageUrl(item.product_images?.[0])}
+                                alt={item.item_name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"%3E%3Crect x="3" y="3" width="18" height="18" rx="2"/%3E%3Ccircle cx="8.5" cy="8.5" r="1.5"/%3E%3Cpath d="M21 15l-5-5L5 21"/%3E%3C/svg%3E';
+                                }}
+                              />
+                            </div>
+                          ))}
+                          {order.items_count > 3 && (
+                            <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs font-semibold text-gray-700">+{order.items_count - 3}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 flex flex-col gap-1">
+                          <p className="text-xs text-gray-600">
+                            Total Items <span className="font-semibold text-gray-900">{order.items_count}</span>
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            Reward: <span className="font-semibold text-gray-900">${typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount).toFixed(2) : order.reward_amount.toFixed(2)}</span>
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 flex flex-col gap-1">
-                        <p className="text-xs text-gray-600">
-                          Total Items <span className="font-semibold text-gray-900">{order.items_count}</span>
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          Reward: <span className="font-semibold text-gray-900">${typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount).toFixed(2) : order.reward_amount.toFixed(2)}</span>
-                        </p>
-                      </div>
-                    </div>
+                    ) : (
+                      <p className="text-xs text-gray-500">No items</p>
+                    )}
                   </div>
 
                   {/* Action Button */}

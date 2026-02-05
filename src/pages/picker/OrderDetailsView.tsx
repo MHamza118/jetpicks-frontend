@@ -6,7 +6,7 @@ import { imageUtils } from '../../utils';
 import PickerDashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
-import { Upload, CheckCircle, Circle } from 'lucide-react';
+import { Upload, CheckCircle, Circle, ChevronRight } from 'lucide-react';
 
 interface OrderItem {
   id: string;
@@ -46,12 +46,14 @@ const PickerOrderDetailsView = () => {
   const [showUploadSection, setShowUploadSection] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
       try {
         setLoading(true);
         setError(null);
+        setCurrentImageIndex(0);
         const response = await pickerOrdersApi.getOrderDetails(orderId!);
         const data = (response as any).data || response;
         
@@ -171,43 +173,67 @@ const PickerOrderDetailsView = () => {
                 </div>
 
                 {/* Product Image and Orderer Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Product Image */}
-                  <div className="bg-white border border-gray-200 rounded-2xl p-6 flex items-center justify-center">
-                    <div className="w-48 h-48 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                      <img
-                        src={imageUtils.getImageUrl(order.items[0]?.product_images?.[0])}
-                        alt={order.items[0]?.item_name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"%3E%3Crect x="3" y="3" width="18" height="18" rx="2"/%3E%3Ccircle cx="8.5" cy="8.5" r="1.5"/%3E%3Cpath d="M21 15l-5-5L5 21"/%3E%3C/svg%3E';
-                        }}
-                      />
-                    </div>
+                <div className="flex items-center justify-center gap-6">
+                  {/* Product Image Carousel */}
+                  <div className="relative w-56 h-56 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0">
+                    {order.items?.[0]?.product_images && Array.isArray(order.items[0].product_images) && order.items[0].product_images.length > 0 ? (
+                      <>
+                        <img
+                          key={`${order.id}-${currentImageIndex}`}
+                          src={imageUtils.getImageUrl(order.items[0].product_images[currentImageIndex])}
+                          alt={order.items[0]?.item_name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"%3E%3Crect x="3" y="3" width="18" height="18" rx="2"/%3E%3Ccircle cx="8.5" cy="8.5" r="1.5"/%3E%3Cpath d="M21 15l-5-5L5 21"/%3E%3C/svg%3E';
+                          }}
+                        />
+                        {/* Forward Arrow Only */}
+                        {order.items[0].product_images.length > 1 && (
+                          <button
+                            onClick={() => {
+                              const newIndex = currentImageIndex === order.items[0].product_images!.length - 1 ? 0 : currentImageIndex + 1;
+                              setCurrentImageIndex(newIndex);
+                            }}
+                            className="absolute bottom-3 right-3 bg-[#4D0013] hover:bg-[#660019] text-white p-2 rounded-full transition-all shadow-lg z-10"
+                          >
+                            <ChevronRight size={24} />
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-gray-400">
+                        <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-xs font-medium">No image</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Orderer Info */}
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-6">JetOrderer</h3>
-                    <div className="flex items-center gap-4">
-                      <div className="relative w-16 h-16 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {order.orderer.avatar_url ? (
-                          <img
-                            src={imageUtils.getImageUrl(order.orderer.avatar_url)}
-                            alt={order.orderer.full_name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                        ) : null}
-                        {!order.orderer.avatar_url || (order.orderer as any).avatarError ? (
-                          <span className="text-lg font-semibold text-gray-600">{order.orderer.full_name.charAt(0).toUpperCase()}</span>
-                        ) : null}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">{order.orderer.full_name}</p>
-                        <p className="text-sm text-gray-600">{order.orderer.rating} ⭐</p>
+                  {/* Orderer Info - Centered vertically with carousel */}
+                  <div className="flex items-center justify-center">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-6">JetOrderer</h3>
+                      <div className="flex items-center gap-4">
+                        <div className="relative w-16 h-16 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {order.orderer.avatar_url ? (
+                            <img
+                              src={imageUtils.getImageUrl(order.orderer.avatar_url)}
+                              alt={order.orderer.full_name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          ) : null}
+                          {!order.orderer.avatar_url || (order.orderer as any).avatarError ? (
+                            <span className="text-lg font-semibold text-gray-600">{order.orderer.full_name.charAt(0).toUpperCase()}</span>
+                          ) : null}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">{order.orderer.full_name}</p>
+                          <p className="text-sm text-gray-600">{order.orderer.rating} ⭐</p>
+                        </div>
                       </div>
                     </div>
                   </div>

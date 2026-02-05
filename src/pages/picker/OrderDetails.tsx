@@ -6,6 +6,7 @@ import DashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
 import { useUser } from '../../context/UserContext';
+import { ChevronRight } from 'lucide-react';
 
 interface OrderItem {
   id: string;
@@ -48,6 +49,7 @@ const PickerOrderDetails = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToCustomLaws, setAgreedToCustomLaws] = useState(false);
   const [hasCounterOffer, setHasCounterOffer] = useState(false);
+  const [currentImageIndices, setCurrentImageIndices] = useState<{ [key: string]: number }>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -185,14 +187,29 @@ const PickerOrderDetails = () => {
                 <div className="flex gap-6 overflow-x-auto pb-4">
                   {order.items.map((item) => (
                     <div key={item.id} className="flex gap-4 items-start flex-shrink-0">
-                      {/* Item Image */}
-                      <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                      {/* Item Image Carousel */}
+                      <div className="relative w-40 h-40 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
                         {item.product_images && item.product_images.length > 0 ? (
-                          <img
-                            src={getImageUrl(item.product_images[0])}
-                            alt={item.item_name}
-                            className="w-full h-full object-cover"
-                          />
+                          <>
+                            <img
+                              src={getImageUrl(item.product_images[currentImageIndices[item.id] || 0])}
+                              alt={item.item_name}
+                              className="w-full h-full object-cover"
+                            />
+                            {/* Forward Arrow Only */}
+                            {item.product_images.length > 1 && (
+                              <button
+                                onClick={() => {
+                                  const currentIndex = currentImageIndices[item.id] || 0;
+                                  const newIndex = currentIndex === item.product_images!.length - 1 ? 0 : currentIndex + 1;
+                                  setCurrentImageIndices(prev => ({ ...prev, [item.id]: newIndex }));
+                                }}
+                                className="absolute bottom-2 right-2 bg-[#4D0013] hover:bg-[#660019] text-white p-2 rounded-full transition-all shadow-lg z-10"
+                              >
+                                <ChevronRight size={20} />
+                              </button>
+                            )}
+                          </>
                         ) : (
                           <span className="text-gray-400 text-xs">No image</span>
                         )}
