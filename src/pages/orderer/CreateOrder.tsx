@@ -129,10 +129,6 @@ const CreateOrder = () => {
         }
     };
 
-    const getCountryName = (code: string) => {
-        return countries.find(c => c.code === code)?.name || code;
-    };
-
     const getCitiesForCountry = async (countryName: string) => {
         if (citiesMap[countryName]) {
             return citiesMap[countryName];

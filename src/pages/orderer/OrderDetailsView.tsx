@@ -340,15 +340,17 @@ const OrdererOrderDetailsView = () => {
                 <button
                   onClick={async () => {
                     try {
-                      if (!deliveryCompleted && orderId) {
+                      if (!deliveryCompleted && orderId && order.status === 'delivered') {
                         await ordererOrdersApi.confirmDelivery(orderId);
+                        setDeliveryCompleted(true);
                       }
-                      setDeliveryCompleted(!deliveryCompleted);
                     } catch (err) {
                       console.error('Failed to confirm delivery:', err);
+                      alert('Failed to confirm delivery. Please try again.');
                     }
                   }}
-                  className="flex items-center gap-3 cursor-pointer"
+                  disabled={order.status !== 'delivered' || deliveryCompleted}
+                  className={`flex items-center gap-3 ${order.status === 'delivered' && !deliveryCompleted ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
                 >
                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                     deliveryCompleted
@@ -361,7 +363,8 @@ const OrdererOrderDetailsView = () => {
                 </button>
                 <button
                   onClick={() => setIssueWithDelivery(!issueWithDelivery)}
-                  className="flex items-center gap-3 cursor-pointer"
+                  disabled={order.status !== 'delivered'}
+                  className={`flex items-center gap-3 ${order.status === 'delivered' ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
                 >
                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                     issueWithDelivery
