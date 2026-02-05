@@ -267,13 +267,36 @@ const CreateOrderStep2 = () => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-600 mb-2">Weight</label>
-                                            <input
-                                                type="text"
-                                                value={item.weight}
-                                                onChange={(e) => handleItemChange(item.id, 'weight', e.target.value)}
-                                                placeholder="1/4 Kg"
-                                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm"
-                                            />
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="number"
+                                                    value={item.weight.split(' ')[0] || ''}
+                                                    onChange={(e) => {
+                                                        const unit = item.weight.split(' ')[1] || 'kg';
+                                                        const newWeight = e.target.value ? `${e.target.value} ${unit}` : '';
+                                                        handleItemChange(item.id, 'weight', newWeight);
+                                                    }}
+                                                    placeholder="0"
+                                                    step="0.01"
+                                                    min="0"
+                                                    className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm"
+                                                />
+                                                <select
+                                                    value={item.weight.split(' ')[1] || 'kg'}
+                                                    onChange={(e) => {
+                                                        const value = item.weight.split(' ')[0] || '';
+                                                        const newWeight = value ? `${value} ${e.target.value}` : '';
+                                                        handleItemChange(item.id, 'weight', newWeight);
+                                                    }}
+                                                    className="px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm bg-white"
+                                                >
+                                                    <option value="kg">kg</option>
+                                                    <option value="g">g</option>
+                                                    <option value="mg">mg</option>
+                                                    <option value="lb">lb</option>
+                                                    <option value="oz">oz</option>
+                                                </select>
+                                            </div>
                                         </div>
 
                                         <div>
