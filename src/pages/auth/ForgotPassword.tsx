@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Mail } from 'lucide-react';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
-import signupBg from '../../assets/signupbg.jpg';
+import signupbg2Image from '../../assets/signupbg2.png';
 import { passwordResetApi } from '../../services/passwordReset';
 
 const ForgotPassword = () => {
@@ -54,10 +54,16 @@ const ForgotPassword = () => {
 
     return (
         <div
-            className="min-h-screen w-full flex items-center justify-center bg-cover bg-no-repeat overflow-auto py-6"
-            style={{ backgroundImage: `url(${signupBg})`, backgroundPosition: 'center 70%' }}
+            className="min-h-screen w-full flex items-center justify-center overflow-auto py-6"
+            style={{
+                backgroundImage: `url(${signupbg2Image})`,
+                backgroundSize: 'cover',
+                backgroundPosition: window.innerWidth < 768 ? 'right center' : 'center',
+                backgroundRepeat: 'no-repeat',
+                backgroundAttachment: 'fixed'
+            }}
         >
-            <div className="w-full max-w-[480px] border border-white/20 bg-white/30 backdrop-blur-[40px] rounded-[32px] p-8 shadow-[0_0_50px_rgba(255,255,255,0.3)] mx-4">
+            <div className="w-full max-w-[480px] p-8 mx-4">
                 <div className="mb-6">
                     <h1 className="text-[28px] font-bold text-gray-900">Forgot Password?</h1>
                     <p className="text-gray-500 font-medium text-xs">We'll send you a reset link</p>

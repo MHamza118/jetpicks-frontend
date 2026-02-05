@@ -5,7 +5,7 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Toggle from '../../components/ui/Toggle';
 import RoleSelector from '../../components/auth/RoleSelector';
-import signup2Image from '../../assets/signup2.png';
+import signupbg2Image from '../../assets/signupbg2.png';
 import { authApi } from '../../services';
 import { storage } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
@@ -65,9 +65,13 @@ const Auth = () => {
         setError(null);
     };
 
-    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && !loading) {
-            isSignup ? handleSignup() : handleLogin();
+            if (isSignup) {
+                handleSignup();
+            } else {
+                handleLogin();
+            }
         }
     };
 
@@ -139,8 +143,8 @@ const Auth = () => {
             } else {
                 navigate('/orderer/dashboard');
             }
-        } catch (err: any) {
-            const errorMessage = err?.message || 'Login failed. Please try again.';
+        } catch (err: Error | unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.';
             setError(errorMessage);
         } finally {
             setLoading(false);
@@ -167,8 +171,8 @@ const Auth = () => {
             storage.set(STORAGE_KEYS.USER, response.data.user);
 
             navigate('/profile-setup');
-        } catch (err: any) {
-            const errorMessage = err?.message || 'Signup failed. Please try again.';
+        } catch (err: Error | unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'Signup failed. Please try again.';
             setError(errorMessage);
         } finally {
             setLoading(false);
@@ -182,17 +186,25 @@ const Auth = () => {
 
     if (isSignup) {
         return (
-            <div className="h-screen w-full flex bg-white overflow-hidden">
-                {/* Left Side - Form */}
-                <div className="w-full md:w-1/2 flex items-center justify-center px-4 md:px-6 overflow-hidden">
-                    <div className="w-full max-w-[380px]">
-                        <div className="text-center mb-2">
-                            <h1 className="text-2xl font-bold text-gray-900 mb-0">Sign Up</h1>
-                            <p className="text-gray-500 font-medium text-xs">Create your jetpicker account</p>
+            <div 
+                className="h-screen w-full flex items-center justify-start overflow-hidden"
+                style={{
+                    backgroundImage: `url(${signupbg2Image})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat'
+                }}
+            >
+                {/* Form Container - Left Side */}
+                <div className="relative z-10 w-full md:w-1/2 flex items-center justify-center px-4 md:px-6">
+                    <div className="w-full max-w-[480px] p-5">
+                        <div className="text-center mb-3">
+                            <h1 className="text-2xl font-bold text-gray-900 mb-0.5">Sign Up</h1>
+                            <p className="text-gray-600 font-medium text-xs">Create your jetpicker account</p>
                         </div>
 
                         {error && (
-                            <div className="mb-1.5 p-1.5 bg-red-100 border border-red-400 text-red-700 rounded text-xs">
+                            <div className="mb-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-xs">
                                 {error}
                             </div>
                         )}
@@ -201,7 +213,7 @@ const Auth = () => {
                             <RoleSelector selectedRole={selectedRole} onRoleChange={setSelectedRole} />
                         </div>
 
-                        <div className="grid gap-0.5">
+                        <div className="grid gap-2">
                             <Input
                                 label="Full Name"
                                 placeholder="Esther Howard"
@@ -209,7 +221,7 @@ const Auth = () => {
                                 name="full_name"
                                 value={signupFormData.full_name}
                                 onChange={handleSignupInputChange}
-                                onKeyPress={handleKeyPress}
+                                onKeyDown={handleKeyDown}
                             />
 
                             <Input
@@ -220,7 +232,7 @@ const Auth = () => {
                                 name="phone_number"
                                 value={signupFormData.phone_number}
                                 onChange={handleSignupInputChange}
-                                onKeyPress={handleKeyPress}
+                                onKeyDown={handleKeyDown}
                             />
 
                             <Input
@@ -231,7 +243,7 @@ const Auth = () => {
                                 name="email"
                                 value={signupFormData.email}
                                 onChange={handleSignupInputChange}
-                                onKeyPress={handleKeyPress}
+                                onKeyDown={handleKeyDown}
                             />
 
                             <Input
@@ -242,7 +254,7 @@ const Auth = () => {
                                 name="password"
                                 value={signupFormData.password}
                                 onChange={handleSignupInputChange}
-                                onKeyPress={handleKeyPress}
+                                onKeyDown={handleKeyDown}
                                 rightIcon={
                                     <button onClick={() => setShowSignupPassword(!showSignupPassword)} className="text-gray-500 hover:text-gray-700">
                                         {showSignupPassword ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -258,7 +270,7 @@ const Auth = () => {
                                 name="confirm_password"
                                 value={signupFormData.confirm_password}
                                 onChange={handleSignupInputChange}
-                                onKeyPress={handleKeyPress}
+                                onKeyDown={handleKeyDown}
                                 rightIcon={
                                     <button onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="text-gray-500 hover:text-gray-700">
                                         {showConfirmPassword ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -267,9 +279,9 @@ const Auth = () => {
                             />
                         </div>
 
-                        <div className="mt-1.5 space-y-1">
+                        <div className="mt-2 space-y-1.5">
                             <div className="flex items-center justify-between">
-                                <span className="text-gray-600 font-medium text-xs">Remember me</span>
+                                <span className="text-gray-700 font-medium text-xs">Remember me</span>
                                 <Toggle enabled={rememberMe} onChange={setRememberMe} />
                             </div>
 
@@ -291,17 +303,17 @@ const Auth = () => {
                             </div>
                         </div>
 
-                        <div className="mt-2 flex justify-center">
+                        <div className="mt-3 flex justify-center">
                             <Button 
                                 onClick={handleSignup} 
-                                className="w-full py-1.5 text-xs tracking-wide rounded"
+                                className="w-full py-2 text-sm tracking-wide rounded"
                                 disabled={loading}
                             >
                                 {loading ? 'Signing Up...' : 'Sign Up'}
                             </Button>
                         </div>
 
-                        <div className="mt-1.5 text-center text-xs text-gray-600">
+                        <div className="mt-2 text-center text-xs text-gray-700">
                             <span>Already have an account? </span>
                             <button
                                 onClick={() => switchMode('login')}
@@ -312,32 +324,35 @@ const Auth = () => {
                         </div>
                     </div>
                 </div>
-
-                {/* Right Side - Image */}
-                <div className="hidden md:flex w-1/2 items-center justify-center p-0 overflow-hidden">
-                    <img src={signup2Image} alt="Sign Up" className="w-full h-full object-cover" />
-                </div>
             </div>
         );
     }
 
     return (
-        <div className="h-screen w-full flex bg-white overflow-hidden">
-            {/* Left Side - Form */}
-            <div className="w-full md:w-1/2 flex items-center justify-center px-4 md:px-6 overflow-hidden">
-                <div className="w-full max-w-[380px]">
-                    <div className="text-center mb-4">
-                        <h1 className="text-2xl font-bold text-gray-900 mb-0">Welcome Back</h1>
-                        <p className="text-gray-500 font-medium text-xs">Pick the parcel and start earning</p>
+        <div 
+            className="h-screen w-full flex items-center justify-start overflow-hidden"
+            style={{
+                backgroundImage: `url(${signupbg2Image})`,
+                backgroundSize: '100% 100%',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+            }}
+        >
+            {/* Form Container - Left Side */}
+            <div className="relative z-10 w-full md:w-1/2 flex items-center justify-center px-4 md:px-8">
+                <div className="w-full max-w-[500px] p-8">
+                    <div className="text-center mb-8">
+                        <h1 className="text-4xl font-bold text-gray-900 mb-2">Welcome Back</h1>
+                        <p className="text-gray-600 font-medium text-base">Pick the parcel and start earning</p>
                     </div>
 
                     {error && (
-                        <div className="mb-2 p-1.5 bg-red-100 border border-red-400 text-red-700 rounded text-xs">
+                        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
                             {error}
                         </div>
                     )}
 
-                    <div className="grid gap-1">
+                    <div className="grid gap-3">
                         <Input
                             label="Username"
                             placeholder="Esther Howard"
@@ -345,7 +360,7 @@ const Auth = () => {
                             name="username"
                             value={loginFormData.username}
                             onChange={handleLoginInputChange}
-                            onKeyPress={handleKeyPress}
+                            onKeyDown={handleKeyDown}
                         />
 
                         <Input
@@ -356,30 +371,30 @@ const Auth = () => {
                             name="password"
                             value={loginFormData.password}
                             onChange={handleLoginInputChange}
-                            onKeyPress={handleKeyPress}
+                            onKeyDown={handleKeyDown}
                             rightIcon={
                                 <button onClick={() => setShowPassword(!showPassword)} className="text-gray-500 hover:text-gray-700">
-                                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
                             }
                         />
                     </div>
 
-                    <div className="mt-3 text-center text-xs text-gray-600">
+                    <div className="mt-6 text-center text-sm text-gray-600">
                         <p>By connecting your account confirm that you agree with our <span className="font-bold text-gray-900">Term and Condition</span></p>
                     </div>
 
-                    <div className="mt-4 flex justify-center">
+                    <div className="mt-8 flex justify-center">
                         <Button 
                             onClick={handleLogin} 
-                            className="w-full py-1.5 text-xs tracking-wide rounded"
+                            className="w-full py-3 text-base tracking-wide rounded-lg"
                             disabled={loading}
                         >
                             {loading ? 'Logging In...' : 'Log In'}
                         </Button>
                     </div>
 
-                    <div className="mt-2 text-center text-xs text-gray-600">
+                    <div className="mt-6 text-center text-base text-gray-600">
                         <button
                             onClick={() => navigate('/forgot-password')}
                             className="text-gray-900 font-semibold hover:underline"
@@ -388,7 +403,7 @@ const Auth = () => {
                         </button>
                     </div>
 
-                    <div className="mt-3 text-center text-xs text-gray-600">
+                    <div className="mt-6 text-center text-base text-gray-600">
                         <span>Don't have an account? </span>
                         <button
                             onClick={() => switchMode('signup')}
@@ -398,11 +413,6 @@ const Auth = () => {
                         </button>
                     </div>
                 </div>
-            </div>
-
-            {/* Right Side - Image */}
-            <div className="hidden md:flex w-1/2 items-center justify-center p-0 overflow-hidden">
-                <img src={signup2Image} alt="Login" className="w-full h-full object-cover" />
             </div>
         </div>
     );
