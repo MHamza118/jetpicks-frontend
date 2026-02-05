@@ -29,6 +29,7 @@ interface OrderDetails {
   destination_city: string;
   special_notes?: string;
   reward_amount: number | string;
+  accepted_counter_offer_amount?: number | string;
   status: string;
   items_count: number;
   items_cost: number;
@@ -123,17 +124,21 @@ const OrderAccepted = () => {
     return order?.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
   };
 
-  const calculateJetPicksFee = (total: number) => {
-    return (total * 0.015).toFixed(2);
+  const calculateJetPicksFee = (itemsCost: number, initialReward: number, counterOffer: number) => {
+    const subtotal = itemsCost + initialReward + counterOffer;
+    return (subtotal * 0.015).toFixed(2);
   };
 
   const calculateTotal = () => {
     const itemsCost = calculateTotalCost();
-    const fee = parseFloat(calculateJetPicksFee(itemsCost));
-    const reward = typeof order?.reward_amount === 'string' 
+    const initialReward = typeof order?.reward_amount === 'string' 
       ? parseFloat(order.reward_amount) 
       : (order?.reward_amount || 0);
-    const total = itemsCost + fee + reward;
+    const counterOffer = typeof order?.accepted_counter_offer_amount === 'string'
+      ? parseFloat(order.accepted_counter_offer_amount)
+      : (order?.accepted_counter_offer_amount || 0);
+    const fee = parseFloat(calculateJetPicksFee(itemsCost, initialReward, counterOffer));
+    const total = itemsCost + initialReward + counterOffer + fee;
     return total.toFixed(2);
   };
 
@@ -176,7 +181,13 @@ const OrderAccepted = () => {
   }
 
   const itemsCost = calculateTotalCost();
-  const jetPicksFee = calculateJetPicksFee(itemsCost);
+  const initialReward = typeof order.reward_amount === 'string' 
+    ? parseFloat(order.reward_amount) 
+    : order.reward_amount;
+  const counterOffer = typeof order.accepted_counter_offer_amount === 'string'
+    ? parseFloat(order.accepted_counter_offer_amount)
+    : (order.accepted_counter_offer_amount || 0);
+  const jetPicksFee = calculateJetPicksFee(itemsCost, initialReward, counterOffer);
   const totalAmount = calculateTotal();
 
   return (
@@ -255,8 +266,14 @@ const OrderAccepted = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 text-sm">Reward</span>
-                  <span className="text-gray-900 font-semibold text-sm">${typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount).toFixed(2) : order.reward_amount.toFixed(2)}</span>
+                  <span className="text-gray-900 font-semibold text-sm">${initialReward.toFixed(2)}</span>
                 </div>
+                {counterOffer > 0 && (
+                  <div className="flex justify-between items-center bg-yellow-50 p-2 rounded">
+                    <span className="text-gray-600 text-sm font-semibold">Counter Offer</span>
+                    <span className="text-gray-900 font-bold text-sm">${counterOffer.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 text-sm">JetPicks fee</span>
                   <span className="text-gray-900 font-semibold text-sm">(1.5%) ${jetPicksFee}</span>

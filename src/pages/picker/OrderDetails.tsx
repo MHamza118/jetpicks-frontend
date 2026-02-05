@@ -28,6 +28,7 @@ interface OrderDetails {
   destination_city: string;
   special_notes?: string;
   reward_amount: number | string;
+  accepted_counter_offer_amount?: number | string;
   status: string;
   items_count: number;
   items_cost: number;
@@ -63,8 +64,8 @@ const PickerOrderDetails = () => {
         const offersData = (offersRes as any).data || offersRes;
         const offers = offersData.data || offersData;
         
-        // Check if any counter offer exists for THIS order
-        const counterOfferExists = offers.some((offer: any) => offer.offer_type === 'COUNTER');
+        // Check if any counter offer exists for THIS order (PENDING or ACCEPTED)
+        const counterOfferExists = offers.some((offer: any) => offer.offer_type === 'COUNTER' && (offer.status === 'PENDING' || offer.status === 'ACCEPTED'));
         setHasCounterOffer(counterOfferExists);
       } catch (error) {
         console.error('Failed to fetch order details:', error);
@@ -97,17 +98,21 @@ const PickerOrderDetails = () => {
     return order?.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
   };
 
-  const calculateJetPicksFee = (total: number) => {
-    return (total * 0.015).toFixed(2);
+  const calculateJetPicksFee = (itemsCost: number, initialReward: number, counterOffer: number) => {
+    const subtotal = itemsCost + initialReward + counterOffer;
+    return (subtotal * 0.015).toFixed(2);
   };
 
   const calculateTotal = () => {
     const itemsCost = calculateTotalCost();
-    const fee = parseFloat(calculateJetPicksFee(itemsCost));
-    const reward = typeof order?.reward_amount === 'string'
+    const initialReward = typeof order?.reward_amount === 'string'
       ? parseFloat(order.reward_amount)
       : (order?.reward_amount || 0);
-    const total = itemsCost + fee + reward;
+    const counterOffer = typeof order?.accepted_counter_offer_amount === 'string'
+      ? parseFloat(order.accepted_counter_offer_amount)
+      : (order?.accepted_counter_offer_amount || 0);
+    const fee = parseFloat(calculateJetPicksFee(itemsCost, initialReward, counterOffer));
+    const total = itemsCost + initialReward + counterOffer + fee;
     return total.toFixed(2);
   };
 
@@ -150,7 +155,13 @@ const PickerOrderDetails = () => {
   }
 
   const itemsCost = calculateTotalCost();
-  const jetPicksFee = calculateJetPicksFee(itemsCost);
+  const initialReward = typeof order.reward_amount === 'string'
+    ? parseFloat(order.reward_amount)
+    : order.reward_amount;
+  const counterOffer = typeof order.accepted_counter_offer_amount === 'string'
+    ? parseFloat(order.accepted_counter_offer_amount)
+    : (order.accepted_counter_offer_amount || 0);
+  const jetPicksFee = calculateJetPicksFee(itemsCost, initialReward, counterOffer);
   const totalAmount = calculateTotal();
 
   return (
@@ -255,9 +266,15 @@ const PickerOrderDetails = () => {
                     <span className="text-gray-900 font-semibold">${itemsCost.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Reward</span>
-                    <span className="text-gray-900 font-semibold">${typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount).toFixed(2) : order.reward_amount.toFixed(2)}</span>
+                    <span className="text-gray-600">Initial Reward</span>
+                    <span className="text-gray-900 font-semibold">${initialReward.toFixed(2)}</span>
                   </div>
+                  {counterOffer > 0 && (
+                    <div className="flex justify-between items-center bg-yellow-50 p-2 rounded">
+                      <span className="text-gray-600 font-semibold">Counter Offer</span>
+                      <span className="text-gray-900 font-bold">${counterOffer.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">JetPicks fee</span>
                     <span className="text-gray-900 font-semibold">(1.5%) ${jetPicksFee}</span>
@@ -338,7 +355,7 @@ const PickerOrderDetails = () => {
                     : 'border-2 border-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                Send Counter Offer
+                {hasCounterOffer ? 'Counter Offer Sent' : 'Send Counter Offer'}
               </button>
             </div>
           </div>

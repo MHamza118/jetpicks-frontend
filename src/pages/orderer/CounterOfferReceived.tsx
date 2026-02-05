@@ -54,6 +54,7 @@ const CounterOfferReceived = () => {
   const navigate = useNavigate();
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [offer, setOffer] = useState<OfferData | null>(null);
+  const [offerStatus, setOfferStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
@@ -90,13 +91,14 @@ const CounterOfferReceived = () => {
         const offersResponse = offersRes as { data: Array<{ id: string; offer_type: string; status: string; offer_amount: number | string }> } | Array<{ id: string; offer_type: string; status: string; offer_amount: number | string }>;
         const offers = Array.isArray(offersResponse) ? offersResponse : offersResponse.data;
         if (offers && Array.isArray(offers)) {
-          // Find the COUNTER offer (not INITIAL)
-          const counterOffer = offers.find((o: { offer_type: string; status: string }) => o.offer_type === 'COUNTER' && o.status === 'PENDING');
+          // Find the latest COUNTER offer (PENDING or ACCEPTED)
+          const counterOffer = offers.find((o: { offer_type: string; status: string }) => o.offer_type === 'COUNTER' && (o.status === 'PENDING' || o.status === 'ACCEPTED'));
           if (counterOffer) {
             setOffer({
               id: counterOffer.id,
               offer_amount: counterOffer.offer_amount,
             });
+            setOfferStatus(counterOffer.status);
           }
         }
       } catch (error) {
@@ -128,18 +130,22 @@ const CounterOfferReceived = () => {
     return order?.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
   };
 
-  const calculateJetPicksFee = (total: number) => {
-    return (total * 0.015).toFixed(2);
+  const calculateJetPicksFee = (itemsCost: number, initialReward: number, counterOffer: number) => {
+    const subtotal = itemsCost + initialReward + counterOffer;
+    return (subtotal * 0.015).toFixed(2);
   };
 
   const calculateTotal = () => {
     if (!offer) return '0.00';
     const itemsCost = calculateTotalCost();
-    const fee = parseFloat(calculateJetPicksFee(itemsCost));
+    const initialReward = typeof order?.reward_amount === 'string' 
+      ? parseFloat(order.reward_amount) 
+      : (order?.reward_amount || 0);
     const counterOfferAmt = typeof offer.offer_amount === 'string' 
       ? parseFloat(offer.offer_amount) 
       : offer.offer_amount;
-    const total = itemsCost + fee + counterOfferAmt;
+    const fee = parseFloat(calculateJetPicksFee(itemsCost, initialReward, counterOfferAmt));
+    const total = itemsCost + initialReward + counterOfferAmt + fee;
     return total.toFixed(2);
   };
 
@@ -149,26 +155,26 @@ const CounterOfferReceived = () => {
     setIsProcessing(true);
     try {
       await ordersApi.acceptOffer(offer.id);
-      // Navigate back to previous page
-      navigate(-1);
+      // Navigate to dashboard after successful acceptance
+      navigate('/orderer/dashboard');
     } catch (error) {
       console.error('Failed to accept offer:', error);
-    } finally {
+      alert('Failed to accept offer');
       setIsProcessing(false);
     }
   };
 
   const handleDeclineOffer = async () => {
     if (!offer?.id) return;
-    
+
     setIsProcessing(true);
     try {
       await ordersApi.rejectOffer(offer.id);
-      // Navigate back to previous page
-      navigate(-1);
+      // Navigate to dashboard after declining
+      navigate('/orderer/dashboard');
     } catch (error) {
       console.error('Failed to decline offer:', error);
-    } finally {
+      alert('Failed to decline offer');
       setIsProcessing(false);
     }
   };
@@ -212,9 +218,15 @@ const CounterOfferReceived = () => {
   }
 
   const itemsCost = calculateTotalCost();
-  const jetPicksFee = calculateJetPicksFee(itemsCost);
-  const totalAmount = calculateTotal();
+  const initialReward = typeof order.reward_amount === 'string' 
+    ? parseFloat(order.reward_amount) 
+    : order.reward_amount;
   const counterOfferAmount = offer ? (typeof offer.offer_amount === 'string' 
+    ? parseFloat(offer.offer_amount) 
+    : offer.offer_amount) : 0;
+  const jetPicksFee = calculateJetPicksFee(itemsCost, initialReward, counterOfferAmount);
+  const totalAmount = calculateTotal();
+  const counterOfferAmountStr = offer ? (typeof offer.offer_amount === 'string' 
     ? parseFloat(offer.offer_amount).toFixed(2) 
     : offer.offer_amount.toFixed(2)) : '0.00';
   const originalRewardAmount = typeof order.reward_amount === 'string' 
@@ -300,12 +312,16 @@ const CounterOfferReceived = () => {
                   <span className="text-gray-900 font-semibold text-sm">${itemsCost.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600 text-sm">Original Reward</span>
+                  <span className="text-gray-600 text-sm">Initial Reward</span>
                   <span className="text-gray-900 font-semibold text-sm">${originalRewardAmount}</span>
                 </div>
                 <div className="flex justify-between items-center bg-yellow-50 p-2 rounded">
                   <span className="text-gray-600 text-sm font-semibold">Counter Offer</span>
-                  <span className="text-gray-900 font-bold text-sm">${counterOfferAmount}</span>
+                  <span className="text-gray-900 font-bold text-sm">${counterOfferAmountStr}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 text-sm">Subtotal</span>
+                  <span className="text-gray-900 font-semibold text-sm">${(itemsCost + parseFloat(originalRewardAmount) + parseFloat(counterOfferAmountStr)).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 text-sm">JetPicks fee</span>
@@ -320,20 +336,33 @@ const CounterOfferReceived = () => {
 
             {/* Action Buttons */}
             <div className="flex flex-col gap-3 mb-8">
-              <button
-                onClick={handleAcceptOffer}
-                disabled={isProcessing}
-                className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold hover:bg-yellow-500 transition-colors text-base disabled:opacity-50"
-              >
-                {isProcessing ? 'Processing...' : 'Accept Offer'}
-              </button>
-              <button
-                onClick={handleDeclineOffer}
-                disabled={isProcessing}
-                className="w-full border-2 border-gray-300 text-gray-900 py-3 rounded-lg font-bold hover:bg-gray-50 transition-colors text-base disabled:opacity-50"
-              >
-                {isProcessing ? 'Processing...' : 'Decline'}
-              </button>
+              {offerStatus === 'PENDING' ? (
+                <>
+                  <button
+                    onClick={handleAcceptOffer}
+                    disabled={isProcessing}
+                    className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold hover:bg-yellow-500 transition-colors text-base disabled:opacity-50"
+                  >
+                    {isProcessing ? 'Processing...' : 'Accept Offer'}
+                  </button>
+                  <button
+                    onClick={handleDeclineOffer}
+                    disabled={isProcessing}
+                    className="w-full border-2 border-gray-300 text-gray-900 py-3 rounded-lg font-bold hover:bg-gray-50 transition-colors text-base disabled:opacity-50"
+                  >
+                    {isProcessing ? 'Processing...' : 'Decline'}
+                  </button>
+                </>
+              ) : offerStatus === 'ACCEPTED' ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                  <p className="text-green-700 font-semibold">Counter offer accepted</p>
+                  <p className="text-green-600 text-sm mt-1">Waiting for picker to accept the order</p>
+                </div>
+              ) : offerStatus === 'REJECTED' ? (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                  <p className="text-red-700 font-semibold">Counter offer declined</p>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
