@@ -33,12 +33,19 @@ const CreateOrder = () => {
         destinationCity: pickerRoute?.arrival_city || orderData.destinationCity || '',
         specialNotes: orderData.specialNotes || '',
     });
+    const [countryCodeMap, setCountryCodeMap] = useState<{ [key: string]: string }>({});
 
     useEffect(() => {
         const fetchCountries = async () => {
             try {
                 const countriesData = await locationsApi.getCountries();
                 setCountries(countriesData);
+                // Build a map of country names to codes for easy lookup
+                const codeMap: { [key: string]: string } = {};
+                countriesData.forEach(country => {
+                    codeMap[country.name] = country.code;
+                });
+                setCountryCodeMap(codeMap);
             } catch (error) {
                 console.error('Failed to fetch countries:', error);
             }
@@ -244,8 +251,8 @@ const CreateOrder = () => {
                                                     <span className="flex items-center gap-2">
                                                         {formData.originCountry && (
                                                             <>
-                                                                <FlagIcon countryCode={formData.originCountry} className="w-5 h-5" />
-                                                                {getCountryName(formData.originCountry)}
+                                                                <FlagIcon countryCode={countryCodeMap[formData.originCountry] || ''} className="w-5 h-5" />
+                                                                {formData.originCountry}
                                                             </>
                                                         )}
                                                         {!formData.originCountry && <span className="text-gray-500">Select country</span>}
@@ -355,8 +362,8 @@ const CreateOrder = () => {
                                                     <span className="flex items-center gap-2">
                                                         {formData.destinationCountry && (
                                                             <>
-                                                                <FlagIcon countryCode={formData.destinationCountry} className="w-5 h-5" />
-                                                                {getCountryName(formData.destinationCountry)}
+                                                                <FlagIcon countryCode={countryCodeMap[formData.destinationCountry] || ''} className="w-5 h-5" />
+                                                                {formData.destinationCountry}
                                                             </>
                                                         )}
                                                         {!formData.destinationCountry && <span className="text-gray-500">Select country</span>}
