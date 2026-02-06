@@ -6,6 +6,7 @@ import DashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
 import { useUser } from '../../context/UserContext';
+import { useDashboardCache } from '../../context/DashboardCacheContext';
 import { ChevronRight } from 'lucide-react';
 
 interface OrderItem {
@@ -45,6 +46,7 @@ const PickerOrderDetails = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const { avatarUrl, avatarError, handleAvatarError } = useUser();
+  const { clearPickerCache } = useDashboardCache();
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -82,8 +84,10 @@ const PickerOrderDetails = () => {
   const handleAcceptDelivery = async () => {
     try {
       await ordersApi.acceptDelivery(orderId!);
-      // Navigate to the accepted order page
-      navigate(`/orderer/order-accepted/${orderId}`);
+      // Clear picker cache to force fresh dashboard data
+      clearPickerCache();
+      // Navigate to dashboard to show real-time update
+      navigate('/picker/dashboard');
     } catch (error) {
       console.error('Failed to accept delivery:', error);
       alert('Failed to accept delivery. Please try again.');

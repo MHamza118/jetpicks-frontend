@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
+import { pickerOrdersApi } from '../../services/picker/orders';
 import { dashboardApi } from '../../services/dashboard';
 import { imageUtils } from '../../utils';
 import PickerDashboardSidebar from '../../components/layout/PickerDashboardSidebar';
@@ -45,11 +46,21 @@ const PickerMyOrders = () => {
         setLoading(true);
         setError(null);
         
-        // Use dashboard API which filters orders by picker's travel journey
-        const response = await dashboardApi.getPickerDashboard(1, 100);
+        // Map filter to API status format
+        const statusMap: Record<string, string | undefined> = {
+          'all': undefined,
+          'pending': 'PENDING',
+          'accepted': 'ACCEPTED',
+          'delivered': 'DELIVERED',
+          'cancelled': 'CANCELLED',
+        };
         
-        const dashboardData = (response as any).data;
-        const ordersData = dashboardData?.available_orders?.data || [];
+        const status = statusMap[activeFilter];
+        const response = await pickerOrdersApi.getPickerOrders(status, 1, 100);
+        
+        // The apiClient returns response.data directly
+        // So response is { data: [...], pagination: {...} }
+        const ordersData = (response as any)?.data || [];
         
         if (!Array.isArray(ordersData)) {
           console.error('Invalid response format:', response);
@@ -57,18 +68,28 @@ const PickerMyOrders = () => {
           return;
         }
         
+        // Fetch picker's travel journeys to filter matching orders
+        const dashboardRes = await dashboardApi.getPickerDashboard(1, 100);
+        const dashboardData = (dashboardRes as any).data;
+        const travelJourneys = dashboardData?.travel_journeys || [];
+        
+        // Create a set of matching routes (origin_city -> destination_city)
+        const matchingRoutes = new Set(
+          travelJourneys.map((journey: any) => 
+            `${journey.departure_city}|${journey.arrival_city}`
+          )
+        );
+        
+        // Filter orders to only show those matching picker's travel journeys
+        const filteredOrdersData = ordersData.filter((order: any) => {
+          const orderRoute = `${order.origin_city}|${order.destination_city}`;
+          return matchingRoutes.has(orderRoute);
+        });
+        
         // Transform API response to match Order interface
-        const transformedOrders: Order[] = ordersData.map((order: any) => ({
-          id: order.id,
-          orderer_id: order.orderer.id,
-          orderer: order.orderer,
-          origin_city: order.origin_city,
-          destination_city: order.destination_city,
-          status: 'pending' as const, // Dashboard only shows available orders (PENDING)
-          items_count: order.items_count,
-          reward_amount: order.reward_amount,
-          items: [], // Dashboard doesn't include full items
-          created_at: new Date().toISOString(),
+        const transformedOrders: Order[] = filteredOrdersData.map((order: any) => ({
+          ...order,
+          status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled' | 'accepted',
         }));
         
         setOrders(transformedOrders);
@@ -81,7 +102,7 @@ const PickerMyOrders = () => {
     };
 
     fetchOrders();
-  }, []);
+  }, [activeFilter]);
 
   // Filter orders based on active filter
   const filteredOrders = orders.filter((order) => {
@@ -140,7 +161,22 @@ const PickerMyOrders = () => {
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white">
           {/* Filter Tabs */}
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Available Orders</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Accepted Orders</h2>
+            <div className="flex gap-3 flex-wrap">
+              {['all', 'pending', 'accepted', 'delivered', 'cancelled'].map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setActiveFilter(filter as any)}
+                  className={`px-4 py-2 rounded-full font-semibold text-sm transition-colors ${
+                    activeFilter === filter
+                      ? 'bg-[#4D0013] text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Loading State */}
