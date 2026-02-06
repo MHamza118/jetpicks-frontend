@@ -41,11 +41,7 @@ const AppRoutes = () => {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route 
               path="/profile-setup" 
-              element={
-                <ProtectedRoute requiredRole="PICKER">
-                  <ProfileSetup />
-                </ProtectedRoute>
-              } 
+              element={<ProfileSetup />}
             />
             
             {/* Travel Availability - Used during signup and in dashboard */}

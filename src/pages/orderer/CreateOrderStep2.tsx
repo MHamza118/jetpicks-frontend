@@ -111,6 +111,14 @@ const CreateOrderStep2 = () => {
         }
     };
 
+    const handleRemoveImage = (itemId: string, imageIndex: number) => {
+        setItems(items.map(item =>
+            item.id === itemId 
+                ? { ...item, images: item.images.filter((_, idx) => idx !== imageIndex) }
+                : item
+        ));
+    };
+
     const handleBack = () => {
         navigate(-1);
     };
@@ -244,8 +252,18 @@ const CreateOrderStep2 = () => {
                                     <label className="block text-sm font-medium text-gray-600 mb-3">Upload product images</label>
                                     <div className="flex gap-3 mb-6 flex-wrap">
                                         {item.images.map((image, idx) => (
-                                            <div key={idx} className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200 flex-shrink-0">
+                                            <div key={idx} className="relative w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200 flex-shrink-0">
                                                 <img src={URL.createObjectURL(image)} alt={`Product ${idx + 1}`} className="w-full h-full object-cover rounded-lg" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveImage(item.id, idx)}
+                                                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-colors"
+                                                    aria-label="Remove image"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                    </svg>
+                                                </button>
                                             </div>
                                         ))}
                                         <label className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:bg-gray-50 transition-colors flex-shrink-0 cursor-pointer">

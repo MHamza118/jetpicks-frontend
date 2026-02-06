@@ -34,7 +34,6 @@ const TravelAvailabilitySetup = () => {
         arrival_date: '',
         luggage_weight_capacity: '5',
     });
-    const [existingJourneyId, setExistingJourneyId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -60,7 +59,6 @@ const TravelAvailabilitySetup = () => {
                 const response = await travelApi.getJourneys();
                 if (response.data && response.data.length > 0) {
                     const journey = response.data[0];
-                    setExistingJourneyId(journey.id);
                     setFormData({
                         departure_country: journey.departure_country || '',
                         departure_city: journey.departure_city || '',
@@ -153,8 +151,8 @@ const TravelAvailabilitySetup = () => {
 
             await travelApi.createJourney(payload);
             navigate('/picker/dashboard');
-        } catch (err: any) {
-            const errorMessage = err?.message || 'Failed to save travel details. Please try again.';
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to save travel details. Please try again.';
             setError(errorMessage);
         } finally {
             setLoading(false);
