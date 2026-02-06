@@ -28,7 +28,7 @@ const Chat = () => {
   }, [fetchChatRooms]);
 
   // Fetch specific room if roomId is provided
-  // GUARD: Only fetch if roomId exists to prevent null API calls
+  // GUARD: if roomId exists to prevent null API calls
   useEffect(() => {
     if (roomId) {
       fetchChatRoom(roomId);

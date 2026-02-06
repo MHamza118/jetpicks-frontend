@@ -104,10 +104,28 @@ const CreateOrderStep2 = () => {
     const handleImageUpload = (itemId: string, e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files) {
-            const newFiles = Array.from(files);
-            setItems(items.map(item =>
-                item.id === itemId ? { ...item, images: [...item.images, ...newFiles] } : item
-            ));
+            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+            const validFiles: File[] = [];
+            let hasInvalidFiles = false;
+
+            Array.from(files).forEach(file => {
+                if (file.size > MAX_FILE_SIZE) {
+                    hasInvalidFiles = true;
+                    console.warn(`File ${file.name} exceeds 5MB limit`);
+                } else {
+                    validFiles.push(file);
+                }
+            });
+
+            if (hasInvalidFiles) {
+                setValidationError('Some images exceed 5MB limit. Only valid images have been added.');
+            }
+
+            if (validFiles.length > 0) {
+                setItems(items.map(item =>
+                    item.id === itemId ? { ...item, images: [...item.images, ...validFiles] } : item
+                ));
+            }
         }
     };
 
