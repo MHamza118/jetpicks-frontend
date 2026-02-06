@@ -10,7 +10,7 @@ interface Order {
   id: string;
   origin_city: string;
   destination_city: string;
-  status: 'pending' | 'delivered' | 'cancelled';
+  status: 'pending' | 'delivered' | 'cancelled' | 'draft' | 'accepted';
   items_count: number;
   total_cost: number;
   created_at: string;
@@ -20,7 +20,7 @@ const OrdererMyOrders = () => {
   const navigate = useNavigate();
   const { avatarUrl, avatarError, handleAvatarError } = useUser();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'delivered' | 'cancelled'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'delivered' | 'cancelled' | 'accepted'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,15 +33,17 @@ const OrdererMyOrders = () => {
         const response = await ordererOrdersApi.getOrders(status);
         const data = (response as any).data || response;
         
-        const formattedOrders = data.map((order: any) => ({
-          id: order.id,
-          origin_city: order.origin_city,
-          destination_city: order.destination_city,
-          status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled',
-          items_count: order.items_count,
-          total_cost: order.total_cost,
-          created_at: order.created_at,
-        }));
+        const formattedOrders = data
+          .filter((order: any) => order.status.toUpperCase() !== 'DRAFT') // Filter out DRAFT orders
+          .map((order: any) => ({
+            id: order.id,
+            origin_city: order.origin_city,
+            destination_city: order.destination_city,
+            status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled' | 'draft' | 'accepted',
+            items_count: order.items_count,
+            total_cost: order.total_cost,
+            created_at: order.created_at,
+          }));
         
         setOrders(formattedOrders);
       } catch (err) {
@@ -65,6 +67,8 @@ const OrdererMyOrders = () => {
     switch (status) {
       case 'delivered':
         return 'bg-green-100 text-green-700';
+      case 'accepted':
+        return 'bg-blue-100 text-blue-700';
       case 'pending':
         return 'bg-yellow-100 text-yellow-700';
       case 'cancelled':
@@ -95,7 +99,7 @@ const OrdererMyOrders = () => {
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Order History</h2>
             <div className="flex gap-3 flex-wrap">
-              {['all', 'pending', 'delivered', 'cancelled'].map((filter) => (
+              {['all', 'pending', 'accepted', 'delivered', 'cancelled'].map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setActiveFilter(filter as any)}

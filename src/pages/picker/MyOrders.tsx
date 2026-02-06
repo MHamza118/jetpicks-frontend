@@ -24,7 +24,7 @@ interface Order {
   };
   origin_city: string;
   destination_city: string;
-  status: 'pending' | 'delivered' | 'cancelled';
+  status: 'pending' | 'delivered' | 'cancelled' | 'accepted';
   items_count: number;
   reward_amount: number | string;
   items: OrderItem[];
@@ -35,7 +35,7 @@ const PickerMyOrders = () => {
   const navigate = useNavigate();
   const { avatarUrl, avatarError, handleAvatarError } = useUser();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'delivered' | 'cancelled'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'delivered' | 'cancelled' | 'accepted'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +49,7 @@ const PickerMyOrders = () => {
         const statusMap: Record<string, string | undefined> = {
           'all': undefined,
           'pending': 'PENDING',
+          'accepted': 'ACCEPTED',
           'delivered': 'DELIVERED',
           'cancelled': 'CANCELLED',
         };
@@ -69,7 +70,7 @@ const PickerMyOrders = () => {
         // Transform API response to match Order interface
         const transformedOrders: Order[] = ordersData.map((order: any) => ({
           ...order,
-          status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled',
+          status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled' | 'accepted',
         }));
         
         setOrders(transformedOrders);
@@ -94,6 +95,8 @@ const PickerMyOrders = () => {
     switch (status) {
       case 'delivered':
         return 'bg-green-100 text-green-700';
+      case 'accepted':
+        return 'bg-blue-100 text-blue-700';
       case 'pending':
         return 'bg-yellow-100 text-yellow-700';
       case 'cancelled':
@@ -141,7 +144,7 @@ const PickerMyOrders = () => {
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Accepted Orders</h2>
             <div className="flex gap-3 flex-wrap">
-              {['all', 'pending', 'delivered', 'cancelled'].map((filter) => (
+              {['all', 'pending', 'accepted', 'delivered', 'cancelled'].map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setActiveFilter(filter as any)}
