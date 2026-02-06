@@ -54,6 +54,40 @@ const CreateOrder = () => {
         fetchCountries();
     }, []);
 
+    // Check for existing DRAFT order on mount
+    useEffect(() => {
+        const checkExistingDraft = async () => {
+            if (!orderData.orderId && !pickerRoute) {
+                try {
+                    const res = await ordersApi.getActiveDraftOrder();
+                    const orders = (res as any).data?.data || [];
+                    if (orders.length > 0) {
+                        const draftOrder = orders[0];
+                        updateOrderData({
+                            orderId: draftOrder.id,
+                            originCountry: draftOrder.origin_country,
+                            originCity: draftOrder.origin_city,
+                            destinationCountry: draftOrder.destination_country,
+                            destinationCity: draftOrder.destination_city,
+                            specialNotes: draftOrder.special_notes || '',
+                        });
+                        setFormData({
+                            originCountry: draftOrder.origin_country,
+                            originCity: draftOrder.origin_city,
+                            destinationCountry: draftOrder.destination_country,
+                            destinationCity: draftOrder.destination_city,
+                            specialNotes: draftOrder.special_notes || '',
+                        });
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch draft order:', error);
+                }
+            }
+        };
+
+        checkExistingDraft();
+    }, []);
+
     useEffect(() => {
         // Pre-fill form if coming from picker selection
         if (pickerRoute) {
@@ -79,26 +113,31 @@ const CreateOrder = () => {
             if (currentStep === 1) {
                 setLoading(true);
                 try {
-                    // Save order to backend
-                    const orderPayload: any = {
-                        origin_country: formData.originCountry,
-                        origin_city: formData.originCity,
-                        destination_country: formData.destinationCountry,
-                        destination_city: formData.destinationCity,
-                    };
-                    
-                    if (formData.specialNotes.trim()) {
-                        orderPayload.special_notes = formData.specialNotes;
+                    let orderId = orderData.orderId;
+
+                    // Only create a new order if one doesn't exist
+                    if (!orderId) {
+                        const orderPayload: any = {
+                            origin_country: formData.originCountry,
+                            origin_city: formData.originCity,
+                            destination_country: formData.destinationCountry,
+                            destination_city: formData.destinationCity,
+                            status: 'DRAFT',
+                        };
+                        
+                        if (formData.specialNotes.trim()) {
+                            orderPayload.special_notes = formData.specialNotes;
+                        }
+
+                        // Add picker_id if this order was created from picker selection
+                        if (selectedPicker?.picker?.id) {
+                            orderPayload.picker_id = selectedPicker.picker.id;
+                        }
+                        
+                        const res = await ordersApi.createOrder(orderPayload);
+                        orderId = (res as any).data.id;
                     }
 
-                    // Add picker_id if this order was created from picker selection
-                    if (selectedPicker?.picker?.id) {
-                        orderPayload.picker_id = selectedPicker.picker.id;
-                    }
-                    
-                    const res = await ordersApi.createOrder(orderPayload);
-
-                    const orderId = (res as any).data.id;
                     updateOrderData({
                         originCountry: formData.originCountry,
                         originCity: formData.originCity,
@@ -108,7 +147,7 @@ const CreateOrder = () => {
                         orderId,
                         selectedPickerId: selectedPicker?.picker?.id,
                     });
-                    navigate('/orderer/create-order-step2');
+                    navigate(`/orderer/create-order/${orderId}/step2`);
                 } catch (error) {
                     console.error('Failed to create order:', error);
                     alert('Failed to create order. Please try again.');

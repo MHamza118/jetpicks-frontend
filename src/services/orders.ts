@@ -33,8 +33,14 @@ export const ordersApi = {
   setReward: (orderId: string, data: SetOrderRewardPayload) =>
     apiClient.put(`/orders/${orderId}/reward`, data),
 
+  finalizeOrder: (orderId: string) =>
+    apiClient.put(`/orders/${orderId}/finalize`, {}),
+
   acceptDelivery: (orderId: string) =>
     apiClient.put(`/orders/${orderId}/accept`, {}),
+
+  getActiveDraftOrder: () =>
+    apiClient.get('/orders?status=DRAFT&limit=1'),
 
   getOrders: (status?: string, page?: number, limit?: number) => {
     const params = new URLSearchParams();

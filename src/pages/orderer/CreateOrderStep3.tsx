@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { ordersApi } from '../../services';
 import { useOrder } from '../../context/OrderContext';
@@ -9,10 +9,46 @@ import DashboardHeader from '../../components/layout/DashboardHeader';
 
 const CreateOrderStep3 = () => {
   const navigate = useNavigate();
+  const { orderId } = useParams<{ orderId: string }>();
   const { orderData, updateOrderData } = useOrder();
   const { avatarUrl, avatarError, handleAvatarError } = useUser();
   const [reward, setReward] = useState(orderData.reward || '');
   const [loading, setLoading] = useState(false);
+
+  // Fetch order details from backend using URL param
+  useEffect(() => {
+    const fetchOrderDetails = async () => {
+      if (!orderId) {
+        navigate('/orderer/create-order');
+        return;
+      }
+
+      try {
+        const res = await ordersApi.getOrderDetails(orderId);
+        const order = (res as any).data;
+        
+        // Update context with order data
+        updateOrderData({
+          orderId: order.id,
+          originCountry: order.origin_country,
+          originCity: order.origin_city,
+          destinationCountry: order.destination_country,
+          destinationCity: order.destination_city,
+          specialNotes: order.special_notes || '',
+          reward: order.reward_amount?.toString() || '',
+        });
+        
+        if (order.reward_amount) {
+          setReward(order.reward_amount.toString());
+        }
+      } catch (error) {
+        console.error('Failed to fetch order:', error);
+        navigate('/orderer/create-order');
+      }
+    };
+
+    fetchOrderDetails();
+  }, [orderId]);
 
   const handleNext = async () => {
     if (!reward.trim()) {
@@ -20,20 +56,15 @@ const CreateOrderStep3 = () => {
       return;
     }
 
-    if (!orderData.orderId) {
-      alert('Order ID not found. Please start from step 1.');
-      return;
-    }
-
     setLoading(true);
     try {
       // Save reward to backend
-      await ordersApi.setReward(orderData.orderId, {
+      await ordersApi.setReward(orderId!, {
         reward_amount: parseFloat(reward),
       });
 
       updateOrderData({ reward });
-      navigate('/orderer/create-order-step4');
+      navigate(`/orderer/create-order/${orderId}/step4`);
     } catch (error) {
       console.error('Failed to set reward:', error);
       alert('Failed to set reward. Please try again.');

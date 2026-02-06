@@ -116,7 +116,7 @@ const AppRoutes = () => {
               } 
             />
             <Route 
-              path="/orderer/create-order-step2" 
+              path="/orderer/create-order/:orderId/step2" 
               element={
                 <ProtectedRoute requiredRole="ORDERER">
                   <CreateOrderStep2 />
@@ -124,7 +124,7 @@ const AppRoutes = () => {
               } 
             />
             <Route 
-              path="/orderer/create-order-step3" 
+              path="/orderer/create-order/:orderId/step3" 
               element={
                 <ProtectedRoute requiredRole="ORDERER">
                   <CreateOrderStep3 />
@@ -132,7 +132,7 @@ const AppRoutes = () => {
               } 
             />
             <Route 
-              path="/orderer/create-order-step4" 
+              path="/orderer/create-order/:orderId/step4" 
               element={
                 <ProtectedRoute requiredRole="ORDERER">
                   <CreateOrderStep4 />

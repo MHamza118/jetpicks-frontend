@@ -1,5 +1,5 @@
-import { useState} from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Upload, Plus } from 'lucide-react';
 import { ordersApi } from '../../services';
 import { useOrder } from '../../context/OrderContext';
@@ -25,6 +25,7 @@ interface OrderItem {
 
 const CreateOrderStep2 = () => {
     const navigate = useNavigate();
+    const { orderId } = useParams<{ orderId: string }>();
     const { orderData, updateOrderData } = useOrder();
     const { avatarUrl, avatarError, handleAvatarError } = useUser();
     const [loading, setLoading] = useState(false);
@@ -44,6 +45,36 @@ const CreateOrderStep2 = () => {
             },
         ]
     );
+
+    // Fetch order details from backend using URL param
+    useEffect(() => {
+        const fetchOrderDetails = async () => {
+            if (!orderId) {
+                navigate('/orderer/create-order');
+                return;
+            }
+
+            try {
+                const res = await ordersApi.getOrderDetails(orderId);
+                const order = (res as any).data;
+                
+                // Update context with order data
+                updateOrderData({
+                    orderId: order.id,
+                    originCountry: order.origin_country,
+                    originCity: order.origin_city,
+                    destinationCountry: order.destination_country,
+                    destinationCity: order.destination_city,
+                    specialNotes: order.special_notes || '',
+                });
+            } catch (error) {
+                console.error('Failed to fetch order:', error);
+                navigate('/orderer/create-order');
+            }
+        };
+
+        fetchOrderDetails();
+    }, [orderId]);
 
     const handleAddItem = () => {
         setItems([...items, {
@@ -85,11 +116,6 @@ const CreateOrderStep2 = () => {
     };
 
     const handleNext = async () => {
-        if (!orderData.orderId) {
-            alert('Order ID not found. Please start from step 1.');
-            return;
-        }
-
         // Validate required fields
         let hasErrors = false;
         const updatedItems = items.map(item => {
@@ -151,11 +177,11 @@ const CreateOrderStep2 = () => {
                     });
                 }
 
-                await ordersApi.addOrderItem(orderData.orderId, formData);
+                await ordersApi.addOrderItem(orderId!, formData);
             }
 
             updateOrderData({ items });
-            navigate('/orderer/create-order-step3');
+            navigate(`/orderer/create-order/${orderId}/step3`);
         } catch (error) {
             console.error('Failed to save items:', error);
             setValidationError('Something went wrong. Please try again.');

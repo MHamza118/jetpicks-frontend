@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { ordersApi } from '../../services';
 import { imageUtils } from '../../utils';
@@ -11,7 +11,8 @@ import placeOrderImage from '../../assets/placeorder.png';
 
 const CreateOrderStep4 = () => {
   const navigate = useNavigate();
-  const { orderData, resetOrderData } = useOrder();
+  const { orderId } = useParams<{ orderId: string }>();
+  const { resetOrderData } = useOrder();
   const { avatarUrl, avatarError, handleAvatarError } = useUser();
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [lawsAgreed, setLawsAgreed] = useState(false);
@@ -19,19 +20,25 @@ const CreateOrderStep4 = () => {
   const [loading, setLoading] = useState(false);
   const [orderDetails, setOrderDetails] = useState<any>(null);
 
+  // Fetch order details from backend using URL param
   useEffect(() => {
-    if (orderData.orderId) {
-      const fetchOrderDetails = async () => {
-        try {
-          const res = await ordersApi.getOrderDetails(orderData.orderId!);
-          setOrderDetails((res as any).data);
-        } catch (error) {
-          console.error('Failed to fetch order details:', error);
-        }
-      };
-      fetchOrderDetails();
-    }
-  }, [orderData.orderId]);
+    const fetchOrderDetails = async () => {
+      if (!orderId) {
+        navigate('/orderer/create-order');
+        return;
+      }
+
+      try {
+        const res = await ordersApi.getOrderDetails(orderId);
+        setOrderDetails((res as any).data);
+      } catch (error) {
+        console.error('Failed to fetch order:', error);
+        navigate('/orderer/create-order');
+      }
+    };
+
+    fetchOrderDetails();
+  }, [orderId]);
 
   useEffect(() => {
     if (orderPlaced) {
@@ -50,12 +57,13 @@ const CreateOrderStep4 = () => {
     if (termsAgreed && lawsAgreed) {
       setLoading(true);
       try {
-        // Order is already saved in all steps, just show success
+        // Finalize draft order by changing status to PENDING
+        await ordersApi.finalizeOrder(orderId!);
         setOrderPlaced(true);
         resetOrderData();
       } catch (error) {
-        console.error('Failed to complete order:', error);
-        alert('Failed to complete order. Please try again.');
+        console.error('Failed to finalize order:', error);
+        alert('Failed to finalize order. Please try again.');
       } finally {
         setLoading(false);
       }
