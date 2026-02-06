@@ -114,7 +114,7 @@ const CreateOrderStep4 = () => {
                           {item.store_link && (
                             <div className="flex justify-between mb-2">
                               <span className="text-gray-600 text-sm">Store:</span>
-                              <a href={item.store_link} target="_blank" rel="noopener noreferrer" className="text-[#FFDF57] text-sm underline">
+                              <a href={item.store_link} target="_blank" rel="noopener noreferrer" className="text-[#4D0013] text-sm underline font-semibold">
                                 {item.store_link}
                               </a>
                             </div>
@@ -247,7 +247,7 @@ const CreateOrderStep4 = () => {
                             {item.store_link && (
                               <div className="flex justify-between mb-2">
                                 <span className="text-gray-600 text-sm">Store:</span>
-                                <a href={item.store_link} target="_blank" rel="noopener noreferrer" className="text-[#FFDF57] text-sm underline">
+                                <a href={item.store_link} target="_blank" rel="noopener noreferrer" className="text-[#4D0013] text-sm underline font-semibold">
                                   {item.store_link}
                                 </a>
                               </div>

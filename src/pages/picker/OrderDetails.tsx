@@ -239,7 +239,7 @@ const PickerOrderDetails = () => {
                             href={item.store_link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[#FFDF57] text-sm underline mb-4"
+                            className="text-[#4D0013] text-sm underline mb-4 font-semibold"
                           >
                             Store link
                           </a>
