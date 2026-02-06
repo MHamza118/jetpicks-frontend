@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Paperclip, Phone } from 'lucide-react';
+import { Send, Paperclip } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { imageUtils } from '../../utils';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
@@ -7,6 +7,7 @@ import DashboardHeader from '../../components/layout/DashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
 import { useChat } from '../../context/ChatContext';
 import { useUser } from '../../context/UserContext';
+import type { ChatMessage } from '../../context/ChatContext';
 
 const Chat = () => {
   const { roomId } = useParams<{ roomId?: string }>();
@@ -78,14 +79,14 @@ const Chat = () => {
     }));
   };
 
-  const getMessageContent = (message: any) => {
+  const getMessageContent = (message: ChatMessage) => {
     if (showTranslated[message.id] && message.content_translated) {
       return message.content_translated;
     }
     return message.content_original;
   };
 
-  const shouldShowTranslateButton = (message: any) => {
+  const shouldShowTranslateButton = (message: ChatMessage) => {
     return message.content_translated && message.sender_id !== currentRoom?.orderer.id;
   };
 
@@ -187,15 +188,7 @@ const Chat = () => {
                     </div>
                     <div>
                       <h3 className="font-bold text-gray-900">{currentRoom.picker.full_name}</h3>
-                      <p className="text-xs text-gray-500">
-                        Order: {currentRoom.order_id.slice(0, 8)}...
-                      </p>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                      <Phone size={20} className="text-gray-600" />
-                    </button>
                   </div>
                 </div>
 

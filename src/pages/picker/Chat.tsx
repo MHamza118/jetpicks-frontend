@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Paperclip, Phone } from 'lucide-react';
+import { Send, Paperclip } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { imageUtils } from '../../utils';
 import PickerDashboardSidebar from '../../components/layout/PickerDashboardSidebar';
@@ -7,6 +7,7 @@ import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader
 import MobileFooter from '../../components/layout/MobileFooter';
 import { useChat } from '../../context/ChatContext';
 import { useUser } from '../../context/UserContext';
+import type { ChatMessage } from '../../context/ChatContext';
 
 const Chat = () => {
   const { roomId } = useParams<{ roomId?: string }>();
@@ -79,14 +80,14 @@ const Chat = () => {
     }));
   };
 
-  const getMessageContent = (message: any) => {
+  const getMessageContent = (message: ChatMessage) => {
     if (showTranslated[message.id] && message.content_translated) {
       return message.content_translated;
     }
     return message.content_original;
   };
 
-  const shouldShowTranslateButton = (message: any) => {
+  const shouldShowTranslateButton = (message: ChatMessage) => {
     return message.content_translated && message.sender_id !== currentRoom?.picker.id;
   };
 
@@ -144,7 +145,7 @@ const Chat = () => {
                             {room.other_user.full_name}
                           </h3>
                           <span className={`text-xs flex-shrink-0 ${currentRoom?.id === room.id ? 'text-white/70' : 'text-gray-500'}`}>
-                            {room.last_message_time ? new Date(room.last_message_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }).replace(':', '.') : ''}
+                            {room.last_message_time ? new Date(room.last_message_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).replace(':', '.') : ''}
                           </span>
                         </div>
                         <p className={`text-xs truncate mt-1 ${currentRoom?.id === room.id ? 'text-white/70' : 'text-gray-500'}`}>
@@ -187,15 +188,7 @@ const Chat = () => {
                     </div>
                     <div>
                       <h3 className="font-bold text-gray-900">{currentRoom.orderer.full_name}</h3>
-                      <p className="text-xs text-gray-500">
-                        Order: {currentRoom.order_id.slice(0, 8)}...
-                      </p>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                      <Phone size={20} className="text-gray-600" />
-                    </button>
                   </div>
                 </div>
 
