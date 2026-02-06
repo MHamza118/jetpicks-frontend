@@ -5,9 +5,11 @@ import DashboardHeader from '../../components/layout/DashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
 import { useUser } from '../../context/UserContext';
 import { ordererOrdersApi } from '../../services/orderer/orders';
+import { chatApi } from '../../services/chat';
 
 interface Order {
   id: string;
+  picker_id?: string;
   origin_city: string;
   destination_city: string;
   status: 'pending' | 'delivered' | 'cancelled' | 'draft' | 'accepted';
@@ -37,6 +39,7 @@ const OrdererMyOrders = () => {
           .filter((order: any) => order.status.toUpperCase() !== 'DRAFT') // Filter out DRAFT orders
           .map((order: any) => ({
             id: order.id,
+            picker_id: order.picker_id,
             origin_city: order.origin_city,
             destination_city: order.destination_city,
             status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled' | 'draft' | 'accepted',
@@ -80,6 +83,26 @@ const OrdererMyOrders = () => {
 
   const getStatusBadgeText = (status: string) => {
     return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
+  const handleStartChat = async (order: Order) => {
+    try {
+      if (!order.picker_id) {
+        alert('Picker information not available');
+        return;
+      }
+      const result = await chatApi.getOrCreateChatRoom(order.id, order.picker_id);
+      
+      if ((result as any)?.success && (result as any)?.chatRoomId) {
+        navigate(`/orderer/chat/${(result as any).chatRoomId}`);
+      } else {
+        console.error('Failed to get or create chat room:', (result as any)?.message || 'Unknown error');
+        alert('Failed to start chat. Please try again.');
+      }
+    } catch (error) {
+      console.error('Failed to start chat:', error);
+      alert('Failed to start chat. Please try again.');
+    }
   };
 
   return (
@@ -173,6 +196,16 @@ const OrdererMyOrders = () => {
                   >
                     View Order Details
                   </button>
+
+                  {/* Start Chat Button - Only for Accepted Orders */}
+                  {order.status === 'accepted' && (
+                    <button
+                      onClick={() => handleStartChat(order)}
+                      className="w-full mt-2 bg-[#FFDF57] text-gray-900 py-2 rounded-lg font-bold text-sm hover:bg-yellow-500 transition-colors"
+                    >
+                      Start Chat
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
 import { pickerOrdersApi } from '../../services/picker/orders';
 import { dashboardApi } from '../../services/dashboard';
+import { chatApi } from '../../services/chat';
 import { imageUtils } from '../../utils';
 import PickerDashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
@@ -146,6 +147,22 @@ const PickerMyOrders = () => {
     navigate(`/picker/orders/${order.id}/view`);
   };
 
+  const handleStartChat = async (order: Order) => {
+    try {
+      const result = await chatApi.getOrCreateChatRoom(order.id, order.orderer_id);
+      
+      if ((result as any)?.success && (result as any)?.chatRoomId) {
+        navigate(`/picker/chat/${(result as any).chatRoomId}`);
+      } else {
+        console.error('Failed to get or create chat room:', (result as any)?.message || 'Unknown error');
+        alert('Failed to start chat. Please try again.');
+      }
+    } catch (error) {
+      console.error('Failed to start chat:', error);
+      alert('Failed to start chat. Please try again.');
+    }
+  };
+
   return (
     <div className="flex h-screen bg-white flex-col md:flex-row">
       <PickerDashboardSidebar activeTab="orders" />
@@ -281,6 +298,16 @@ const PickerMyOrders = () => {
                   >
                     {getActionButtonText(order.status)}
                   </button>
+                  
+                  {/* Start Chat Button - Only for Accepted Orders */}
+                  {order.status === 'accepted' && (
+                    <button
+                      onClick={() => handleStartChat(order)}
+                      className="w-full mt-2 bg-[#4D0013] text-white py-2 rounded-lg font-bold text-sm hover:bg-[#660019] transition-colors"
+                    >
+                      Start Chat
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

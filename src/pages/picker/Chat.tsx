@@ -285,7 +285,7 @@ const Chat = () => {
                       disabled={sending || !messageInput.trim()}
                       className="p-2 bg-[#4D0013] hover:bg-[#660019] text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Send size={20} className="text-gray-900" />
+                      <Send size={20} className="text-white" />
                     </button>
                   </div>
                 </div>
