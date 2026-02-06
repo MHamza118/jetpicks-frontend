@@ -23,6 +23,8 @@ const TravelAvailabilitySetup = () => {
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const [searchText, setSearchText] = useState<{ [key: string]: string }>({});
 
+    const luggageOptions = ['5', '10', '15', '20', '25', '30'];
+
     const [formData, setFormData] = useState({
         departure_country: countries[0]?.name || '',
         departure_city: '',
@@ -32,6 +34,7 @@ const TravelAvailabilitySetup = () => {
         arrival_date: '',
         luggage_weight_capacity: '5',
     });
+    const [existingJourneyId, setExistingJourneyId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -51,12 +54,61 @@ const TravelAvailabilitySetup = () => {
         fetchUserProfile();
     }, []);
 
+    useEffect(() => {
+        const fetchExistingJourney = async () => {
+            try {
+                const response = await travelApi.getJourneys();
+                if (response.data && response.data.length > 0) {
+                    const journey = response.data[0];
+                    setExistingJourneyId(journey.id);
+                    setFormData({
+                        departure_country: journey.departure_country || '',
+                        departure_city: journey.departure_city || '',
+                        departure_date: journey.departure_date || '',
+                        arrival_country: journey.arrival_country || '',
+                        arrival_city: journey.arrival_city || '',
+                        arrival_date: journey.arrival_date || '',
+                        luggage_weight_capacity: journey.luggage_weight_capacity || '5',
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to fetch existing journey:', error);
+            }
+        };
+
+        if (countries.length > 0) {
+            fetchExistingJourney();
+        }
+    }, [countries]);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (!target.closest('.luggage-dropdown')) {
+                setOpenDropdown(null);
+            }
+        };
+
+        if (openDropdown === 'luggage') {
+            document.addEventListener('click', handleClickOutside);
+            return () => document.removeEventListener('click', handleClickOutside);
+        }
+    }, [openDropdown]);
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
             [name]: value,
         }));
+    };
+
+    const handleLuggageSelect = (value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            luggage_weight_capacity: value,
+        }));
+        setOpenDropdown(null);
     };
 
     const handleCountrySelect = async (fieldName: string, countryName: string) => {
@@ -405,19 +457,44 @@ const TravelAvailabilitySetup = () => {
                                 <label className="text-gray-900 font-bold text-sm">Luggage</label>
                             </div>
 
-                            <select
-                                name="luggage_weight_capacity"
-                                value={formData.luggage_weight_capacity}
-                                onChange={handleInputChange}
-                                className="w-full bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1"
-                            >
-                                <option value="5">5 kg</option>
-                                <option value="10">10 kg</option>
-                                <option value="15">15 kg</option>
-                                <option value="20">20 kg</option>
-                                <option value="25">25 kg</option>
-                                <option value="30">30 kg</option>
-                            </select>
+                            <div className="relative luggage-dropdown">
+                                <div className="flex gap-2 items-center">
+                                    <input
+                                        type="number"
+                                        name="luggage_weight_capacity"
+                                        value={formData.luggage_weight_capacity}
+                                        onChange={handleInputChange}
+                                        onFocus={() => setOpenDropdown('luggage')}
+                                        placeholder="Enter weight"
+                                        className="flex-1 bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1"
+                                        min="1"
+                                    />
+                                    <span className="text-gray-700 font-semibold text-sm">kg</span>
+                                </div>
+                                {openDropdown === 'luggage' && (
+                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                                        <div className="max-h-48 overflow-y-auto">
+                                            <div className="px-3 py-2 text-xs text-gray-500 font-semibold bg-gray-50 border-b border-gray-200">
+                                                Quick select
+                                            </div>
+                                            {luggageOptions.map(option => (
+                                                <button
+                                                    key={option}
+                                                    onClick={() => handleLuggageSelect(option)}
+                                                    className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                                                        formData.luggage_weight_capacity === option
+                                                            ? 'bg-yellow-100 text-gray-900 font-semibold'
+                                                            : 'hover:bg-yellow-50 text-gray-700'
+                                                    }`}
+                                                >
+                                                    {option} kg
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <p className="text-gray-500 text-xs mt-1">Type any number or select from quick options</p>
                         </div>
 
                         {/* Buttons */}

@@ -170,7 +170,7 @@ const Auth = () => {
             storage.set(STORAGE_KEYS.AUTH_TOKEN, response.data.token);
             storage.set(STORAGE_KEYS.USER, response.data.user);
 
-            navigate('/profile-setup');
+            navigate('/profile-setup', { replace: true });
         } catch (err: Error | unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Signup failed. Please try again.';
             setError(errorMessage);
@@ -226,7 +226,7 @@ const Auth = () => {
 
                             <Input
                                 label="Phone number"
-                                placeholder="12301451223"
+                                placeholder="+44 7911 123456"
                                 icon={Phone}
                                 type="tel"
                                 name="phone_number"
@@ -237,7 +237,7 @@ const Auth = () => {
 
                             <Input
                                 label="Email Address"
-                                placeholder="bill.sanders@example.com"
+                                placeholder="example@gmail.com"
                                 icon={Mail}
                                 type="email"
                                 name="email"

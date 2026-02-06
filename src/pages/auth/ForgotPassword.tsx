@@ -79,7 +79,7 @@ const ForgotPassword = () => {
                             The link will expire in 15 minutes. If you don't see the email, check your spam folder.
                         </p>
                         <Button
-                            onClick={() => navigate('/')}
+                            onClick={() => navigate('/', { replace: true })}
                             className="max-w-[260px] w-full py-3 text-base tracking-wide rounded-xl"
                         >
                             Back to Login

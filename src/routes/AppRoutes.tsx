@@ -39,10 +39,24 @@ const AppRoutes = () => {
             <Route path="/login" element={<Auth />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/profile-setup" element={<ProfileSetup />} />
+            <Route 
+              path="/profile-setup" 
+              element={
+                <ProtectedRoute requiredRole="PICKER">
+                  <ProfileSetup />
+                </ProtectedRoute>
+              } 
+            />
             
             {/* Travel Availability - Used during signup and in dashboard */}
-            <Route path="/travel-availability-setup" element={<TravelAvailabilitySetup />} />
+            <Route 
+              path="/travel-availability-setup" 
+              element={
+                <ProtectedRoute requiredRole="PICKER">
+                  <TravelAvailabilitySetup />
+                </ProtectedRoute>
+              } 
+            />
             
             {/* Orderer Routes - Protected */}
             <Route 
