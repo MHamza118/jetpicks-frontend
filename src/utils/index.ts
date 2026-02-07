@@ -111,7 +111,7 @@ export const imageUtils = {
     }
     
     // Get the base URL from environment
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.jetpicks.com/api';
     
     // Remove /api from the END only to get the domain
     const domain = apiBaseUrl.endsWith('/api') ? apiBaseUrl.slice(0, -4) : apiBaseUrl;
