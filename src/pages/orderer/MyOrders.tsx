@@ -5,6 +5,7 @@ import DashboardHeader from '../../components/layout/DashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
 import { useUser } from '../../context/UserContext';
 import { ordererOrdersApi } from '../../services/orderer/orders';
+import type { OrdererOrderDetails } from '../../services/orderer/orders';
 import { chatApi } from '../../services/chat';
 
 interface Order {
@@ -25,6 +26,9 @@ const OrdererMyOrders = () => {
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'delivered' | 'cancelled' | 'accepted'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedOrderForCancel, setSelectedOrderForCancel] = useState<OrdererOrderDetails | null>(null);
+  const [cancelModalLoading, setCancelModalLoading] = useState(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -106,34 +110,58 @@ const OrdererMyOrders = () => {
   };
 
   const handleCancelOrder = async (orderId: string) => {
-    if (window.confirm('Are you sure you want to cancel this order?')) {
-      try {
-        await ordererOrdersApi.cancelOrder(orderId);
-        
-        // Fetch all orders (not filtered by current activeFilter) to get the updated status
-        const response = await ordererOrdersApi.getOrders(undefined);
-        const data = (response as any).data || response;
-        
-        const formattedOrders = data
-          .filter((order: any) => order.status.toUpperCase() !== 'DRAFT')
-          .map((order: any) => ({
-            id: order.id,
-            picker_id: order.picker_id,
-            origin_city: order.origin_city,
-            destination_city: order.destination_city,
-            status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled' | 'draft' | 'accepted',
-            items_count: order.items_count,
-            total_cost: order.total_cost,
-            created_at: order.created_at,
-          }));
-        
-        setOrders(formattedOrders);
-        alert('Order cancelled successfully');
-      } catch (error) {
-        console.error('Failed to cancel order:', error);
-        alert('Failed to cancel order. Please try again.');
-      }
+    try {
+      setCancelModalLoading(true);
+      const response = await ordererOrdersApi.getOrderDetails(orderId);
+      const orderDetails = (response as any).data || response;
+      setSelectedOrderForCancel(orderDetails);
+      setShowCancelModal(true);
+    } catch (error) {
+      console.error('Failed to fetch order details:', error);
+      alert('Failed to load order details. Please try again.');
+    } finally {
+      setCancelModalLoading(false);
     }
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!selectedOrderForCancel) return;
+
+    try {
+      setCancelModalLoading(true);
+      await ordererOrdersApi.cancelOrder(selectedOrderForCancel.id);
+      
+      // Fetch all orders (not filtered by current activeFilter) to get the updated status
+      const response = await ordererOrdersApi.getOrders(undefined);
+      const data = (response as any).data || response;
+      
+      const formattedOrders = data
+        .filter((order: any) => order.status.toUpperCase() !== 'DRAFT')
+        .map((order: any) => ({
+          id: order.id,
+          picker_id: order.picker_id,
+          origin_city: order.origin_city,
+          destination_city: order.destination_city,
+          status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled' | 'draft' | 'accepted',
+          items_count: order.items_count,
+          total_cost: order.total_cost,
+          created_at: order.created_at,
+        }));
+      
+      setOrders(formattedOrders);
+      setShowCancelModal(false);
+      setSelectedOrderForCancel(null);
+    } catch (error) {
+      console.error('Failed to cancel order:', error);
+      alert('Failed to cancel order. Please try again.');
+    } finally {
+      setCancelModalLoading(false);
+    }
+  };
+
+  const handleCloseCancelModal = () => {
+    setShowCancelModal(false);
+    setSelectedOrderForCancel(null);
   };
 
   return (
@@ -256,6 +284,68 @@ const OrdererMyOrders = () => {
             </div>
           )}
         </div>
+
+        {/* Cancel Order Modal */}
+        {showCancelModal && selectedOrderForCancel && (
+          <div 
+            className="fixed inset-0 flex items-center justify-center z-50 p-4"
+            onClick={handleCloseCancelModal}
+          >
+            <div 
+              className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header with Question Mark Icon */}
+              <div className="flex items-center gap-2 mb-6">
+                <h3 className="text-xl font-bold text-gray-900">Traveler reward</h3>
+                <div className="w-6 h-6 rounded-full border-2 border-gray-400 flex items-center justify-center">
+                  <span className="text-gray-400 font-bold text-sm">?</span>
+                </div>
+              </div>
+
+              {/* Order Summary Section */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Item Cost:</span>
+                  <span className="font-semibold text-gray-900">${parseFloat(selectedOrderForCancel.items_cost.toString()).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Reward:</span>
+                  <span className="font-semibold text-gray-900">${parseFloat(selectedOrderForCancel.reward_amount.toString()).toFixed(2)}</span>
+                </div>
+                <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
+                  <span className="text-gray-900 font-semibold">Total:</span>
+                  <span className="font-bold text-lg text-gray-900">
+                    ${(parseFloat(selectedOrderForCancel.items_cost.toString()) + parseFloat(selectedOrderForCancel.reward_amount.toString())).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Confirmation Message */}
+              <p className="text-gray-600 text-sm mb-6">
+                Are you sure you want to cancel this order?
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseCancelModal}
+                  disabled={cancelModalLoading}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-semibold text-gray-900 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Keep Order
+                </button>
+                <button
+                  onClick={handleConfirmCancel}
+                  disabled={cancelModalLoading}
+                  className="flex-1 px-4 py-2 bg-[#FFDF57] rounded-lg font-semibold text-gray-900 hover:bg-yellow-500 transition-colors disabled:opacity-50"
+                >
+                  {cancelModalLoading ? 'Cancelling Order...' : 'Cancel Order'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <MobileFooter activeTab="home" />
       </div>
