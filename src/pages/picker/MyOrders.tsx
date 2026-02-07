@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
-import { pickerOrdersApi } from '../../services/picker/orders';
+import { pickerOrdersApi, type PickerOrderDetail } from '../../services/picker/orders';
 import { dashboardApi } from '../../services/dashboard';
 import { chatApi } from '../../services/chat';
 import { imageUtils } from '../../utils';
@@ -40,6 +40,9 @@ const PickerMyOrders = () => {
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'delivered' | 'cancelled' | 'accepted'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedOrderForCancel, setSelectedOrderForCancel] = useState<PickerOrderDetail | null>(null);
+  const [cancelModalLoading, setCancelModalLoading] = useState(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -166,41 +169,65 @@ const PickerMyOrders = () => {
   };
 
   const handleCancelOrder = async (orderId: string) => {
-    if (window.confirm('Are you sure you want to cancel this order?')) {
-      try {
-        await pickerOrdersApi.cancelOrder(orderId);
-        
-        // Fetch all orders (not filtered by current activeFilter) to get the updated status
-        const response = await pickerOrdersApi.getPickerOrders(undefined, 1, 100);
-        const ordersData = (response as any)?.data || [];
-        
-        const dashboardRes = await dashboardApi.getPickerDashboard(1, 100);
-        const dashboardData = (dashboardRes as any).data;
-        const travelJourneys = dashboardData?.travel_journeys || [];
-        
-        const matchingRoutes = new Set(
-          travelJourneys.map((journey: any) => 
-            `${journey.departure_city}|${journey.arrival_city}`
-          )
-        );
-        
-        const filteredOrdersData = ordersData.filter((order: any) => {
-          const orderRoute = `${order.origin_city}|${order.destination_city}`;
-          return matchingRoutes.has(orderRoute);
-        });
-        
-        const transformedOrders: Order[] = filteredOrdersData.map((order: any) => ({
-          ...order,
-          status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled' | 'accepted',
-        }));
-        
-        setOrders(transformedOrders);
-        alert('Order cancelled successfully');
-      } catch (error) {
-        console.error('Failed to cancel order:', error);
-        alert('Failed to cancel order. Please try again.');
-      }
+    try {
+      setCancelModalLoading(true);
+      const response = await pickerOrdersApi.getOrderDetails(orderId);
+      const orderDetails = (response as any).data || response;
+      setSelectedOrderForCancel(orderDetails);
+      setShowCancelModal(true);
+    } catch (error) {
+      console.error('Failed to fetch order details:', error);
+      alert('Failed to load order details. Please try again.');
+    } finally {
+      setCancelModalLoading(false);
     }
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!selectedOrderForCancel) return;
+
+    try {
+      setCancelModalLoading(true);
+      await pickerOrdersApi.cancelOrder(selectedOrderForCancel.id);
+      
+      // Fetch all orders (not filtered by current activeFilter) to get the updated status
+      const response = await pickerOrdersApi.getPickerOrders(undefined, 1, 100);
+      const ordersData = (response as any)?.data || [];
+      
+      const dashboardRes = await dashboardApi.getPickerDashboard(1, 100);
+      const dashboardData = (dashboardRes as any).data;
+      const travelJourneys = dashboardData?.travel_journeys || [];
+      
+      const matchingRoutes = new Set(
+        travelJourneys.map((journey: any) => 
+          `${journey.departure_city}|${journey.arrival_city}`
+        )
+      );
+      
+      const filteredOrdersData = ordersData.filter((order: any) => {
+        const orderRoute = `${order.origin_city}|${order.destination_city}`;
+        return matchingRoutes.has(orderRoute);
+      });
+      
+      const transformedOrders: Order[] = filteredOrdersData.map((order: any) => ({
+        ...order,
+        status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled' | 'accepted',
+      }));
+      
+      setOrders(transformedOrders);
+      setShowCancelModal(false);
+      setSelectedOrderForCancel(null);
+    } catch (error) {
+      console.error('Failed to cancel order:', error);
+      alert('Failed to cancel order. Please try again.');
+    } finally {
+      setCancelModalLoading(false);
+    }
+  };
+
+  const handleCloseCancelModal = () => {
+    setShowCancelModal(false);
+    setSelectedOrderForCancel(null);
   };
 
   return (
@@ -375,6 +402,68 @@ const PickerMyOrders = () => {
             </div>
           )}
         </div>
+
+        {/* Cancel Order Modal */}
+        {showCancelModal && selectedOrderForCancel && (
+          <div 
+            className="fixed inset-0 flex items-center justify-center z-50 p-4"
+            onClick={handleCloseCancelModal}
+          >
+            <div 
+              className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header with Question Mark Icon */}
+              <div className="flex items-center gap-2 mb-6">
+                <h3 className="text-xl font-bold text-gray-900">Traveler reward</h3>
+                <div className="w-6 h-6 rounded-full border-2 border-gray-400 flex items-center justify-center">
+                  <span className="text-gray-400 font-bold text-sm">?</span>
+                </div>
+              </div>
+
+              {/* Order Summary Section */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Item Cost:</span>
+                  <span className="font-semibold text-gray-900">${parseFloat(selectedOrderForCancel.items_cost.toString()).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Reward:</span>
+                  <span className="font-semibold text-gray-900">${parseFloat(selectedOrderForCancel.reward_amount.toString()).toFixed(2)}</span>
+                </div>
+                <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
+                  <span className="text-gray-900 font-semibold">Total:</span>
+                  <span className="font-bold text-lg text-gray-900">
+                    ${(parseFloat(selectedOrderForCancel.items_cost.toString()) + parseFloat(selectedOrderForCancel.reward_amount.toString())).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Confirmation Message */}
+              <p className="text-gray-600 text-sm mb-6">
+                Are you sure you want to cancel this order?
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseCancelModal}
+                  disabled={cancelModalLoading}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-semibold text-gray-900 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Keep Order
+                </button>
+                <button
+                  onClick={handleConfirmCancel}
+                  disabled={cancelModalLoading}
+                  className="flex-1 px-4 py-2 bg-[#4D0013] text-white rounded-lg font-semibold hover:bg-[#660019] transition-colors disabled:opacity-50"
+                >
+                  {cancelModalLoading ? 'Cancelling Order...' : 'Cancel Order'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <MobileFooter activeTab="home" />
       </div>
