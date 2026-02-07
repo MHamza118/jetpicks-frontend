@@ -242,7 +242,7 @@ const OrdererMyOrders = () => {
                   {order.status === 'pending' && (
                     <button
                       onClick={() => handleCancelOrder(order.id)}
-                      className="w-full mt-2 bg-red-500 text-white py-2 rounded-lg font-bold text-sm hover:bg-red-600 transition-colors"
+                      className="w-full mt-2 bg-[#FFDF57] text-gray-900 py-2 rounded-lg font-bold text-sm hover:bg-yellow-500 transition-colors"
                     >
                       Cancel Order
                     </button>

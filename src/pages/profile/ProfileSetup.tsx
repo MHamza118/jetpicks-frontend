@@ -45,6 +45,27 @@ const ProfileSetup = () => {
         }
     }, [countries]);
 
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            // Check if click is outside all dropdowns
+            if (!target.closest('.nationality-dropdown') && 
+                !target.closest('.travel-from-dropdown') && 
+                !target.closest('.travel-to-dropdown') && 
+                !target.closest('.language-dropdown')) {
+                setIsNationalityDropdownOpen(false);
+                setIsTravelFromDropdownOpen(false);
+                setIsTravelToDropdownOpen(false);
+                setIsLanguageDropdownOpen(false);
+            }
+        };
+
+        if (isNationalityDropdownOpen || isTravelFromDropdownOpen || isTravelToDropdownOpen || isLanguageDropdownOpen) {
+            document.addEventListener('click', handleClickOutside);
+            return () => document.removeEventListener('click', handleClickOutside);
+        }
+    }, [isNationalityDropdownOpen, isTravelFromDropdownOpen, isTravelToDropdownOpen, isLanguageDropdownOpen]);
+
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -178,7 +199,7 @@ const ProfileSetup = () => {
                             <label className="text-gray-700 font-semibold text-base">Current residing country</label>
                         </div>
 
-                        <div className="relative z-30">
+                        <div className="relative z-30 nationality-dropdown">
                             <button
                                 onClick={() => {
                                     setIsNationalityDropdownOpen(!isNationalityDropdownOpen);
@@ -244,7 +265,7 @@ const ProfileSetup = () => {
                                 <label className="text-gray-700 font-semibold text-base">Country of travel from</label>
                             </div>
 
-                            <div className="relative z-20">
+                            <div className="relative z-20 travel-from-dropdown">
                                 <button
                                     onClick={() => {
                                         setIsTravelFromDropdownOpen(!isTravelFromDropdownOpen);
@@ -307,7 +328,7 @@ const ProfileSetup = () => {
                                 <label className="text-gray-700 font-semibold text-base">Country of travel to</label>
                             </div>
 
-                            <div className="relative z-10">
+                            <div className="relative z-10 travel-to-dropdown">
                                 <button
                                     onClick={() => {
                                         setIsTravelToDropdownOpen(!isTravelToDropdownOpen);
@@ -372,7 +393,7 @@ const ProfileSetup = () => {
                         <label className="text-gray-700 font-semibold text-base">Languages</label>
                     </div>
 
-                    <div className="relative z-5">
+                    <div className="relative z-5 language-dropdown">
                         <div
                             onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
                             className="w-full flex items-center gap-2 mb-3 pb-3 border-b border-gray-300 flex-wrap cursor-pointer hover:opacity-80 transition-opacity"

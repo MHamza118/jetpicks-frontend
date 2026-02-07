@@ -191,12 +191,12 @@ const OrdererProfile = () => {
       action: () => navigate('/orderer/profile/settings'),
     },
     {
-      id: 'payout',
-      label: 'Payout Methods',
+      id: 'payment',
+      label: 'Payment Methods',
       icon: null,
       isSvg: true,
       svgSrc: cardsSvg,
-      action: () => navigate('/orderer/profile/payout'),
+      action: () => navigate('/orderer/profile/payment'),
     },
   ];
 

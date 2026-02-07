@@ -59,13 +59,19 @@ const TravelAvailabilitySetup = () => {
                 const response = await travelApi.getJourneys();
                 if (response.data && response.data.length > 0) {
                     const journey = response.data[0];
+                    // Format dates from ISO format to yyyy-MM-dd
+                    const formatDate = (dateString: string) => {
+                        if (!dateString) return '';
+                        const date = new Date(dateString);
+                        return date.toISOString().split('T')[0];
+                    };
                     setFormData({
                         departure_country: journey.departure_country || '',
                         departure_city: journey.departure_city || '',
-                        departure_date: journey.departure_date || '',
+                        departure_date: formatDate(journey.departure_date),
                         arrival_country: journey.arrival_country || '',
                         arrival_city: journey.arrival_city || '',
-                        arrival_date: journey.arrival_date || '',
+                        arrival_date: formatDate(journey.arrival_date),
                         luggage_weight_capacity: journey.luggage_weight_capacity || '5',
                     });
                 }
@@ -82,12 +88,15 @@ const TravelAvailabilitySetup = () => {
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
-            if (!target.closest('.luggage-dropdown')) {
+            // Check if click is outside any dropdown
+            if (!target.closest('.country-dropdown') && 
+                !target.closest('.city-dropdown') && 
+                !target.closest('.luggage-dropdown')) {
                 setOpenDropdown(null);
             }
         };
 
-        if (openDropdown === 'luggage') {
+        if (openDropdown) {
             document.addEventListener('click', handleClickOutside);
             return () => document.removeEventListener('click', handleClickOutside);
         }
@@ -206,7 +215,7 @@ const TravelAvailabilitySetup = () => {
                             <div className="space-y-3">
                                 <div>
                                     <label className="text-gray-700 font-bold text-xs mb-0.5 block">Country</label>
-                                    <div className="relative">
+                                    <div className="relative country-dropdown">
                                         <button
                                             onClick={() => {
                                                 setOpenDropdown(openDropdown === 'departure_country' ? null : 'departure_country');
@@ -257,7 +266,7 @@ const TravelAvailabilitySetup = () => {
                                     {loadingCities[formData.departure_country] ? (
                                         <div className="text-gray-500 text-sm py-2">Loading cities...</div>
                                     ) : (
-                                        <div className="relative">
+                                        <div className="relative city-dropdown">
                                             <button
                                                 onClick={() => {
                                                     setOpenDropdown(openDropdown === 'departure_city' ? null : 'departure_city');
@@ -313,7 +322,7 @@ const TravelAvailabilitySetup = () => {
                             <div className="space-y-3">
                                 <div>
                                     <label className="text-gray-700 font-bold text-xs mb-0.5 block">Country</label>
-                                    <div className="relative">
+                                    <div className="relative country-dropdown">
                                         <button
                                             onClick={() => {
                                                 setOpenDropdown(openDropdown === 'arrival_country' ? null : 'arrival_country');
@@ -364,7 +373,7 @@ const TravelAvailabilitySetup = () => {
                                     {loadingCities[formData.arrival_country] ? (
                                         <div className="text-gray-500 text-sm py-2">Loading cities...</div>
                                     ) : (
-                                        <div className="relative">
+                                        <div className="relative city-dropdown">
                                             <button
                                                 onClick={() => {
                                                     setOpenDropdown(openDropdown === 'arrival_city' ? null : 'arrival_city');

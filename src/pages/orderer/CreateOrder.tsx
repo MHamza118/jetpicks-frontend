@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, ArrowLeft, ChevronDown } from 'lucide-react';
 import { ordersApi } from '../../services';
@@ -34,6 +34,21 @@ const CreateOrder = () => {
         specialNotes: orderData.specialNotes || '',
     });
     const [countryCodeMap, setCountryCodeMap] = useState<{ [key: string]: string }>({});
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Handle click outside to close dropdowns
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setOpenDropdown(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     useEffect(() => {
         const fetchCountries = async () => {
@@ -265,7 +280,7 @@ const CreateOrder = () => {
 
                         {/* Step 1: Delivery Route */}
                         {currentStep === 1 && (
-                            <div className="space-y-6">
+                            <div className="space-y-6" ref={dropdownRef}>
                                 {/* Origin Section */}
                                 <div>
                                     <div className="flex items-center gap-2 mb-4">

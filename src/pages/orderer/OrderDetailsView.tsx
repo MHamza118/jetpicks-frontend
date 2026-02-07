@@ -32,9 +32,10 @@ interface OrderDetailsData {
   destination_city: string;
   items: OrderItem[];
   picker: Picker;
-  status: 'pending' | 'delivered' | 'cancelled';
+  status: 'pending' | 'delivered' | 'cancelled' | 'accepted';
   delivery_status?: 'completed' | 'issue' | null;
   remaining_time?: string;
+  total_cost: number;
 }
 
 const OrdererOrderDetailsView = () => {
@@ -52,6 +53,10 @@ const OrdererOrderDetailsView = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showPaymentNotice, setShowPaymentNotice] = useState(true);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -88,6 +93,7 @@ const OrdererOrderDetailsView = () => {
           status: data.status.toLowerCase(),
           delivery_status: null,
           remaining_time: '47h:12m',
+          total_cost: data.total_cost || 0,
         });
       } catch (err) {
         console.error('Failed to fetch order details:', err);
@@ -101,6 +107,16 @@ const OrdererOrderDetailsView = () => {
       fetchOrderDetails();
     }
   }, [orderId]);
+
+  // Auto-hide payment notice after 30 seconds
+  useEffect(() => {
+    if (showPaymentNotice && order?.status === 'accepted') {
+      const timer = setTimeout(() => {
+        setShowPaymentNotice(false);
+      }, 30000);
+      return () => clearTimeout(timer);
+    }
+  }, [showPaymentNotice, order?.status]);
 
   const handleSubmitReview = async () => {
     if (!rating) {
@@ -210,6 +226,33 @@ const OrdererOrderDetailsView = () => {
               )}
             </div>
           </div>
+
+          {/* Payment Notice Popup - Only for Accepted Orders */}
+          {order.status.toUpperCase() === 'ACCEPTED' && showPaymentNotice && (
+            <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4 relative">
+              <button
+                onClick={() => setShowPaymentNotice(false)}
+                className="absolute top-2 right-2 text-yellow-600 hover:text-yellow-700 text-lg font-bold"
+              >
+                ✕
+              </button>
+              <div className="pr-6">
+                <h3 className="text-base font-semibold text-yellow-900 mb-1">Complete Payment to Proceed</h3>
+                <p className="text-yellow-800 text-xs mb-1">
+                  Your order is ready! Please complete the payment to confirm your purchase. Once payment is verified, the picker will proceed with buying the items for you.
+                </p>
+                <p className="text-yellow-700 text-xs font-medium mb-3">
+                  Auto-closes in 30 seconds.
+                </p>
+                <button
+                  onClick={() => setShowPaymentModal(true)}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
+                >
+                  Pay
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="max-w-xl mx-auto space-y-6">
           {/* Order Summary Card */}
@@ -350,6 +393,13 @@ const OrdererOrderDetailsView = () => {
             <div className="mb-6">
               <h3 className="font-bold text-gray-900 mb-4 text-base">ORDER MARKED AS DELIVERED BY JETPICKER</h3>
 
+              {/* Payment Not Completed Warning */}
+              {!paymentCompleted && order.status.toUpperCase() === 'ACCEPTED' && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                  <p className="text-red-700 text-sm font-semibold">Please complete payment first to mark delivery status</p>
+                </div>
+              )}
+
               {/* Status Indicators */}
               <div className="space-y-3 mb-6">
                 <button
@@ -365,7 +415,7 @@ const OrdererOrderDetailsView = () => {
                     }
                   }}
                   disabled={order.status !== 'delivered' || deliveryCompleted}
-                  className={`flex items-center gap-3 ${order.status === 'delivered' && !deliveryCompleted ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
+                  className={`flex items-center gap-3 ${order.status === 'delivered' && !deliveryCompleted ? 'cursor-pointer' : 'cursor-not-allowed'} ${order.status !== 'delivered' || deliveryCompleted ? 'opacity-50' : ''}`}
                 >
                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                     deliveryCompleted
@@ -379,7 +429,7 @@ const OrdererOrderDetailsView = () => {
                 <button
                   onClick={() => setIssueWithDelivery(!issueWithDelivery)}
                   disabled={order.status !== 'delivered'}
-                  className={`flex items-center gap-3 ${order.status === 'delivered' ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
+                  className={`flex items-center gap-3 ${order.status === 'delivered' ? 'cursor-pointer' : 'cursor-not-allowed'} ${order.status !== 'delivered' ? 'opacity-50' : ''}`}
                 >
                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                     issueWithDelivery
@@ -515,6 +565,75 @@ const OrdererOrderDetailsView = () => {
 
         <MobileFooter activeTab="home" />
       </div>
+
+      {/* Payment Modal - Inline */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-xl pointer-events-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Payment Details</h2>
+            
+            <div className="space-y-4 mb-6">
+              <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+                <p className="text-gray-600">Order Amount</p>
+                <p className="font-semibold text-gray-900">${order?.total_cost || '0'}</p>
+              </div>
+              <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+                <p className="text-gray-600">Delivery Fee</p>
+                <p className="font-semibold text-gray-900">$0</p>
+              </div>
+              <div className="flex justify-between items-center pt-3">
+                <p className="text-lg font-bold text-gray-900">Total</p>
+                <p className="text-lg font-bold text-gray-900">${order?.total_cost || '0'}</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  setShowPaymentSuccess(true);
+                  setPaymentCompleted(true);
+                }}
+                className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold text-lg hover:bg-yellow-500 transition-colors"
+              >
+                Confirm Payment
+              </button>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="w-full bg-gray-200 text-gray-900 py-3 rounded-lg font-bold text-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Success Modal - Inline */}
+      {showPaymentSuccess && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-xl text-center pointer-events-auto">
+            <div className="mb-6 flex justify-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Completed</h2>
+            <p className="text-gray-600 mb-6">Your payment has been successfully processed. The picker will now proceed with buying the items for you.</p>
+            <button
+              onClick={() => {
+                setShowPaymentSuccess(false);
+                setShowPaymentNotice(false);
+              }}
+              className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold text-lg hover:bg-yellow-500 transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

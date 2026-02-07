@@ -10,6 +10,7 @@ import OrdererOrderDetailsView from '../pages/orderer/OrderDetailsView';
 import OrdererProfile from '../pages/orderer/Profile';
 import OrdererPersonalInformation from '../pages/orderer/PersonalInformation';
 import OrdererSettings from '../pages/orderer/Settings';
+import OrdererPaymentMethods from '../pages/orderer/PaymentMethods';
 import CreateOrder from '../pages/orderer/CreateOrder';
 import CreateOrderStep2 from '../pages/orderer/CreateOrderStep2';
 import CreateOrderStep3 from '../pages/orderer/CreateOrderStep3';
@@ -92,6 +93,14 @@ const AppRoutes = () => {
               element={
                 <ProtectedRoute requiredRole="ORDERER">
                   <OrdererSettings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/orderer/profile/payment" 
+              element={
+                <ProtectedRoute requiredRole="ORDERER">
+                  <OrdererPaymentMethods />
                 </ProtectedRoute>
               } 
             />

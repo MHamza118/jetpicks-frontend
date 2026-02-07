@@ -47,6 +47,7 @@ const PickerOrderDetailsView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showPaymentNotice, setShowPaymentNotice] = useState(true);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -81,6 +82,16 @@ const PickerOrderDetailsView = () => {
       fetchOrderDetails();
     }
   }, [orderId]);
+
+  // Auto-hide payment notice after 30 seconds
+  useEffect(() => {
+    if (showPaymentNotice && order?.status === 'accepted') {
+      const timer = setTimeout(() => {
+        setShowPaymentNotice(false);
+      }, 30000);
+      return () => clearTimeout(timer);
+    }
+  }, [showPaymentNotice, order?.status]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -155,6 +166,27 @@ const PickerOrderDetailsView = () => {
                   )}
                 </div>
               </div>
+
+              {/* Payment Notice Popup - Only for Accepted Orders */}
+              {order.status.toUpperCase() === 'ACCEPTED' && showPaymentNotice && (
+                <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 relative">
+                  <button
+                    onClick={() => setShowPaymentNotice(false)}
+                    className="absolute top-2 right-2 text-red-400 hover:text-red-600 text-lg font-bold"
+                  >
+                    ✕
+                  </button>
+                  <div className="pr-6">
+                    <h3 className="text-base font-semibold text-red-900 mb-1">Payment Pending</h3>
+                    <p className="text-red-800 text-xs mb-1">
+                      Please hold off on purchasing the items at this time. Once the orderer completes the payment, we'll send you a notification to proceed with buying the products.
+                    </p>
+                    <p className="text-red-700 text-xs font-medium">
+                      Auto-closes in 30 seconds.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="max-w-xl mx-auto space-y-6">
                 {/* Order Summary Card */}
