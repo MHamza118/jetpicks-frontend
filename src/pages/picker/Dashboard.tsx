@@ -177,7 +177,7 @@ const PickerDashboard = () => {
                                         {/* Total Items and Reward */}
                                         <div className="text-right">
                                             <p className="text-xs text-gray-600 font-medium">Total items {order.items_count}</p>
-                                            <p className="font-bold text-red-900 text-sm">Reward: ${order.reward_amount}</p>
+                                            <p className="font-bold text-red-900 text-sm">Total: ${(order.items_cost + parseFloat(order.reward_amount.toString())).toFixed(2)}</p>
                                         </div>
                                     </div>
 

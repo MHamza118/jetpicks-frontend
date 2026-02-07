@@ -137,7 +137,6 @@ const CreateOrder = () => {
                             origin_city: formData.originCity,
                             destination_country: formData.destinationCountry,
                             destination_city: formData.destinationCity,
-                            status: 'DRAFT',
                         };
                         
                         if (formData.specialNotes.trim()) {
@@ -147,6 +146,9 @@ const CreateOrder = () => {
                         // Add picker_id if this order was created from picker selection
                         if (selectedPicker?.picker?.id) {
                             orderPayload.picker_id = selectedPicker.picker.id;
+                        } else {
+                            // Only set status to DRAFT for common flow (no picker selected)
+                            orderPayload.status = 'DRAFT';
                         }
                         
                         const res = await ordersApi.createOrder(orderPayload);

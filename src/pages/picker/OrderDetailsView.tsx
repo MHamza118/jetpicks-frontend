@@ -22,11 +22,16 @@ interface OrderItem {
 interface OrderDetailsViewData {
   id: string;
   orderer_id: string;
+  origin_country: string;
   origin_city: string;
+  destination_country: string;
   destination_city: string;
   status: string;
   items_count: number;
+  items_cost?: number;
   reward_amount: number | string;
+  accepted_counter_offer_amount?: number | string;
+  waiting_days?: number;
   items: OrderItem[];
   orderer: {
     id: string;
@@ -61,11 +66,16 @@ const PickerOrderDetailsView = () => {
         setOrder({
           id: data.id,
           orderer_id: data.orderer_id,
+          origin_country: data.origin_country,
           origin_city: data.origin_city,
+          destination_country: data.destination_country,
           destination_city: data.destination_city,
           status: data.status.toLowerCase(),
           items_count: data.items_count,
+          items_cost: data.items_cost,
           reward_amount: data.reward_amount,
+          accepted_counter_offer_amount: data.accepted_counter_offer_amount,
+          waiting_days: data.waiting_days,
           items: data.items,
           orderer: data.orderer,
           created_at: data.created_at,
@@ -145,8 +155,8 @@ const PickerOrderDetailsView = () => {
             <>
               {/* Route Header with Status */}
               <div className="mb-8">
-                <h1 className="text-3xl font-bold text-[#4D0013]">
-                  {order.origin_city} - {order.destination_city}
+                <h1 className="text-2xl md:text-3xl font-bold text-[#4D0013] break-words">
+                  {order.origin_city}, {order.origin_country} - {order.destination_city}, {order.destination_country}
                 </h1>
                 {/* Status Badge and Cancelled Message */}
                 <div className="mt-3 flex items-center gap-4">
@@ -193,12 +203,6 @@ const PickerOrderDetailsView = () => {
                 <div className="bg-white border border-gray-200 rounded-2xl p-6">
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <p className="text-gray-600">Route</p>
-                      <p className="font-semibold text-gray-900">
-                        From {order.origin_city} to {order.destination_city}
-                      </p>
-                    </div>
-                    <div className="flex justify-between items-center">
                       <p className="text-gray-600">Item list</p>
                       <p className="font-semibold text-gray-900">{order.items[0]?.item_name || 'N/A'}</p>
                     </div>
@@ -218,6 +222,36 @@ const PickerOrderDetailsView = () => {
                         ${typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount).toFixed(2) : order.reward_amount.toFixed(2)}
                       </p>
                     </div>
+                    {order.waiting_days && (
+                      <div className="flex justify-between items-center">
+                        <p className="text-gray-600">Waiting Days</p>
+                        <p className="font-semibold text-gray-900">{order.waiting_days} days</p>
+                      </div>
+                    )}
+                    {order.items_cost !== undefined && (
+                      <>
+                        <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
+                          <p className="text-gray-600">Items Cost</p>
+                          <p className="font-semibold text-gray-900">
+                            ${order.items_cost.toFixed(2)}
+                          </p>
+                        </div>
+                        {order.accepted_counter_offer_amount && parseFloat(order.accepted_counter_offer_amount.toString()) > 0 && (
+                          <div className="flex justify-between items-center">
+                            <p className="text-gray-600">Counter Offer</p>
+                            <p className="font-semibold text-gray-900">
+                              ${typeof order.accepted_counter_offer_amount === 'string' ? parseFloat(order.accepted_counter_offer_amount).toFixed(2) : order.accepted_counter_offer_amount.toFixed(2)}
+                            </p>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center font-bold text-lg">
+                          <p className="text-gray-900">Total Amount</p>
+                          <p className="text-gray-900">
+                            ${(order.items_cost + parseFloat(order.reward_amount.toString()) + (order.accepted_counter_offer_amount ? parseFloat(order.accepted_counter_offer_amount.toString()) : 0)).toFixed(2)}
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 

@@ -30,6 +30,7 @@ interface OrderDetails {
   special_notes?: string;
   reward_amount: number | string;
   accepted_counter_offer_amount?: number | string;
+  waiting_days?: number;
   status: string;
   items_count: number;
   items_cost: number;
@@ -184,7 +185,7 @@ const PickerOrderDetails = () => {
           {/* Route Header */}
           <div className="text-center mb-8">
             <p className="text-gray-900 font-semibold text-lg md:text-xl">
-              From {order.origin_city} - {order.destination_city}{' '}
+              From {order.origin_city}, {order.origin_country} to {order.destination_city}, {order.destination_country}{' '}
               <span className="text-gray-500 text-sm md:text-base">
                 {new Date(order.created_at).toLocaleDateString('en-US', {
                   year: 'numeric',
@@ -293,7 +294,7 @@ const PickerOrderDetails = () => {
               {/* Estimated Delivery */}
               <div className="bg-white border border-gray-200 rounded-2xl p-6">
                 <h3 className="text-gray-900 font-bold text-lg mb-4">Estimated delivery date</h3>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center mb-4">
                   <p className="text-gray-900 font-bold text-2xl">
                     {new Date(order.created_at).toLocaleDateString('en-US', {
                       year: 'numeric',
@@ -303,6 +304,12 @@ const PickerOrderDetails = () => {
                   </p>
                   <p className="text-gray-600 text-sm">Based on arrival date</p>
                 </div>
+                {order.waiting_days && (
+                  <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
+                    <p className="text-gray-600 font-medium">Waiting Days</p>
+                    <p className="text-gray-900 font-semibold">{order.waiting_days} days</p>
+                  </div>
+                )}
               </div>
             </div>
 

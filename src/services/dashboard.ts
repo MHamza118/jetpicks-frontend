@@ -14,6 +14,7 @@ export interface PickerDashboardData {
       destination_city: string;
       earliest_delivery_date: string;
       items_count: number;
+      items_cost: number;
       reward_amount: number;
       items_images: string[];
     }[];
