@@ -298,7 +298,7 @@ const Auth = () => {
                                     )}
                                 </button>
                                 <span className="text-gray-900 font-semibold text-xs">
-                                    I agree to terms and conditions
+                                    I agree to Terms and Conditions
                                 </span>
                             </div>
                         </div>

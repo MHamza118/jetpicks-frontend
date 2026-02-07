@@ -21,6 +21,7 @@ export interface OrderData {
   reward: string;
   orderId?: string;
   selectedPickerId?: string;
+  waitingDays?: string;
 }
 
 interface OrderContextType {
@@ -40,6 +41,7 @@ const initialOrderData: OrderData = {
   items: [],
   reward: '',
   selectedPickerId: undefined,
+  waitingDays: '',
 };
 
 export const OrderProvider = ({ children }: { children: ReactNode }) => {

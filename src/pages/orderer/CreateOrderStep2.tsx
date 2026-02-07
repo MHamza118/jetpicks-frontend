@@ -30,6 +30,7 @@ const CreateOrderStep2 = () => {
     const { avatarUrl, avatarError, handleAvatarError } = useUser();
     const [loading, setLoading] = useState(false);
     const [validationError, setValidationError] = useState<string | null>(null);
+    const [waitingDays, setWaitingDays] = useState(orderData.waitingDays || '');
     const [items, setItems] = useState<OrderItem[]>(
         orderData.items.length > 0 ? orderData.items : [
             {
@@ -176,8 +177,17 @@ const CreateOrderStep2 = () => {
             return;
         }
 
+        if (!waitingDays.trim()) {
+            setValidationError('Please specify how long you can wait for your items');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
         setLoading(true);
         try {
+            // First, update the order with waiting_days
+            await ordersApi.updateOrder(orderId!, { waiting_days: parseInt(waitingDays) });
+
             // Save all items to backend
             for (const item of items) {
                 const formData = new FormData();
@@ -206,7 +216,7 @@ const CreateOrderStep2 = () => {
                 await ordersApi.addOrderItem(orderId!, formData);
             }
 
-            updateOrderData({ items });
+            updateOrderData({ items, waitingDays });
             navigate(`/orderer/create-order/${orderId}/step3`);
         } catch (error) {
             console.error('Failed to save items:', error);
@@ -338,8 +348,9 @@ const CreateOrderStep2 = () => {
                                                         const newWeight = e.target.value ? `${e.target.value} ${unit}` : '';
                                                         handleItemChange(item.id, 'weight', newWeight);
                                                     }}
+                                                    onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
                                                     placeholder="0"
-                                                    step="0.01"
+                                                    step="1"
                                                     min="0"
                                                     className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm"
                                                 />
@@ -367,8 +378,9 @@ const CreateOrderStep2 = () => {
                                                 type="number"
                                                 value={item.price}
                                                 onChange={(e) => handleItemChange(item.id, 'price', e.target.value)}
+                                                onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
                                                 placeholder="50"
-                                                step="0.01"
+                                                step="1"
                                                 min="0"
                                                 className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
                                                     item.errors?.price
@@ -387,6 +399,7 @@ const CreateOrderStep2 = () => {
                                                 type="number"
                                                 value={item.quantity}
                                                 onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value)}
+                                                onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
                                                 placeholder="1"
                                                 step="1"
                                                 min="1"
@@ -399,6 +412,23 @@ const CreateOrderStep2 = () => {
                                             {item.errors?.quantity && (
                                                 <p className="text-red-500 text-xs mt-1">{item.errors.quantity}</p>
                                             )}
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600 mb-2">How long can you wait for your items in days? <span className="text-red-500">*</span></label>
+                                            <input
+                                                type="number"
+                                                value={waitingDays}
+                                                onChange={(e) => {
+                                                    setWaitingDays(e.target.value);
+                                                    setValidationError(null);
+                                                }}
+                                                onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                                                placeholder="Enter number of days"
+                                                step="1"
+                                                min="1"
+                                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm"
+                                            />
                                         </div>
 
                                         <div>

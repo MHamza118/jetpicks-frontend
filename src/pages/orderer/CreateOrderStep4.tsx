@@ -20,9 +20,12 @@ interface OrderItem {
 
 interface OrderDetailsType {
   origin_city: string;
+  origin_country: string;
   destination_city: string;
+  destination_country: string;
   items: OrderItem[];
   reward_amount: number;
+  waiting_days?: number;
 }
 
 const CreateOrderStep4 = () => {
@@ -145,9 +148,15 @@ const CreateOrderStep4 = () => {
                   </div>
                 )}
                 
-                <div className="border-t border-gray-200 pt-4 flex justify-between">
-                  <span className="text-gray-600 font-medium">Reward</span>
-                  <span className="text-gray-900 font-semibold">${orderDetails?.reward_amount}</span>
+                <div className="border-t border-gray-200 pt-4 space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 font-medium">Waiting Days</span>
+                    <span className="text-gray-900 font-semibold">{orderDetails?.waiting_days} days</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 font-medium">Reward</span>
+                    <span className="text-gray-900 font-semibold">${Math.round(orderDetails?.reward_amount || 0)}</span>
+                  </div>
                 </div>
               </div>
 
@@ -224,19 +233,29 @@ const CreateOrderStep4 = () => {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white">
           <div className="max-w-2xl mx-auto md:bg-white md:rounded-2xl md:p-8 md:shadow-[0_2px_15px_rgba(0,0,0,0.05)] md:border md:border-gray-100">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Order Summary</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Summary</h2>
+            <p className="text-gray-600 text-sm mb-6">Before placing your order, please review your complete order summary to ensure all details are correct.</p>
 
             {/* Summary Card */}
-            <div className="bg-gray-50 rounded-xl p-6 mb-6 space-y-4">
+            <div className="bg-gray-50 rounded-xl p-6 mb-6">
               {!orderDetails ? (
                 <div className="text-center py-8">
                   <p className="text-gray-600">Loading order details...</p>
                 </div>
               ) : (
                 <>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 font-medium">Route</span>
-                    <span className="text-gray-900 font-semibold">From {orderDetails?.origin_city} to {orderDetails?.destination_city}</span>
+                  {/* Route Section */}
+                  <div className="mb-6">
+                    <p className="text-gray-600 font-medium text-sm mb-3">Delivery Route</p>
+                    <div className="bg-white rounded-lg p-4 text-center">
+                      <p className="text-gray-900 font-semibold">{orderDetails?.origin_city}, {orderDetails?.origin_country}</p>
+                      <div className="flex items-center justify-center my-3">
+                        <div className="flex-1 h-px bg-gray-300"></div>
+                        <span className="px-3 text-gray-400 text-sm">to</span>
+                        <div className="flex-1 h-px bg-gray-300"></div>
+                      </div>
+                      <p className="text-gray-900 font-semibold">{orderDetails?.destination_city}, {orderDetails?.destination_country}</p>
+                    </div>
                   </div>
                   
                   {/* Items List */}
@@ -272,9 +291,15 @@ const CreateOrderStep4 = () => {
                     </div>
                   )}
                   
-                  <div className="border-t border-gray-200 pt-4 flex justify-between">
-                    <span className="text-gray-600 font-medium">Reward</span>
-                    <span className="text-gray-900 font-semibold">${orderDetails?.reward_amount}</span>
+                  <div className="border-t border-gray-200 pt-4 space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 font-medium">Waiting Days</span>
+                      <span className="text-gray-900 font-semibold">{orderDetails?.waiting_days} days</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 font-medium">Reward</span>
+                      <span className="text-gray-900 font-semibold">${Math.round(orderDetails?.reward_amount || 0)}</span>
+                    </div>
                   </div>
                 </>
               )}

@@ -27,6 +27,9 @@ export const ordersApi = {
   createOrder: (data: CreateOrderPayload) =>
     apiClient.post('/orders', data),
 
+  updateOrder: (orderId: string, data: any) =>
+    apiClient.put(`/orders/${orderId}`, data),
+
   addOrderItem: (orderId: string, data: AddOrderItemPayload | FormData) =>
     apiClient.post(`/orders/${orderId}/items`, data),
 

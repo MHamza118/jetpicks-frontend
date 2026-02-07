@@ -35,10 +35,11 @@ const CreateOrderStep3 = () => {
           destinationCountry: order.destination_country,
           destinationCity: order.destination_city,
           specialNotes: order.special_notes || '',
-          reward: order.reward_amount?.toString() || '',
+          reward: order.reward_amount && order.reward_amount > 0 ? order.reward_amount.toString() : '',
         });
         
-        if (order.reward_amount) {
+        // Only set reward if it's greater than 0
+        if (order.reward_amount && order.reward_amount > 0) {
           setReward(order.reward_amount.toString());
         }
       } catch (error) {
@@ -122,9 +123,13 @@ const CreateOrderStep3 = () => {
 
             <input
               type="number"
-              placeholder="Enter Reward Amount"
+              placeholder="Enter amount"
               value={reward}
               onChange={(e) => setReward(e.target.value)}
+              onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+              onFocus={(e) => e.currentTarget.select()}
+              step="1"
+              min="0"
               className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#FFDF57]"
             />
           </div>
@@ -147,9 +152,13 @@ const CreateOrderStep3 = () => {
             <div className="mb-6">
               <input
                 type="number"
-                placeholder="Enter Reward Amount"
+                placeholder="Enter amount"
                 value={reward}
                 onChange={(e) => setReward(e.target.value)}
+                onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                onFocus={(e) => e.currentTarget.select()}
+                step="1"
+                min="0"
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#FFDF57]"
               />
             </div>
