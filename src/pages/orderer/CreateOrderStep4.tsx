@@ -9,6 +9,22 @@ import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 import placeOrderImage from '../../assets/placeorder.png';
 
+interface OrderItem {
+  item_name: string;
+  quantity: number;
+  store_link?: string;
+  weight: string;
+  price: number;
+  product_images?: string[];
+}
+
+interface OrderDetailsType {
+  origin_city: string;
+  destination_city: string;
+  items: OrderItem[];
+  reward_amount: number;
+}
+
 const CreateOrderStep4 = () => {
   const navigate = useNavigate();
   const { orderId } = useParams<{ orderId: string }>();
@@ -18,7 +34,7 @@ const CreateOrderStep4 = () => {
   const [lawsAgreed, setLawsAgreed] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [orderDetails, setOrderDetails] = useState<any>(null);
+  const [orderDetails, setOrderDetails] = useState<OrderDetailsType | null>(null);
 
   // Fetch order details from backend using URL param
   useEffect(() => {
@@ -29,8 +45,8 @@ const CreateOrderStep4 = () => {
       }
 
       try {
-        const res = await ordersApi.getOrderDetails(orderId);
-        setOrderDetails((res as any).data);
+        const res = await ordersApi.getOrderDetails(orderId) as { data: OrderDetailsType };
+        setOrderDetails(res.data);
       } catch (error) {
         console.error('Failed to fetch order:', error);
         navigate('/orderer/create-order');
@@ -38,7 +54,7 @@ const CreateOrderStep4 = () => {
     };
 
     fetchOrderDetails();
-  }, [orderId]);
+  }, [orderId, navigate]);
 
   useEffect(() => {
     if (orderPlaced) {
@@ -68,10 +84,6 @@ const CreateOrderStep4 = () => {
         setLoading(false);
       }
     }
-  };
-
-  const handleCancelOrder = () => {
-    navigate('/orderer/dashboard');
   };
 
   if (orderPlaced) {
@@ -105,7 +117,7 @@ const CreateOrderStep4 = () => {
                   <div className="border-t border-gray-200 pt-4">
                     <p className="text-gray-600 font-medium mb-3">Items</p>
                     <div className="space-y-3">
-                      {orderDetails.items.map((item: any, idx: number) => (
+                      {orderDetails.items.map((item: OrderItem, idx: number) => (
                         <div key={idx} className="bg-white rounded-lg p-3">
                           <div className="flex justify-between mb-2">
                             <span className="text-gray-900 font-semibold">{item.item_name}</span>
@@ -144,7 +156,7 @@ const CreateOrderStep4 = () => {
                 <div className="mb-8">
                   <p className="text-gray-600 font-medium mb-4">Product Images</p>
                   <div className="flex gap-3 flex-wrap">
-                    {orderDetails.items.map((item: any, itemIdx: number) =>
+                    {orderDetails.items.map((item: OrderItem, itemIdx: number) =>
                       item.product_images && item.product_images.length > 0 ? (
                         item.product_images.map((imagePath: string, imgIdx: number) => {
                           const fullUrl = imageUtils.getImageUrl(imagePath);
@@ -232,7 +244,7 @@ const CreateOrderStep4 = () => {
                     <div className="border-t border-gray-200 pt-4">
                       <p className="text-gray-600 font-medium mb-3">Items</p>
                       <div className="space-y-3">
-                        {orderDetails.items.map((item: any, idx: number) => (
+                        {orderDetails.items.map((item: OrderItem, idx: number) => (
                           <div key={idx} className="bg-white rounded-lg p-3">
                             <div className="flex justify-between mb-2">
                               <span className="text-gray-900 font-semibold">{item.item_name}</span>
@@ -273,7 +285,7 @@ const CreateOrderStep4 = () => {
               <div className="mb-8">
                 <p className="text-gray-600 font-medium mb-4">Product Images</p>
                 <div className="flex gap-3 flex-wrap">
-                  {orderDetails.items.map((item: any, itemIdx: number) =>
+                  {orderDetails.items.map((item: OrderItem, itemIdx: number) =>
                     item.product_images && item.product_images.length > 0 ? (
                       item.product_images.map((imagePath: string, imgIdx: number) => {
                         const fullUrl = imageUtils.getImageUrl(imagePath);
