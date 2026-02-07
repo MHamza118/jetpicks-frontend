@@ -88,4 +88,9 @@ export const pickerOrdersApi = {
       issue_description: issueDescription,
     });
   },
+
+  // Cancel order
+  cancelOrder: (orderId: string) => {
+    return apiClient.delete(`/orders/${orderId}`);
+  },
 };

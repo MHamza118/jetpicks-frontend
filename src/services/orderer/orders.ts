@@ -54,6 +54,11 @@ export const ordererOrdersApi = {
     return response;
   },
 
+  cancelOrder: async (orderId: string) => {
+    const response = await apiClient.delete(`/orders/${orderId}`);
+    return response;
+  },
+
   confirmDelivery: async (orderId: string) => {
     const response = await apiClient.put(`/orders/${orderId}/confirm-delivery`);
     return response;

@@ -167,12 +167,6 @@ const CreateOrderStep4 = () => {
             <div className="bg-[#FFDF57] rounded-3xl p-8 max-w-sm w-full flex flex-col items-center justify-center min-h-96">
               <img src={placeOrderImage} alt="Success" className="w-48 h-48 mb-6 transform -rotate-30" />
               <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Order successfully posted</h2>
-              <button
-                onClick={handleCancelOrder}
-                className="w-full bg-white text-gray-900 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors"
-              >
-                Cancel Order
-              </button>
             </div>
           </div>
         </div>

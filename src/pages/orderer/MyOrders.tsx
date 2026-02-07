@@ -105,6 +105,37 @@ const OrdererMyOrders = () => {
     }
   };
 
+  const handleCancelOrder = async (orderId: string) => {
+    if (window.confirm('Are you sure you want to cancel this order?')) {
+      try {
+        await ordererOrdersApi.cancelOrder(orderId);
+        
+        // Fetch all orders (not filtered by current activeFilter) to get the updated status
+        const response = await ordererOrdersApi.getOrders(undefined);
+        const data = (response as any).data || response;
+        
+        const formattedOrders = data
+          .filter((order: any) => order.status.toUpperCase() !== 'DRAFT')
+          .map((order: any) => ({
+            id: order.id,
+            picker_id: order.picker_id,
+            origin_city: order.origin_city,
+            destination_city: order.destination_city,
+            status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled' | 'draft' | 'accepted',
+            items_count: order.items_count,
+            total_cost: order.total_cost,
+            created_at: order.created_at,
+          }));
+        
+        setOrders(formattedOrders);
+        alert('Order cancelled successfully');
+      } catch (error) {
+        console.error('Failed to cancel order:', error);
+        alert('Failed to cancel order. Please try again.');
+      }
+    }
+  };
+
   return (
     <div className="flex h-screen bg-white flex-col md:flex-row">
       <DashboardSidebar activeTab="orders" />
@@ -204,6 +235,16 @@ const OrdererMyOrders = () => {
                       className="w-full mt-2 bg-[#FFDF57] text-gray-900 py-2 rounded-lg font-bold text-sm hover:bg-yellow-500 transition-colors"
                     >
                       Start Chat
+                    </button>
+                  )}
+
+                  {/* Cancel Order Button - Only for Pending Orders */}
+                  {order.status === 'pending' && (
+                    <button
+                      onClick={() => handleCancelOrder(order.id)}
+                      className="w-full mt-2 bg-red-500 text-white py-2 rounded-lg font-bold text-sm hover:bg-red-600 transition-colors"
+                    >
+                      Cancel Order
                     </button>
                   )}
                 </div>

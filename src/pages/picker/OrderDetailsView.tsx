@@ -117,7 +117,7 @@ const PickerOrderDetailsView = () => {
           onAvatarError={handleAvatarError}
         />
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-32 md:pb-8 bg-white">
           {loading && (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4D0013]"></div>
@@ -132,11 +132,28 @@ const PickerOrderDetailsView = () => {
 
           {!loading && order && (
             <>
-              {/* Route Header */}
+              {/* Route Header with Status */}
               <div className="mb-8">
                 <h1 className="text-3xl font-bold text-[#4D0013]">
                   {order.origin_city} - {order.destination_city}
                 </h1>
+                {/* Status Badge and Cancelled Message */}
+                <div className="mt-3 flex items-center gap-4">
+                  <span className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${
+                    order.status.toUpperCase() === 'CANCELLED'
+                      ? 'bg-red-100 text-red-700'
+                      : order.status.toUpperCase() === 'ACCEPTED'
+                      ? 'bg-blue-100 text-blue-700'
+                      : order.status.toUpperCase() === 'DELIVERED'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                  </span>
+                  {order.status.toUpperCase() === 'CANCELLED' && (
+                    <p className="text-red-700 text-xs">This order has been cancelled and cannot be proceeded further.</p>
+                  )}
+                </div>
               </div>
 
               <div className="max-w-xl mx-auto space-y-6">
@@ -240,7 +257,7 @@ const PickerOrderDetailsView = () => {
                 </div>
 
                 {/* Delivery Status */}
-                {!isDelivered && (
+                {!isDelivered && order.status.toUpperCase() !== 'CANCELLED' && (
                   <div>
                     <button
                       onClick={handleToggleMarkAsDelivered}

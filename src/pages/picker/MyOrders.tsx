@@ -137,7 +137,9 @@ const PickerMyOrders = () => {
       case 'pending':
         return 'View Order Details';
       case 'cancelled':
-        return 'Accept again';
+        return 'View Order Details';
+      case 'accepted':
+        return 'View Order Details';
       default:
         return 'View Order Details';
     }
@@ -160,6 +162,44 @@ const PickerMyOrders = () => {
     } catch (error) {
       console.error('Failed to start chat:', error);
       alert('Failed to start chat. Please try again.');
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (window.confirm('Are you sure you want to cancel this order?')) {
+      try {
+        await pickerOrdersApi.cancelOrder(orderId);
+        
+        // Fetch all orders (not filtered by current activeFilter) to get the updated status
+        const response = await pickerOrdersApi.getPickerOrders(undefined, 1, 100);
+        const ordersData = (response as any)?.data || [];
+        
+        const dashboardRes = await dashboardApi.getPickerDashboard(1, 100);
+        const dashboardData = (dashboardRes as any).data;
+        const travelJourneys = dashboardData?.travel_journeys || [];
+        
+        const matchingRoutes = new Set(
+          travelJourneys.map((journey: any) => 
+            `${journey.departure_city}|${journey.arrival_city}`
+          )
+        );
+        
+        const filteredOrdersData = ordersData.filter((order: any) => {
+          const orderRoute = `${order.origin_city}|${order.destination_city}`;
+          return matchingRoutes.has(orderRoute);
+        });
+        
+        const transformedOrders: Order[] = filteredOrdersData.map((order: any) => ({
+          ...order,
+          status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled' | 'accepted',
+        }));
+        
+        setOrders(transformedOrders);
+        alert('Order cancelled successfully');
+      } catch (error) {
+        console.error('Failed to cancel order:', error);
+        alert('Failed to cancel order. Please try again.');
+      }
     }
   };
 
@@ -261,14 +301,22 @@ const PickerMyOrders = () => {
                               key={item.id}
                               className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0"
                             >
-                              <img
-                                src={imageUtils.getImageUrl(item.product_images?.[0])}
-                                alt={item.item_name}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"%3E%3Crect x="3" y="3" width="18" height="18" rx="2"/%3E%3Ccircle cx="8.5" cy="8.5" r="1.5"/%3E%3Cpath d="M21 15l-5-5L5 21"/%3E%3C/svg%3E';
-                                }}
-                              />
+                              {item.product_images?.[0] ? (
+                                <img
+                                  src={imageUtils.getImageUrl(item.product_images[0])}
+                                  alt={item.item_name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"%3E%3Crect x="3" y="3" width="18" height="18" rx="2"/%3E%3Ccircle cx="8.5" cy="8.5" r="1.5"/%3E%3Cpath d="M21 15l-5-5L5 21"/%3E%3C/svg%3E';
+                                  }}
+                                />
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                                  <circle cx="8.5" cy="8.5" r="1.5" />
+                                  <path d="M21 15l-5-5L5 21" />
+                                </svg>
+                              )}
                             </div>
                           ))}
                           {order.items_count > 3 && (
@@ -306,6 +354,16 @@ const PickerMyOrders = () => {
                       className="w-full mt-2 bg-[#4D0013] text-white py-2 rounded-lg font-bold text-sm hover:bg-[#660019] transition-colors"
                     >
                       Start Chat
+                    </button>
+                  )}
+
+                  {/* Cancel Order Button - Only for Pending Orders */}
+                  {order.status === 'pending' && (
+                    <button
+                      onClick={() => handleCancelOrder(order.id)}
+                      className="w-full mt-2 bg-red-500 text-white py-2 rounded-lg font-bold text-sm hover:bg-red-600 transition-colors"
+                    >
+                      Cancel Order
                     </button>
                   )}
                 </div>
