@@ -168,7 +168,7 @@ const OrdererOrderDetailsView = () => {
           onAvatarError={handleAvatarError}
         />
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white">
+        <div className={`flex-1 overflow-y-auto p-4 md:p-8 ${order?.status.toUpperCase() === 'CANCELLED' ? 'pb-32 md:pb-8' : 'pb-24 md:pb-0'} bg-white`}>
           {loading && (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFDF57]"></div>
@@ -189,11 +189,26 @@ const OrdererOrderDetailsView = () => {
 
           {!loading && order && (
             <>
-          {/* Route Header */}
+          {/* Route Header with Status */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900">
               {order.origin_city} - {order.destination_city}
             </h1>
+            {/* Status Badge and Cancelled Message */}
+            <div className="mt-3 flex items-center gap-4">
+              <span className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${
+                order.status.toUpperCase() === 'CANCELLED'
+                  ? 'bg-red-100 text-red-700'
+                  : order.status.toUpperCase() === 'DELIVERED'
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-yellow-100 text-yellow-700'
+              }`}>
+                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+              </span>
+              {order.status.toUpperCase() === 'CANCELLED' && (
+                <p className="text-red-700 text-xs">This order has been cancelled and cannot be proceeded further.</p>
+              )}
+            </div>
           </div>
 
           <div className="max-w-xl mx-auto space-y-6">
@@ -330,8 +345,8 @@ const OrdererOrderDetailsView = () => {
             </div>
           )}
 
-          {/* Delivery Status Section - Only show when picker is assigned */}
-          {order.picker.id && (
+          {/* Delivery Status Section - Only show when picker is assigned and order is not cancelled */}
+          {order.picker.id && order.status.toUpperCase() !== 'CANCELLED' && (
             <div className="mb-6">
               <h3 className="font-bold text-gray-900 mb-4 text-base">ORDER MARKED AS DELIVERED BY JETPICKER</h3>
 
@@ -391,8 +406,8 @@ const OrdererOrderDetailsView = () => {
             </div>
           )}
 
-          {/* Rate and Tip Section - Only show when picker is assigned */}
-          {order.picker.id && (
+          {/* Rate and Tip Section - Only show when picker is assigned and order is not cancelled */}
+          {order.picker.id && order.status.toUpperCase() !== 'CANCELLED' && (
             <div className="rounded-2xl p-8 mb-6" style={{ backgroundColor: '#FFFACD' }}>
               <h3 className="text-center font-bold text-gray-900 mb-6 text-lg">Rate your experience with {order.picker.name}</h3>
 
