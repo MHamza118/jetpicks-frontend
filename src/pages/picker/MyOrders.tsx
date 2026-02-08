@@ -85,9 +85,18 @@ const PickerMyOrders = () => {
         );
         
         // Filter orders to only show those matching picker's travel journeys
+        // For CANCELLED orders, show them regardless of route matching (they were previously accepted)
         const filteredOrdersData = ordersData.filter((order: any) => {
           const orderRoute = `${order.origin_city}|${order.destination_city}`;
-          return matchingRoutes.has(orderRoute);
+          const isRouteMatch = matchingRoutes.has(orderRoute);
+          const isCancelled = order.status === 'CANCELLED';
+          
+          // Always show cancelled orders (they were previously assigned to this picker)
+          if (isCancelled) {
+            return true;
+          }
+          // For other statuses, check if route matches
+          return isRouteMatch;
         });
         
         // Transform API response to match Order interface
@@ -188,6 +197,7 @@ const PickerMyOrders = () => {
 
     try {
       setCancelModalLoading(true);
+      
       await pickerOrdersApi.cancelOrder(selectedOrderForCancel.id);
       
       // Fetch all orders (not filtered by current activeFilter) to get the updated status
@@ -206,7 +216,15 @@ const PickerMyOrders = () => {
       
       const filteredOrdersData = ordersData.filter((order: any) => {
         const orderRoute = `${order.origin_city}|${order.destination_city}`;
-        return matchingRoutes.has(orderRoute);
+        const isRouteMatch = matchingRoutes.has(orderRoute);
+        const isCancelled = order.status === 'CANCELLED';
+        
+        // Always show cancelled orders (they were previously assigned to this picker)
+        if (isCancelled) {
+          return true;
+        }
+        // For other statuses, check if route matches
+        return isRouteMatch;
       });
       
       const transformedOrders: Order[] = filteredOrdersData.map((order: any) => ({
