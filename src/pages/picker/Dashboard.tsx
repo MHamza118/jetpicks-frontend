@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dashboardApi } from '../../services';
 import type { PickerDashboardData } from '../../services/dashboard';
 import { useDashboardCache } from '../../context/DashboardCacheContext';
+import { useGlobalNotifications } from '../../context/GlobalNotificationContext';
 import { useUser } from '../../context/UserContext';
 import { imageUtils } from '../../utils';
 import PickerDashboardSidebar from '../../components/layout/PickerDashboardSidebar';
@@ -19,6 +20,18 @@ const PickerDashboard = () => {
     const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const fetchInProgressRef = useRef(false);
     const visibilityHandlerRef = useRef<(() => void) | null>(null);
+    
+    // Global notification hook
+    const { newOrderNotification, showNewOrderModal, setShowNewOrderModal, handleNewOrderClick } = useGlobalNotifications();
+
+    // Memoize header props to prevent unnecessary re-renders
+    const headerProps = useMemo(() => ({
+        title: 'Dashboard',
+        avatarUrl,
+        avatarError,
+        onAvatarError: handleAvatarError,
+        avatarLoading: loading,
+    }), [avatarUrl, avatarError, handleAvatarError, loading]);
 
     const fetchData = async (skipCache = false) => {
         // Prevent duplicate fetches
@@ -93,13 +106,7 @@ const PickerDashboard = () => {
             <PickerDashboardSidebar activeTab="dashboard" />
 
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-                <PickerDashboardHeader
-                    title="Dashboard"
-                    avatarUrl={avatarUrl}
-                    avatarError={avatarError}
-                    onAvatarError={handleAvatarError}
-                    avatarLoading={loading}
-                />
+                <PickerDashboardHeader {...headerProps} />
 
                 <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white">
                     {dashboardData?.travel_journeys && dashboardData.travel_journeys.length > 0 && (
@@ -200,6 +207,37 @@ const PickerDashboard = () => {
                 </div>
 
                 <MobileFooter activeTab="home" />
+
+                {/* New Order Notification Modal */}
+                {showNewOrderModal && newOrderNotification && (
+                    <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
+                        <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
+                            <div className="text-center">
+                                <div className="w-16 h-16 bg-[#4D0013] rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <h2 className="text-2xl font-bold text-gray-900 mb-2">New Order Available!</h2>
+                                <p className="text-gray-600 mb-2">{newOrderNotification.originCity} → {newOrderNotification.destinationCity}</p>
+                                <p className="text-sm text-gray-500 mb-2">From <span className="font-semibold text-gray-900">{newOrderNotification.ordererName}</span></p>
+                                <p className="text-lg font-bold text-[#4D0013] mb-6">Reward: ${newOrderNotification.rewardAmount.toFixed(2)}</p>
+                                <button
+                                    onClick={() => handleNewOrderClick(newOrderNotification.orderId, newOrderNotification.id)}
+                                    className="w-full bg-[#4D0013] text-white py-3 rounded-lg font-bold hover:bg-[#660019] transition-colors mb-2"
+                                >
+                                    View Order
+                                </button>
+                                <button
+                                    onClick={() => setShowNewOrderModal(false)}
+                                    className="w-full bg-gray-100 text-gray-900 py-3 rounded-lg font-bold hover:bg-gray-200 transition-colors"
+                                >
+                                    Dismiss
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

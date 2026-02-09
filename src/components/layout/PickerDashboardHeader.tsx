@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Search, Bell, User, ArrowLeft, X, Loader } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { notificationsApi, searchApi } from '../../services';
-import { useAcceptedOrderPolling, useCounterOfferPolling } from '../../context/OrderNotificationContext';
+import { useGlobalNotifications } from '../../context/GlobalNotificationContext';
 import { memo } from 'react';
 import type { SearchOrderResult } from '../../services/search';
 import { imageUtils } from '../../utils';
@@ -32,8 +32,20 @@ const PickerDashboardHeader = ({
     const [searchLoading, setSearchLoading] = useState(false);
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const searchContainerRef = useRef<HTMLDivElement>(null);
-    const { notification, acceptedOrdersHistory, showNotificationModal, setShowNotificationModal, handleNotificationClick } = useAcceptedOrderPolling();
-    const { counterOfferNotification, counterOffersHistory, showCounterOfferModal, setShowCounterOfferModal, handleCounterOfferClick } = useCounterOfferPolling();
+    const {
+      acceptedOrderNotification,
+      acceptedOrdersHistory,
+      showAcceptedOrderModal,
+      setShowAcceptedOrderModal,
+      handleAcceptedOrderClick,
+      counterOfferNotification,
+      counterOffersHistory,
+      showCounterOfferModal,
+      setShowCounterOfferModal,
+      handleCounterOfferClick,
+      newOrdersHistory,
+      handleNewOrderClick,
+    } = useGlobalNotifications();
 
     // Get user's first letter from localStorage
     const getUserInitial = () => {
@@ -52,7 +64,7 @@ const PickerDashboardHeader = ({
     };
 
     // Combine all notifications
-    const allNotifications = [...acceptedOrdersHistory, ...counterOffersHistory];
+    const allNotifications = [...acceptedOrdersHistory, ...counterOffersHistory, ...newOrdersHistory];
     const unreadCount = allNotifications.filter(n => !n.isRead).length;
 
     // Handle click outside to close search results
@@ -341,11 +353,17 @@ const PickerDashboardHeader = ({
                                                 }
                                             }
 
+                                            // Handle different notification types
                                             if ('offerId' in notif) {
                                                 const counterNotif = notif as any;
                                                 handleCounterOfferClick(counterNotif.orderId, counterNotif.offerId);
+                                            } else if ('originCity' in notif) {
+                                                // NEW_ORDER_AVAILABLE notification
+                                                const newOrderNotif = notif as any;
+                                                handleNewOrderClick(newOrderNotif.orderId, newOrderNotif.id);
                                             } else {
-                                                handleNotificationClick(notif.orderId);
+                                                // ORDER_ACCEPTED notification
+                                                handleAcceptedOrderClick(notif.orderId);
                                             }
                                         }}
                                         className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
@@ -353,6 +371,8 @@ const PickerDashboardHeader = ({
                                         <p className="text-sm font-semibold text-gray-900">
                                             {'offerId' in notif
                                                 ? `${notif.pickerName} sent a counter offer`
+                                                : 'originCity' in notif
+                                                ? `New Order: ${(notif as any).originCity} → ${(notif as any).destinationCity}`
                                                 : `${notif.pickerName} has accepted your order`
                                             }
                                         </p>
@@ -372,22 +392,22 @@ const PickerDashboardHeader = ({
             )}
 
             {/* Auto-show Notification Modal (5 seconds) */}
-            {showNotificationModal && notification && (
+            {showAcceptedOrderModal && acceptedOrderNotification && (
                 <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-lg font-bold text-gray-900">Order Accepted!</h2>
-                            <button onClick={() => setShowNotificationModal(false)}>
+                            <button onClick={() => setShowAcceptedOrderModal(false)}>
                                 <X size={20} className="text-gray-600" />
                             </button>
                         </div>
 
                         <p className="text-gray-700 mb-4">
-                            {notification.pickerName} has accepted your order
+                            {acceptedOrderNotification.pickerName} has accepted your order
                         </p>
 
                         <button
-                            onClick={() => handleNotificationClick(notification.orderId)}
+                            onClick={() => handleAcceptedOrderClick(acceptedOrderNotification.orderId)}
                             className="w-full bg-[#4D0013] text-white py-2 rounded-lg font-bold hover:bg-[#660019] transition-colors"
                         >
                             View Order

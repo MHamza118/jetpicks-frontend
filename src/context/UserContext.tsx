@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import { profileApi } from '../services';
 import { imageUtils } from '../utils';
 import { STORAGE_KEYS } from '../constants';
@@ -111,21 +111,21 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const handleAvatarError = () => {
+  const handleAvatarError = useCallback(() => {
     setAvatarError(true);
     setAvatarUrl(null);
-  };
+  }, []);
 
-  const clearAvatar = () => {
+  const clearAvatar = useCallback(() => {
     setAvatarUrl(null);
     setAvatarError(false);
     setLoading(false);
-  };
+  }, []);
 
-  const refetchAvatar = async () => {
+  const refetchAvatar = useCallback(async () => {
     setLoading(true);
     await fetchAvatar();
-  };
+  }, []);
 
   return (
     <UserContext.Provider value={{ avatarUrl, avatarError, loading, handleAvatarError, refetchAvatar, clearAvatar }}>
