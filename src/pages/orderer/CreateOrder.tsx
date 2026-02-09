@@ -295,10 +295,17 @@ const CreateOrder = () => {
                                             <div className="relative">
                                                 <button
                                                     onClick={() => {
-                                                        setOpenDropdown(openDropdown === 'originCountry' ? null : 'originCountry');
-                                                        setSearchText(prev => ({ ...prev, originCountry: '' }));
+                                                        if (!selectedPicker) {
+                                                            setOpenDropdown(openDropdown === 'originCountry' ? null : 'originCountry');
+                                                            setSearchText(prev => ({ ...prev, originCountry: '' }));
+                                                        }
                                                     }}
-                                                    className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base flex items-center justify-between bg-white hover:bg-gray-50"
+                                                    disabled={!!selectedPicker}
+                                                    className={`w-full px-3 md:px-4 py-2.5 md:py-2 border rounded-lg text-sm md:text-base flex items-center justify-between ${
+                                                        selectedPicker 
+                                                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60' 
+                                                            : 'border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FFDF57]'
+                                                    }`}
                                                 >
                                                     <span className="flex items-center gap-2">
                                                         {formData.originCountry && (
@@ -311,7 +318,7 @@ const CreateOrder = () => {
                                                     </span>
                                                     <ChevronDown size={16} className={`transition-transform ${openDropdown === 'originCountry' ? 'rotate-180' : ''}`} />
                                                 </button>
-                                                {openDropdown === 'originCountry' && (
+                                                {openDropdown === 'originCountry' && !selectedPicker && (
                                                     <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
                                                         <input
                                                             type="text"
@@ -350,10 +357,17 @@ const CreateOrder = () => {
                                                 <div className="relative">
                                                     <button
                                                         onClick={() => {
-                                                            setOpenDropdown(openDropdown === 'originCity' ? null : 'originCity');
-                                                            setSearchText(prev => ({ ...prev, originCity: '' }));
+                                                            if (!selectedPicker) {
+                                                                setOpenDropdown(openDropdown === 'originCity' ? null : 'originCity');
+                                                                setSearchText(prev => ({ ...prev, originCity: '' }));
+                                                            }
                                                         }}
-                                                        className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base flex items-center justify-between bg-white hover:bg-gray-50"
+                                                        disabled={!!selectedPicker}
+                                                        className={`w-full px-3 md:px-4 py-2.5 md:py-2 border rounded-lg text-sm md:text-base flex items-center justify-between ${
+                                                            selectedPicker 
+                                                                ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60' 
+                                                                : 'border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FFDF57]'
+                                                        }`}
                                                     >
                                                         <span className="flex items-center gap-2">
                                                             {formData.originCity && <span>{formData.originCity}</span>}
@@ -361,7 +375,7 @@ const CreateOrder = () => {
                                                         </span>
                                                         <ChevronDown size={16} className={`transition-transform ${openDropdown === 'originCity' ? 'rotate-180' : ''}`} />
                                                     </button>
-                                                    {openDropdown === 'originCity' && (
+                                                    {openDropdown === 'originCity' && !selectedPicker && (
                                                         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
                                                             <input
                                                                 type="text"
@@ -406,10 +420,17 @@ const CreateOrder = () => {
                                             <div className="relative">
                                                 <button
                                                     onClick={() => {
-                                                        setOpenDropdown(openDropdown === 'destinationCountry' ? null : 'destinationCountry');
-                                                        setSearchText(prev => ({ ...prev, destinationCountry: '' }));
+                                                        if (!selectedPicker) {
+                                                            setOpenDropdown(openDropdown === 'destinationCountry' ? null : 'destinationCountry');
+                                                            setSearchText(prev => ({ ...prev, destinationCountry: '' }));
+                                                        }
                                                     }}
-                                                    className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base flex items-center justify-between bg-white hover:bg-gray-50"
+                                                    disabled={!!selectedPicker}
+                                                    className={`w-full px-3 md:px-4 py-2.5 md:py-2 border rounded-lg text-sm md:text-base flex items-center justify-between ${
+                                                        selectedPicker 
+                                                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60' 
+                                                            : 'border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FFDF57]'
+                                                    }`}
                                                 >
                                                     <span className="flex items-center gap-2">
                                                         {formData.destinationCountry && (
@@ -422,7 +443,7 @@ const CreateOrder = () => {
                                                     </span>
                                                     <ChevronDown size={16} className={`transition-transform ${openDropdown === 'destinationCountry' ? 'rotate-180' : ''}`} />
                                                 </button>
-                                                {openDropdown === 'destinationCountry' && (
+                                                {openDropdown === 'destinationCountry' && !selectedPicker && (
                                                     <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
                                                         <input
                                                             type="text"
@@ -461,10 +482,17 @@ const CreateOrder = () => {
                                                 <div className="relative">
                                                     <button
                                                         onClick={() => {
-                                                            setOpenDropdown(openDropdown === 'destinationCity' ? null : 'destinationCity');
-                                                            setSearchText(prev => ({ ...prev, destinationCity: '' }));
+                                                            if (!selectedPicker) {
+                                                                setOpenDropdown(openDropdown === 'destinationCity' ? null : 'destinationCity');
+                                                                setSearchText(prev => ({ ...prev, destinationCity: '' }));
+                                                            }
                                                         }}
-                                                        className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm md:text-base flex items-center justify-between bg-white hover:bg-gray-50"
+                                                        disabled={!!selectedPicker}
+                                                        className={`w-full px-3 md:px-4 py-2.5 md:py-2 border rounded-lg text-sm md:text-base flex items-center justify-between ${
+                                                            selectedPicker 
+                                                                ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60' 
+                                                                : 'border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FFDF57]'
+                                                        }`}
                                                     >
                                                         <span className="flex items-center gap-2">
                                                             {formData.destinationCity && <span>{formData.destinationCity}</span>}
@@ -472,7 +500,7 @@ const CreateOrder = () => {
                                                         </span>
                                                         <ChevronDown size={16} className={`transition-transform ${openDropdown === 'destinationCity' ? 'rotate-180' : ''}`} />
                                                     </button>
-                                                    {openDropdown === 'destinationCity' && (
+                                                    {openDropdown === 'destinationCity' && !selectedPicker && (
                                                         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
                                                             <input
                                                                 type="text"
