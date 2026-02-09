@@ -194,7 +194,7 @@ const TravelAvailabilitySetup = () => {
                 )}
 
                 <div className={isFromDashboard ? "flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white" : "border border-gray-200 bg-white rounded-[32px] p-8 shadow-lg"}>
-                    <div className={isFromDashboard ? "max-w-2xl mx-auto" : ""}>
+                    <div className={isFromDashboard ? "max-w-2xl mx-auto pb-8" : ""}>
                         {isFromDashboard && isEditing ? (
                         <div>
                             <div className="flex items-center justify-between mb-6">
@@ -202,12 +202,6 @@ const TravelAvailabilitySetup = () => {
                                     <h1 className="text-[22px] font-bold text-gray-900">Edit Journey</h1>
                                     <p className="text-gray-500 text-xs font-medium">Share your travel details to get relevant Jetorders</p>
                                 </div>
-                                <button
-                                    onClick={() => setIsEditing(false)}
-                                    className="px-4 py-2 text-sm font-semibold text-white bg-[#4D0013] hover:bg-[#660019] rounded-lg transition-colors"
-                                >
-                                    Done
-                                </button>
                             </div>
                         </div>
                     ) : isFromDashboard && !isEditing ? (
@@ -572,13 +566,13 @@ const TravelAvailabilitySetup = () => {
                         )}
                         {isFromDashboard && isEditing && (
                             <div className="flex flex-col gap-3 mt-8">
-                                <Button
+                                <button
                                     onClick={handleContinue}
-                                    className="w-full py-3 text-sm tracking-wide rounded-xl bg-red-700 hover:bg-red-800 text-white font-bold"
+                                    className="w-full py-3 px-4 text-sm tracking-wide rounded-xl bg-[#4D0013] hover:bg-[#660019] text-white font-bold transition-colors disabled:opacity-50"
                                     disabled={loading}
                                 >
                                     {loading ? 'Saving...' : 'Save Changes'}
-                                </Button>
+                                </button>
                             </div>
                         )}
                     </div>
