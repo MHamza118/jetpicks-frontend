@@ -22,6 +22,7 @@ const TravelAvailabilitySetup = () => {
     const [avatarError, setAvatarError] = useState(false);
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const [searchText, setSearchText] = useState<{ [key: string]: string }>({});
+    const [isEditing, setIsEditing] = useState(false);
 
     const luggageOptions = ['5', '10', '15', '20', '25', '30'];
 
@@ -194,10 +195,42 @@ const TravelAvailabilitySetup = () => {
 
                 <div className={isFromDashboard ? "flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white" : "border border-gray-200 bg-white rounded-[32px] p-8 shadow-lg"}>
                     <div className={isFromDashboard ? "max-w-2xl mx-auto" : ""}>
+                        {isFromDashboard && isEditing ? (
+                        <div>
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h1 className="text-[22px] font-bold text-gray-900">Edit Journey</h1>
+                                    <p className="text-gray-500 text-xs font-medium">Share your travel details to get relevant Jetorders</p>
+                                </div>
+                                <button
+                                    onClick={() => setIsEditing(false)}
+                                    className="px-4 py-2 text-sm font-semibold text-white bg-[#4D0013] hover:bg-[#660019] rounded-lg transition-colors"
+                                >
+                                    Done
+                                </button>
+                            </div>
+                        </div>
+                    ) : isFromDashboard && !isEditing ? (
+                        <div>
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h1 className="text-[22px] font-bold text-gray-900">Travel Availability Setup</h1>
+                                    <p className="text-gray-500 text-xs font-medium">Share your travel details to get relevant Jetorders</p>
+                                </div>
+                                <button
+                                    onClick={() => setIsEditing(true)}
+                                    className="px-4 py-2 text-sm font-semibold text-white bg-[#4D0013] hover:bg-[#660019] rounded-lg transition-colors"
+                                >
+                                    Edit
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
                         <div className="text-center mb-6">
                             <h1 className="text-[22px] font-bold text-gray-900 mb-1">Travel Availability Setup</h1>
                             <p className="text-gray-500 text-xs font-medium">Share your travel details to get relevant Jetorders</p>
                         </div>
+                    )}
 
                         {error && (
                             <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded-lg text-xs">
@@ -218,10 +251,12 @@ const TravelAvailabilitySetup = () => {
                                     <div className="relative country-dropdown">
                                         <button
                                             onClick={() => {
+                                                if (isFromDashboard && !isEditing) return;
                                                 setOpenDropdown(openDropdown === 'departure_country' ? null : 'departure_country');
                                                 setSearchText(prev => ({ ...prev, departure_country: '' }));
                                             }}
-                                            className="w-full bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1 flex items-center justify-between hover:opacity-80"
+                                            disabled={isFromDashboard && !isEditing}
+                                            className={`w-full bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1 flex items-center justify-between hover:opacity-80 ${isFromDashboard && !isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             <span className="flex items-center gap-2">
                                                 {formData.departure_country && (
@@ -269,10 +304,12 @@ const TravelAvailabilitySetup = () => {
                                         <div className="relative city-dropdown">
                                             <button
                                                 onClick={() => {
+                                                    if (isFromDashboard && !isEditing) return;
                                                     setOpenDropdown(openDropdown === 'departure_city' ? null : 'departure_city');
                                                     setSearchText(prev => ({ ...prev, departure_city: '' }));
                                                 }}
-                                                className="w-full bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1 flex items-center justify-between hover:opacity-80"
+                                                disabled={isFromDashboard && !isEditing}
+                                                className={`w-full bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1 flex items-center justify-between hover:opacity-80 ${isFromDashboard && !isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
                                             >
                                                 <span>{formData.departure_city || 'Select city'}</span>
                                                 <ChevronDown size={14} className={`transition-transform ${openDropdown === 'departure_city' ? 'rotate-180' : ''}`} />
@@ -325,10 +362,12 @@ const TravelAvailabilitySetup = () => {
                                     <div className="relative country-dropdown">
                                         <button
                                             onClick={() => {
+                                                if (isFromDashboard && !isEditing) return;
                                                 setOpenDropdown(openDropdown === 'arrival_country' ? null : 'arrival_country');
                                                 setSearchText(prev => ({ ...prev, arrival_country: '' }));
                                             }}
-                                            className="w-full bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1 flex items-center justify-between hover:opacity-80"
+                                            disabled={isFromDashboard && !isEditing}
+                                            className={`w-full bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1 flex items-center justify-between hover:opacity-80 ${isFromDashboard && !isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             <span className="flex items-center gap-2">
                                                 {formData.arrival_country && (
@@ -376,10 +415,12 @@ const TravelAvailabilitySetup = () => {
                                         <div className="relative city-dropdown">
                                             <button
                                                 onClick={() => {
+                                                    if (isFromDashboard && !isEditing) return;
                                                     setOpenDropdown(openDropdown === 'arrival_city' ? null : 'arrival_city');
                                                     setSearchText(prev => ({ ...prev, arrival_city: '' }));
                                                 }}
-                                                className="w-full bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1 flex items-center justify-between hover:opacity-80"
+                                                disabled={isFromDashboard && !isEditing}
+                                                className={`w-full bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1 flex items-center justify-between hover:opacity-80 ${isFromDashboard && !isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
                                             >
                                                 <span>{formData.arrival_city || 'Select city'}</span>
                                                 <ChevronDown size={14} className={`transition-transform ${openDropdown === 'arrival_city' ? 'rotate-180' : ''}`} />
@@ -433,7 +474,8 @@ const TravelAvailabilitySetup = () => {
                                     name="departure_date"
                                     value={formData.departure_date}
                                     onChange={handleInputChange}
-                                    className="w-full bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1"
+                                    disabled={isFromDashboard && !isEditing}
+                                    className={`w-full bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1 ${isFromDashboard && !isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
                                 />
                             </div>
                         </div>
@@ -452,7 +494,8 @@ const TravelAvailabilitySetup = () => {
                                     name="arrival_date"
                                     value={formData.arrival_date}
                                     onChange={handleInputChange}
-                                    className="w-full bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1"
+                                    disabled={isFromDashboard && !isEditing}
+                                    className={`w-full bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1 ${isFromDashboard && !isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
                                 />
                             </div>
                         </div>
@@ -471,9 +514,13 @@ const TravelAvailabilitySetup = () => {
                                         name="luggage_weight_capacity"
                                         value={formData.luggage_weight_capacity}
                                         onChange={handleInputChange}
-                                        onFocus={() => setOpenDropdown('luggage')}
+                                        onFocus={() => {
+                                            if (isFromDashboard && !isEditing) return;
+                                            setOpenDropdown('luggage');
+                                        }}
+                                        disabled={isFromDashboard && !isEditing}
                                         placeholder="Enter weight"
-                                        className="flex-1 bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1"
+                                        className={`flex-1 bg-transparent border-b-2 border-yellow-400 text-gray-700 font-semibold text-sm focus:outline-none focus:border-yellow-500 pb-1 ${isFromDashboard && !isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         min="1"
                                     />
                                     <span className="text-gray-700 font-semibold text-sm">kg</span>
@@ -505,22 +552,35 @@ const TravelAvailabilitySetup = () => {
                         </div>
 
                         {/* Buttons */}
-                        <div className="flex flex-col gap-3 mt-8">
-                            <Button
-                                onClick={handleContinue}
-                                className="w-full py-3 text-sm tracking-wide rounded-xl bg-red-700 hover:bg-red-800 text-white font-bold"
-                                disabled={loading}
-                            >
-                                {loading ? 'Saving...' : 'Continue'}
-                            </Button>
-                            <button
-                                onClick={handleSkip}
-                                className="w-full py-3 text-sm font-semibold text-gray-900 hover:text-gray-700 transition-colors disabled:opacity-50"
-                                disabled={loading}
-                            >
-                                Skip for Now
-                            </button>
-                        </div>
+                        {!isFromDashboard && (
+                            <div className="flex flex-col gap-3 mt-8">
+                                <Button
+                                    onClick={handleContinue}
+                                    className="w-full py-3 text-sm tracking-wide rounded-xl bg-red-700 hover:bg-red-800 text-white font-bold"
+                                    disabled={loading}
+                                >
+                                    {loading ? 'Saving...' : 'Continue'}
+                                </Button>
+                                <button
+                                    onClick={handleSkip}
+                                    className="w-full py-3 text-sm font-semibold text-gray-900 hover:text-gray-700 transition-colors disabled:opacity-50"
+                                    disabled={loading}
+                                >
+                                    Skip for Now
+                                </button>
+                            </div>
+                        )}
+                        {isFromDashboard && isEditing && (
+                            <div className="flex flex-col gap-3 mt-8">
+                                <Button
+                                    onClick={handleContinue}
+                                    className="w-full py-3 text-sm tracking-wide rounded-xl bg-red-700 hover:bg-red-800 text-white font-bold"
+                                    disabled={loading}
+                                >
+                                    {loading ? 'Saving...' : 'Save Changes'}
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </div>
 
