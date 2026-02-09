@@ -247,7 +247,15 @@ const PickerOrderDetailsView = () => {
                         <div className="flex justify-between items-center font-bold text-lg">
                           <p className="text-gray-900">Total Amount</p>
                           <p className="text-gray-900">
-                            ${(order.items_cost + parseFloat(order.reward_amount.toString()) + (order.accepted_counter_offer_amount ? parseFloat(order.accepted_counter_offer_amount.toString()) : 0)).toFixed(2)}
+                            ${(() => {
+                              const itemsCost = order.items_cost || 0;
+                              const reward = typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount) : order.reward_amount;
+                              const subtotal = itemsCost + reward;
+                              const jetPickerFee = subtotal * 0.065;
+                              const paymentFee = subtotal * 0.04;
+                              const total = subtotal + jetPickerFee + paymentFee;
+                              return total.toFixed(2);
+                            })()}
                           </p>
                         </div>
                       </>

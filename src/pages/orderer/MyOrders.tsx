@@ -15,7 +15,9 @@ interface Order {
   destination_city: string;
   status: 'pending' | 'delivered' | 'cancelled' | 'draft' | 'accepted';
   items_count: number;
-  total_cost: number;
+  items_cost: number;
+  reward_amount: number;
+  accepted_counter_offer_amount?: number;
   created_at: string;
 }
 
@@ -29,6 +31,23 @@ const OrdererMyOrders = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [selectedOrderForCancel, setSelectedOrderForCancel] = useState<OrdererOrderDetails | null>(null);
   const [cancelModalLoading, setCancelModalLoading] = useState(false);
+
+  // Helper function to calculate total cost with fees
+  const calculateTotalCost = (itemsCost: number, rewardAmount: number, counterOfferAmount?: number) => {
+    const baseAmount = itemsCost + rewardAmount;
+    const jetPickerFee = baseAmount * 0.065;
+    const paymentProcessingFee = baseAmount * 0.04;
+    
+    // If counter offer is accepted, use that instead of reward amount
+    if (counterOfferAmount !== undefined && counterOfferAmount > 0) {
+      const counterOfferTotal = itemsCost + counterOfferAmount;
+      const counterOfferJetPickerFee = counterOfferTotal * 0.065;
+      const counterOfferPaymentFee = counterOfferTotal * 0.04;
+      return counterOfferTotal + counterOfferJetPickerFee + counterOfferPaymentFee;
+    }
+    
+    return baseAmount + jetPickerFee + paymentProcessingFee;
+  };
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -48,7 +67,9 @@ const OrdererMyOrders = () => {
             destination_city: order.destination_city,
             status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled' | 'draft' | 'accepted',
             items_count: order.items_count,
-            total_cost: order.total_cost,
+            items_cost: order.items_cost,
+            reward_amount: order.reward_amount,
+            accepted_counter_offer_amount: order.accepted_counter_offer_amount,
             created_at: order.created_at,
           }));
         
@@ -144,7 +165,9 @@ const OrdererMyOrders = () => {
           destination_city: order.destination_city,
           status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled' | 'draft' | 'accepted',
           items_count: order.items_count,
-          total_cost: order.total_cost,
+          items_cost: order.items_cost,
+          reward_amount: order.reward_amount,
+          accepted_counter_offer_amount: order.accepted_counter_offer_amount,
           created_at: order.created_at,
         }));
       
@@ -244,7 +267,13 @@ const OrdererMyOrders = () => {
                       <p className="text-sm font-semibold text-gray-900">{order.items_count} Items</p>
                     </div>
                     <p className="text-sm text-gray-600">
-                      Total Cost: <span className="font-semibold text-gray-900">${order.total_cost}</span>
+                      Total Cost: <span className="font-semibold text-gray-900">
+                        ${calculateTotalCost(
+                          order.items_cost ? parseFloat(order.items_cost.toString()) : 0,
+                          order.reward_amount ? parseFloat(order.reward_amount.toString()) : 0,
+                          order.accepted_counter_offer_amount ? parseFloat(order.accepted_counter_offer_amount.toString()) : undefined
+                        ).toFixed(2)}
+                      </span>
                     </p>
                   </div>
 
@@ -307,16 +336,42 @@ const OrdererMyOrders = () => {
               <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Item Cost:</span>
-                  <span className="font-semibold text-gray-900">${parseFloat(selectedOrderForCancel.items_cost.toString()).toFixed(2)}</span>
+                  <span className="font-semibold text-gray-900">${(selectedOrderForCancel.items_cost ? parseFloat(selectedOrderForCancel.items_cost.toString()) : 0).toFixed(2)}</span>
                 </div>
+                
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Reward:</span>
-                  <span className="font-semibold text-gray-900">${parseFloat(selectedOrderForCancel.reward_amount.toString()).toFixed(2)}</span>
+                  <span className="font-semibold text-gray-900">${(selectedOrderForCancel.reward_amount ? parseFloat(selectedOrderForCancel.reward_amount.toString()) : 0).toFixed(2)}</span>
                 </div>
+
+                {selectedOrderForCancel.accepted_counter_offer_amount && parseFloat(selectedOrderForCancel.accepted_counter_offer_amount.toString()) > 0 && (
+                  <div className="flex justify-between items-center bg-yellow-100 p-2 rounded">
+                    <span className="text-gray-600 font-semibold">Counter Offer Amount:</span>
+                    <span className="font-bold text-gray-900">${parseFloat(selectedOrderForCancel.accepted_counter_offer_amount.toString()).toFixed(2)}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">JetPicker Fee (6.5%):</span>
+                  <span className="font-semibold text-gray-900">
+                    ${(((selectedOrderForCancel.items_cost ? parseFloat(selectedOrderForCancel.items_cost.toString()) : 0) + (selectedOrderForCancel.reward_amount ? parseFloat(selectedOrderForCancel.reward_amount.toString()) : 0)) * 0.065).toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Payment Processing (4%):</span>
+                  <span className="font-semibold text-gray-900">
+                    ${(((selectedOrderForCancel.items_cost ? parseFloat(selectedOrderForCancel.items_cost.toString()) : 0) + (selectedOrderForCancel.reward_amount ? parseFloat(selectedOrderForCancel.reward_amount.toString()) : 0)) * 0.04).toFixed(2)}
+                  </span>
+                </div>
+                
                 <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
                   <span className="text-gray-900 font-semibold">Total:</span>
                   <span className="font-bold text-lg text-gray-900">
-                    ${(parseFloat(selectedOrderForCancel.items_cost.toString()) + parseFloat(selectedOrderForCancel.reward_amount.toString())).toFixed(2)}
+                    ${calculateTotalCost(
+                      selectedOrderForCancel.items_cost ? parseFloat(selectedOrderForCancel.items_cost.toString()) : 0,
+                      selectedOrderForCancel.reward_amount ? parseFloat(selectedOrderForCancel.reward_amount.toString()) : 0,
+                      selectedOrderForCancel.accepted_counter_offer_amount ? parseFloat(selectedOrderForCancel.accepted_counter_offer_amount.toString()) : undefined
+                    ).toFixed(2)}
                   </span>
                 </div>
               </div>

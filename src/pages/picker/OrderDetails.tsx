@@ -104,8 +104,14 @@ const PickerOrderDetails = () => {
   };
 
   const calculateJetPicksFee = (itemsCost: number, initialReward: number, counterOffer: number) => {
-    const subtotal = itemsCost + initialReward + counterOffer;
-    return (subtotal * 0.015).toFixed(2);
+    const subtotal = itemsCost + (counterOffer > 0 ? counterOffer : initialReward);
+    const jetPickerFee = subtotal * 0.065;
+    const paymentProcessingFee = subtotal * 0.04;
+    return {
+      jetPickerFee: jetPickerFee.toFixed(2),
+      paymentProcessingFee: paymentProcessingFee.toFixed(2),
+      totalFees: (jetPickerFee + paymentProcessingFee).toFixed(2)
+    };
   };
 
   const calculateTotal = () => {
@@ -116,8 +122,9 @@ const PickerOrderDetails = () => {
     const counterOffer = typeof order?.accepted_counter_offer_amount === 'string'
       ? parseFloat(order.accepted_counter_offer_amount)
       : (order?.accepted_counter_offer_amount || 0);
-    const fee = parseFloat(calculateJetPicksFee(itemsCost, initialReward, counterOffer));
-    const total = itemsCost + initialReward + counterOffer + fee;
+    const fees = calculateJetPicksFee(itemsCost, initialReward, counterOffer);
+    const subtotal = itemsCost + (counterOffer > 0 ? counterOffer : initialReward);
+    const total = subtotal + parseFloat(fees.totalFees);
     return total.toFixed(2);
   };
 
@@ -166,7 +173,7 @@ const PickerOrderDetails = () => {
   const counterOffer = typeof order.accepted_counter_offer_amount === 'string'
     ? parseFloat(order.accepted_counter_offer_amount)
     : (order.accepted_counter_offer_amount || 0);
-  const jetPicksFee = calculateJetPicksFee(itemsCost, initialReward, counterOffer);
+  const fees = calculateJetPicksFee(itemsCost, initialReward, counterOffer);
   const totalAmount = calculateTotal();
 
   return (
@@ -271,18 +278,22 @@ const PickerOrderDetails = () => {
                     <span className="text-gray-900 font-semibold">${itemsCost.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Initial Reward</span>
+                    <span className="text-gray-600">Reward Amount</span>
                     <span className="text-gray-900 font-semibold">${initialReward.toFixed(2)}</span>
                   </div>
                   {counterOffer > 0 && (
                     <div className="flex justify-between items-center bg-yellow-50 p-2 rounded">
-                      <span className="text-gray-600 font-semibold">Counter Offer</span>
+                      <span className="text-gray-600 font-semibold">Counter Offer Amount</span>
                       <span className="text-gray-900 font-bold">${counterOffer.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">JetPicks fee</span>
-                    <span className="text-gray-900 font-semibold">(1.5%) ${jetPicksFee}</span>
+                    <span className="text-gray-600">JetPicker Fee (6.5%)</span>
+                    <span className="text-gray-900 font-semibold">${fees.jetPickerFee}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Payment Processing (4%)</span>
+                    <span className="text-gray-900 font-semibold">${fees.paymentProcessingFee}</span>
                   </div>
                   <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
                     <span className="text-gray-900 font-bold">Total</span>

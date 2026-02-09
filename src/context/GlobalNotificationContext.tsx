@@ -72,7 +72,7 @@ export const GlobalNotificationProvider = ({ children }: { children: ReactNode }
     pollIntervalRef.current = setInterval(async () => {
       try {
         if (currentRole === 'PICKER') {
-          const newOrderNotifs = await fetchNewOrderNotifications(1, 100);
+          const newOrderNotifs = await fetchNewOrderNotifications(100);
           setNewOrdersHistory(newOrderNotifs);
 
           for (const notif of newOrderNotifs) {

@@ -21,7 +21,7 @@ export const usePickerNewOrderNotifications = () => {
     // Fetch notifications from database on mount (just to populate history, don't show modal)
     const fetchNotificationsFromDB = async () => {
       try {
-        const notifications = await fetchNewOrderNotifications(1, 100);
+        const notifications = await fetchNewOrderNotifications(100);
         
         const history: NewOrderNotification[] = [];
         for (const notif of notifications) {
@@ -40,7 +40,7 @@ export const usePickerNewOrderNotifications = () => {
     // Polling for new notifications
     pollIntervalRef.current = setInterval(async () => {
       try {
-        const notifications = await fetchNewOrderNotifications(1, 10);
+        const notifications = await fetchNewOrderNotifications(10);
         
         for (const notif of notifications) {
           // Only show modal for notifications that haven't been shown yet

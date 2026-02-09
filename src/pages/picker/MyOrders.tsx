@@ -28,6 +28,7 @@ interface Order {
   destination_city: string;
   status: 'pending' | 'delivered' | 'cancelled' | 'accepted';
   items_count: number;
+  items_cost: number;
   reward_amount: number | string;
   items: OrderItem[];
   created_at: string;
@@ -375,7 +376,15 @@ const PickerMyOrders = () => {
                             Total Items <span className="font-semibold text-gray-900">{order.items_count}</span>
                           </p>
                           <p className="text-xs text-gray-600">
-                            Reward: <span className="font-semibold text-gray-900">${typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount).toFixed(2) : order.reward_amount.toFixed(2)}</span>
+                            Total: <span className="font-semibold text-gray-900">${(() => {
+                              const itemsCost = typeof order.items_cost === 'string' ? parseFloat(order.items_cost) : order.items_cost;
+                              const reward = typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount) : order.reward_amount;
+                              const subtotal = itemsCost + reward;
+                              const jetPickerFee = subtotal * 0.065;
+                              const paymentFee = subtotal * 0.04;
+                              const total = subtotal + jetPickerFee + paymentFee;
+                              return total.toFixed(2);
+                            })()}</span>
                           </p>
                         </div>
                       </div>

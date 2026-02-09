@@ -36,6 +36,9 @@ interface OrderDetailsData {
   delivery_status?: 'completed' | 'issue' | null;
   remaining_time?: string;
   total_cost: number;
+  items_cost: number;
+  reward_amount: number;
+  accepted_counter_offer_amount?: number;
 }
 
 const OrdererOrderDetailsView = () => {
@@ -57,6 +60,50 @@ const OrdererOrderDetailsView = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
+
+  // Helper function to calculate items total
+  const getItemsTotal = () => {
+    if (!order) return 0;
+    return typeof order.items_cost === 'string' ? parseFloat(order.items_cost) : (order.items_cost || 0);
+  };
+
+  // Helper function to get reward amount as number
+  const getRewardAmount = () => {
+    if (!order) return 0;
+    const reward = order.reward_amount;
+    return typeof reward === 'string' ? parseFloat(reward) : (reward || 0);
+  };
+
+  // Helper function to get counter offer amount as number
+  const getCounterOfferAmount = () => {
+    if (!order) return 0;
+    const counterOffer = order.accepted_counter_offer_amount;
+    return typeof counterOffer === 'string' ? parseFloat(counterOffer) : (counterOffer || 0);
+  };
+
+  // Helper function to calculate subtotal (items + reward or counter offer)
+  const getSubtotal = () => {
+    const counterOfferAmount = getCounterOfferAmount();
+    if (counterOfferAmount > 0) {
+      return getItemsTotal() + counterOfferAmount;
+    }
+    return getItemsTotal() + getRewardAmount();
+  };
+
+  // Helper function to calculate JetPicker fee (6.5%)
+  const getJetPickerFee = () => {
+    return getSubtotal() * 0.065;
+  };
+
+  // Helper function to calculate payment processing fee (4%)
+  const getPaymentProcessingFee = () => {
+    return getSubtotal() * 0.04;
+  };
+
+  // Helper function to calculate total
+  const getTotal = () => {
+    return getSubtotal() + getJetPickerFee() + getPaymentProcessingFee();
+  };
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -94,9 +141,11 @@ const OrdererOrderDetailsView = () => {
           delivery_status: null,
           remaining_time: '47h:12m',
           total_cost: data.total_cost || 0,
+          items_cost: data.items_cost || 0,
+          reward_amount: data.reward_amount || 0,
+          accepted_counter_offer_amount: data.accepted_counter_offer_amount,
         });
       } catch (err) {
-        console.error('Failed to fetch order details:', err);
         setError('Failed to load order details');
       } finally {
         setLoading(false);
@@ -165,7 +214,6 @@ const OrdererOrderDetailsView = () => {
         setCustomTipAmount('');
       }, 2000);
     } catch (err) {
-      console.error('Failed to submit review:', err);
       setError('Failed to submit review. Please try again.');
     } finally {
       setSubmitting(false);
@@ -262,21 +310,70 @@ const OrdererOrderDetailsView = () => {
                 <p className="text-gray-600 font-medium">Route</p>
                 <p className="font-semibold text-gray-900">From {order.origin_city} to {order.destination_city}</p>
               </div>
+              
+              {/* Items List */}
+              {order.items && order.items.length > 0 && (
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="space-y-3">
+                    {order.items.map((item: any, idx: number) => (
+                      <div key={idx} className="bg-gray-50 rounded-lg p-3">
+                        <div className="flex justify-between mb-2">
+                          <span className="text-gray-900 font-semibold">{item.name}</span>
+                          <span className="text-gray-600 text-sm">Qty: {item.quantity || 1}</span>
+                        </div>
+                        {item.store_link && (
+                          <div className="flex justify-between mb-2">
+                            <span className="text-gray-600 text-sm">Store:</span>
+                            <a href={item.store_link} target="_blank" rel="noopener noreferrer" className="text-[#4D0013] text-sm underline font-semibold">
+                              {item.store_link}
+                            </a>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 text-sm">Weight:</span>
+                          <span className="text-gray-900 text-sm">{item.weight}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Fee Breakdown Card */}
+          <div className="bg-gray-50 rounded-2xl p-8 mb-6">
+            <h3 className="font-bold text-gray-900 mb-4">Order Cost Breakdown</h3>
+            <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <p className="text-gray-600 font-medium">Item list</p>
-                <p className="font-semibold text-gray-900">Watch</p>
+                <span className="text-gray-600 font-medium">Items Amount</span>
+                <span className="font-semibold text-gray-900">${getItemsTotal().toFixed(2)}</span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 font-medium">Reward Amount</span>
+                <span className="font-semibold text-gray-900">${getRewardAmount().toFixed(2)}</span>
+              </div>
+
+              {getCounterOfferAmount() > 0 && (
+                <div className="flex justify-between items-center bg-yellow-100 p-2 rounded">
+                  <span className="text-gray-600 font-semibold">Counter Offer Amount</span>
+                  <span className="font-bold text-gray-900">${getCounterOfferAmount().toFixed(2)}</span>
+                </div>
+              )}
+              
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 font-medium">JetPicker Fee (6.5%)</span>
+                <span className="font-semibold text-gray-900">${getJetPickerFee().toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <p className="text-gray-600 font-medium">Store</p>
-                <p className="font-semibold text-gray-900">Amazone</p>
+                <span className="text-gray-600 font-medium">Payment Processing (4%)</span>
+                <span className="font-semibold text-gray-900">${getPaymentProcessingFee().toFixed(2)}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <p className="text-gray-600 font-medium">Weight</p>
-                <p className="font-semibold text-gray-900">1/4kg</p>
-              </div>
-              <div className="flex justify-between items-center">
-                <p className="text-gray-600 font-medium">Reward</p>
-                <p className="font-semibold text-gray-900">$10</p>
+              
+              <div className="border-t border-gray-200 pt-3 flex justify-between items-center bg-yellow-50 -mx-8 px-8 py-3 rounded">
+                <span className="text-gray-900 font-bold">Total</span>
+                <span className="text-gray-900 font-bold text-lg">${getTotal().toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -410,7 +507,6 @@ const OrdererOrderDetailsView = () => {
                         setDeliveryCompleted(true);
                       }
                     } catch (err) {
-                      console.error('Failed to confirm delivery:', err);
                       alert('Failed to confirm delivery. Please try again.');
                     }
                   }}

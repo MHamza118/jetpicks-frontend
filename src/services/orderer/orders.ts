@@ -20,6 +20,7 @@ export interface OrdererOrderDetails {
   items_count: number;
   items_cost: number;
   reward_amount: number;
+  accepted_counter_offer_amount?: number;
   items: Array<{
     id: string;
     item_name: string;

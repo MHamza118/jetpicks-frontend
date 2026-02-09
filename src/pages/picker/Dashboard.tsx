@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dashboardApi } from '../../services';
 import type { PickerDashboardData } from '../../services/dashboard';
@@ -184,7 +184,15 @@ const PickerDashboard = () => {
                                         {/* Total Items and Reward */}
                                         <div className="text-right">
                                             <p className="text-xs text-gray-600 font-medium">Total items {order.items_count}</p>
-                                            <p className="font-bold text-red-900 text-sm">Total: ${(order.items_cost + parseFloat(order.reward_amount.toString())).toFixed(2)}</p>
+                                            <p className="font-bold text-red-900 text-sm">Total: ${(() => {
+                                              const itemsCost = typeof order.items_cost === 'string' ? parseFloat(order.items_cost) : order.items_cost;
+                                              const reward = typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount) : order.reward_amount;
+                                              const subtotal = itemsCost + reward;
+                                              const jetPickerFee = subtotal * 0.065;
+                                              const paymentFee = subtotal * 0.04;
+                                              const total = subtotal + jetPickerFee + paymentFee;
+                                              return total.toFixed(2);
+                                            })()}</p>
                                         </div>
                                     </div>
 

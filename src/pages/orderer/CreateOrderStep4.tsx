@@ -39,6 +39,37 @@ const CreateOrderStep4 = () => {
   const [loading, setLoading] = useState(false);
   const [orderDetails, setOrderDetails] = useState<OrderDetailsType | null>(null);
 
+  // Helper function to calculate items total
+  const getItemsTotal = () => {
+    return orderDetails?.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
+  };
+
+  // Helper function to get reward amount as number
+  const getRewardAmount = () => {
+    const reward = orderDetails?.reward_amount;
+    return typeof reward === 'string' ? parseFloat(reward) : (reward || 0);
+  };
+
+  // Helper function to calculate subtotal (items + reward)
+  const getSubtotal = () => {
+    return getItemsTotal() + getRewardAmount();
+  };
+
+  // Helper function to calculate JetPicker fee (6.5%)
+  const getJetPickerFee = () => {
+    return getSubtotal() * 0.065;
+  };
+
+  // Helper function to calculate payment processing fee (4%)
+  const getPaymentProcessingFee = () => {
+    return getSubtotal() * 0.04;
+  };
+
+  // Helper function to calculate total
+  const getTotal = () => {
+    return getSubtotal() + getJetPickerFee() + getPaymentProcessingFee();
+  };
+
   // Fetch order details from backend using URL param
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -138,10 +169,6 @@ const CreateOrderStep4 = () => {
                             <span className="text-gray-600 text-sm">Weight:</span>
                             <span className="text-gray-900 text-sm">{item.weight}</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600 text-sm">Price:</span>
-                            <span className="text-gray-900 font-semibold">${(item.price * item.quantity).toFixed(2)}</span>
-                          </div>
                         </div>
                       ))}
                     </div>
@@ -153,9 +180,43 @@ const CreateOrderStep4 = () => {
                     <span className="text-gray-600 font-medium">Waiting Days</span>
                     <span className="text-gray-900 font-semibold">{orderDetails?.waiting_days} days</span>
                   </div>
+                  
+                  {/* Items Amount */}
                   <div className="flex justify-between">
-                    <span className="text-gray-600 font-medium">Reward</span>
-                    <span className="text-gray-900 font-semibold">${Math.round(orderDetails?.reward_amount || 0)}</span>
+                    <span className="text-gray-600 font-medium">Items Amount</span>
+                    <span className="text-gray-900 font-semibold">
+                      ${getItemsTotal().toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  {/* Reward Amount */}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 font-medium">Reward Amount</span>
+                    <span className="text-gray-900 font-semibold">${getRewardAmount().toFixed(2)}</span>
+                  </div>
+                  
+                  {/* JetPicker Fee (6.5%) */}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 font-medium">JetPicker Fee (6.5%)</span>
+                    <span className="text-gray-900 font-semibold">
+                      ${getJetPickerFee().toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  {/* Payment Processing (4%) */}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 font-medium">Payment Processing (4%)</span>
+                    <span className="text-gray-900 font-semibold">
+                      ${getPaymentProcessingFee().toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  {/* Total */}
+                  <div className="border-t border-gray-200 pt-3 flex justify-between bg-yellow-50 -mx-3 px-3 py-3 rounded">
+                    <span className="text-gray-900 font-bold">Total</span>
+                    <span className="text-gray-900 font-bold text-lg">
+                      ${getTotal().toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -281,10 +342,6 @@ const CreateOrderStep4 = () => {
                               <span className="text-gray-600 text-sm">Weight:</span>
                               <span className="text-gray-900 text-sm">{item.weight}</span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600 text-sm">Price:</span>
-                              <span className="text-gray-900 font-semibold">${(item.price * item.quantity).toFixed(2)}</span>
-                            </div>
                           </div>
                         ))}
                       </div>
@@ -296,9 +353,43 @@ const CreateOrderStep4 = () => {
                       <span className="text-gray-600 font-medium">Waiting Days</span>
                       <span className="text-gray-900 font-semibold">{orderDetails?.waiting_days} days</span>
                     </div>
+                    
+                    {/* Items Amount */}
                     <div className="flex justify-between">
-                      <span className="text-gray-600 font-medium">Reward</span>
-                      <span className="text-gray-900 font-semibold">${Math.round(orderDetails?.reward_amount || 0)}</span>
+                      <span className="text-gray-600 font-medium">Items Amount</span>
+                      <span className="text-gray-900 font-semibold">
+                        ${getItemsTotal().toFixed(2)}
+                      </span>
+                    </div>
+                    
+                    {/* Reward Amount */}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 font-medium">Reward Amount</span>
+                      <span className="text-gray-900 font-semibold">${getRewardAmount().toFixed(2)}</span>
+                    </div>
+                    
+                    {/* JetPicker Fee (6.5%) */}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 font-medium">JetPicker Fee (6.5%)</span>
+                      <span className="text-gray-900 font-semibold">
+                        ${getJetPickerFee().toFixed(2)}
+                      </span>
+                    </div>
+                    
+                    {/* Payment Processing (4%) */}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 font-medium">Payment Processing (4%)</span>
+                      <span className="text-gray-900 font-semibold">
+                        ${getPaymentProcessingFee().toFixed(2)}
+                      </span>
+                    </div>
+                    
+                    {/* Total */}
+                    <div className="border-t border-gray-200 pt-3 flex justify-between bg-yellow-50 -mx-3 px-3 py-3 rounded">
+                      <span className="text-gray-900 font-bold">Total</span>
+                      <span className="text-gray-900 font-bold text-lg">
+                        ${getTotal().toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </>

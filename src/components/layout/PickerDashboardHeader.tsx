@@ -362,17 +362,17 @@ const PickerDashboardHeader = ({
                                                 handleNewOrderClick(newOrderNotif.orderId, newOrderNotif.id);
                                             } else {
                                                 // ORDER_ACCEPTED notification
-                                                handleAcceptedOrderClick(notif.orderId);
+                                                handleAcceptedOrderClick((notif as any).orderId);
                                             }
                                         }}
                                         className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
                                     >
                                         <p className="text-sm font-semibold text-gray-900">
                                             {'offerId' in notif
-                                                ? `${notif.pickerName} sent a counter offer`
+                                                ? `${(notif as any).pickerName} sent a counter offer`
                                                 : 'originCity' in notif
                                                 ? `New Order: ${(notif as any).originCity} → ${(notif as any).destinationCity}`
-                                                : `${notif.pickerName} has accepted your order`
+                                                : `${(notif as any).pickerName} has accepted your order`
                                             }
                                         </p>
                                         {!notif.isRead && (

@@ -15,7 +15,7 @@ export interface NewOrderNotification {
 /**
  * Fetch new order notifications for picker - fetches all pages to get all NEW_ORDER_AVAILABLE notifications
  */
-export const fetchNewOrderNotifications = async (page = 1, limit = 100): Promise<NewOrderNotification[]> => {
+export const fetchNewOrderNotifications = async (limit = 100): Promise<NewOrderNotification[]> => {
   try {
     const allNotifications: NewOrderNotification[] = [];
     let currentPage = 1;
@@ -64,7 +64,7 @@ export const fetchNewOrderNotifications = async (page = 1, limit = 100): Promise
 /**
  * Mark notification as shown
  */
-export const markNotificationAsShown = async (notificationId: string): Promise<void> => {
+export const markNotificationAsShown = async (): Promise<void> => {
   try {
     // This would need a backend endpoint to mark as shown
     // For now, we'll just track it locally

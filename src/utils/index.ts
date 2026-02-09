@@ -111,12 +111,21 @@ export const imageUtils = {
     }
     
     // Get the base URL from environment
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.jetpicks.com/api';
     
     // Remove /api from the END only to get the domain
     const domain = apiBaseUrl.endsWith('/api') ? apiBaseUrl.slice(0, -4) : apiBaseUrl;
     
-    // Ensure imagePath starts with /
+    // If path already starts with /storage/, just prepend domain
+    if (imagePath.startsWith('/storage/')) {
+      // Add cache-busting query parameter for avatars
+      if (imagePath.includes('/avatars/')) {
+        return domain + imagePath + '?t=' + Date.now();
+      }
+      return domain + imagePath;
+    }
+    
+    // Otherwise ensure imagePath starts with /
     const path = imagePath.startsWith('/') ? imagePath : '/' + imagePath;
     
     // Add cache-busting query parameter for avatars
