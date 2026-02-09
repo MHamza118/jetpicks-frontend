@@ -66,7 +66,7 @@ export const usePickerNewOrderNotifications = () => {
       } catch (error) {
         console.error('[PickerNotifications] Error polling for notifications:', error);
       }
-    }, 3000); // Poll every 3 seconds
+    }, 3000); //3 seconds polling
 
     return () => {
       if (pollIntervalRef.current) {
