@@ -44,7 +44,7 @@ const PickerCounterOffer = () => {
         const orderData = (orderRes as any).data || orderRes;
         setOrder(orderData);
       } catch (error) {
-        console.error('Failed to fetch order details:', error);
+        // Silently fail
       } finally {
         setLoading(false);
       }
@@ -79,7 +79,6 @@ const PickerCounterOffer = () => {
       alert('Counter offer sent successfully!');
       navigate(`/picker/orders/${orderId}`);
     } catch (error) {
-      console.error('Failed to send counter offer:', error);
       alert('Failed to send counter offer');
     } finally {
       setSubmitting(false);

@@ -13,33 +13,50 @@ export interface NewOrderNotification {
 }
 
 /**
- * Fetch new order notifications for picker
+ * Fetch new order notifications for picker - fetches all pages to get all NEW_ORDER_AVAILABLE notifications
  */
-export const fetchNewOrderNotifications = async (page = 1, limit = 10): Promise<NewOrderNotification[]> => {
+export const fetchNewOrderNotifications = async (page = 1, limit = 100): Promise<NewOrderNotification[]> => {
   try {
-    const response = await notificationsApi.getNotifications(page, limit);
-    
-    const notificationsData = (response as any).data || [];
-    
-    const filtered = notificationsData
-      .filter((notif: any) => notif.type === 'NEW_ORDER_AVAILABLE')
-      .map((notif: any) => {
-        return {
-          id: notif.id,
-          orderId: notif.entity_id,
-          ordererName: notif.data?.orderer_name || 'Unknown',
-          originCity: notif.data?.origin_city || '',
-          destinationCity: notif.data?.destination_city || '',
-          rewardAmount: parseFloat(notif.data?.reward_amount) || 0,
-          isRead: notif.is_read,
-          isShown: notif.notification_shown_at !== null,
-          timestamp: new Date(notif.created_at).getTime(),
-        };
-      });
-    
-    return filtered;
+    const allNotifications: NewOrderNotification[] = [];
+    let currentPage = 1;
+    let hasMore = true;
+
+    // Fetch all pages to get all NEW_ORDER_AVAILABLE notifications
+    while (hasMore) {
+      const response = await notificationsApi.getNotifications(currentPage, limit);
+      const paginationData = (response as any).pagination || {};
+      const notificationsData = (response as any).data || [];
+
+      if (!notificationsData || notificationsData.length === 0) {
+        break;
+      }
+
+      // Filter and map NEW_ORDER_AVAILABLE notifications
+      const filtered = notificationsData
+        .filter((notif: any) => notif.type === 'NEW_ORDER_AVAILABLE')
+        .map((notif: any) => {
+          return {
+            id: notif.id,
+            orderId: notif.entity_id,
+            ordererName: notif.data?.orderer_name || 'Unknown',
+            originCity: notif.data?.origin_city || '',
+            destinationCity: notif.data?.destination_city || '',
+            rewardAmount: parseFloat(notif.data?.reward_amount) || 0,
+            isRead: notif.is_read,
+            isShown: notif.notification_shown_at !== null,
+            timestamp: new Date(notif.created_at).getTime(),
+          };
+        });
+
+      allNotifications.push(...filtered);
+
+      // Check if there are more pages
+      hasMore = paginationData.has_more === true;
+      currentPage++;
+    }
+
+    return allNotifications;
   } catch (error) {
-    console.error('[pickerNotifications] Error fetching new order notifications:', error);
     return [];
   }
 };
@@ -52,7 +69,7 @@ export const markNotificationAsShown = async (notificationId: string): Promise<v
     // This would need a backend endpoint to mark as shown
     // For now, we'll just track it locally
   } catch (error) {
-    console.error('[pickerNotifications] Error marking notification as shown:', error);
+    // Silently fail
   }
 };
 
@@ -63,6 +80,6 @@ export const markNotificationAsRead = async (notificationId: string): Promise<vo
   try {
     await notificationsApi.markAsRead(notificationId);
   } catch (error) {
-    console.error('[pickerNotifications] Error marking notification as read:', error);
+    // Silently fail
   }
 };

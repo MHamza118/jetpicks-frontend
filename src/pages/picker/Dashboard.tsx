@@ -60,7 +60,7 @@ const PickerDashboard = () => {
 
             setDashboardData(data);
         } catch (error) {
-            console.error('Failed to fetch dashboard data:', error);
+            // Silently fail
         } finally {
             setLoading(false);
             fetchInProgressRef.current = false;

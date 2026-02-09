@@ -58,7 +58,7 @@ const PickerDashboardHeader = ({
                 }
             }
         } catch (error) {
-            console.error('Failed to get user initial:', error);
+            // Silently fail
         }
         return 'U';
     };
@@ -98,7 +98,6 @@ const PickerDashboardHeader = ({
             setSearchResults(data);
             setShowSearchResults(true);
         } catch (error) {
-            console.error('Search failed:', error);
             setSearchResults([]);
         } finally {
             setSearchLoading(false);
@@ -349,7 +348,7 @@ const PickerDashboardHeader = ({
                                                 try {
                                                     await notificationsApi.markAsRead(notif.id);
                                                 } catch (error) {
-                                                    console.error('Failed to mark notification as read:', error);
+                                                    // Silently fail
                                                 }
                                             }
 
