@@ -200,7 +200,7 @@ const Auth = () => {
                 // Send the access token to backend for verification
                 const response = await googleAuthApi.login({
                     idToken: codeResponse.access_token,
-                    role: isSignup ? selectedRole : undefined,
+                    role: isSignup ? (selectedRole || undefined) : undefined,
                 });
 
                 storage.set(STORAGE_KEYS.AUTH_TOKEN, response.data.token);

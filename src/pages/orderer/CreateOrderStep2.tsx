@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Upload, Plus } from 'lucide-react';
+import { ArrowLeft, Upload, Plus, ChevronDown } from 'lucide-react';
 import { ordersApi } from '../../services';
 import { useOrder } from '../../context/OrderContext';
 import { useUser } from '../../context/UserContext';
+import { getCurrencyByCountry, getAllCurrencies } from '../../services/currencies';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 
@@ -16,6 +17,7 @@ interface OrderItem {
     quantity: string;
     notes: string;
     images: File[];
+    currency?: string;
     errors?: {
         name?: string;
         quantity?: string;
@@ -31,6 +33,11 @@ const CreateOrderStep2 = () => {
     const [loading, setLoading] = useState(false);
     const [validationError, setValidationError] = useState<string | null>(null);
     const [waitingDays, setWaitingDays] = useState(orderData.waitingDays || '');
+    const [currency, setCurrency] = useState<{ code: string; symbol: string } | null>(null);
+    const [availableCurrencies, setAvailableCurrencies] = useState<Array<{ code: string; symbol: string }>>([]);
+    const [openCurrencyDropdown, setOpenCurrencyDropdown] = useState(false);
+    const [currencySearchText, setCurrencySearchText] = useState('');
+    const currencyDropdownRef = useRef<HTMLDivElement>(null);
     const [items, setItems] = useState<OrderItem[]>(
         orderData.items.length > 0 ? orderData.items : [
             {
@@ -77,6 +84,36 @@ const CreateOrderStep2 = () => {
         fetchOrderDetails();
     }, [orderId]);
 
+    // Load all available currencies
+    useEffect(() => {
+        const currencies = getAllCurrencies();
+        setAvailableCurrencies(currencies);
+    }, []);
+
+    // Fetch currency based on origin country
+    useEffect(() => {
+        if (orderData.originCountry) {
+            const currencyData = getCurrencyByCountry(orderData.originCountry);
+            if (currencyData) {
+                setCurrency({ code: currencyData.code, symbol: currencyData.symbol });
+            }
+        }
+    }, [orderData.originCountry]);
+
+    // Handle click outside currency dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (currencyDropdownRef.current && !currencyDropdownRef.current.contains(event.target as Node)) {
+                setOpenCurrencyDropdown(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     const handleAddItem = () => {
         setItems([...items, {
             id: Date.now().toString(),
@@ -87,6 +124,7 @@ const CreateOrderStep2 = () => {
             quantity: '',
             notes: '',
             images: [],
+            currency: currency?.code || 'USD',
             errors: {},
         }]);
     };
@@ -100,6 +138,20 @@ const CreateOrderStep2 = () => {
                 errors: { ...item.errors, [field]: undefined }
             } : item
         ));
+    };
+
+    const handleCurrencyChange = (newCurrency: { code: string; symbol: string }) => {
+        console.log('Currency changed to:', newCurrency.code);
+        setCurrency(newCurrency);
+        // Update all items with the new currency
+        setItems(prevItems => {
+            const updatedItems = prevItems.map(item => ({
+                ...item,
+                currency: newCurrency.code
+            }));
+            console.log('Items updated with currency:', updatedItems);
+            return updatedItems;
+        });
     };
 
     const handleImageUpload = (itemId: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,6 +249,9 @@ const CreateOrderStep2 = () => {
                 formData.append('item_name', item.name);
                 formData.append('quantity', (parseInt(item.quantity) || 1).toString());
                 formData.append('price', item.price);
+                const currencyToSave = item.currency || currency?.code || 'USD';
+                console.log('Saving item with currency:', currencyToSave, 'Item:', item);
+                formData.append('currency', currencyToSave);
 
                 if (item.weight?.trim()) {
                     formData.append('weight', item.weight.trim());
@@ -377,20 +432,66 @@ const CreateOrderStep2 = () => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-600 mb-2">Price of Item <span className="text-red-500">*</span></label>
-                                            <input
-                                                type="number"
-                                                value={item.price}
-                                                onChange={(e) => handleItemChange(item.id, 'price', e.target.value)}
-                                                onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
-                                                placeholder="50"
-                                                step="1"
-                                                min="0"
-                                                className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
-                                                    item.errors?.price
-                                                        ? 'border-red-500 focus:ring-red-500'
-                                                        : 'border-gray-300 focus:ring-[#FFDF57]'
-                                                }`}
-                                            />
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="number"
+                                                    value={item.price}
+                                                    onChange={(e) => handleItemChange(item.id, 'price', e.target.value)}
+                                                    onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                                                    placeholder="50"
+                                                    step="1"
+                                                    min="0"
+                                                    className={`flex-1 px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
+                                                        item.errors?.price
+                                                            ? 'border-red-500 focus:ring-red-500'
+                                                            : 'border-gray-300 focus:ring-[#FFDF57]'
+                                                    }`}
+                                                />
+                                                <div className="relative" ref={currencyDropdownRef}>
+                                                    <button
+                                                        onClick={() => setOpenCurrencyDropdown(!openCurrencyDropdown)}
+                                                        className="px-3 py-2.5 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 flex items-center gap-1 text-sm font-medium text-gray-700 flex-shrink-0 transition-colors"
+                                                    >
+                                                        <span>{currency?.code || 'USD'}</span>
+                                                        <ChevronDown size={14} className={`transition-transform ${openCurrencyDropdown ? 'rotate-180' : ''}`} />
+                                                    </button>
+                                                    {openCurrencyDropdown && (
+                                                        <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 w-48">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Search currency..."
+                                                                value={currencySearchText}
+                                                                onChange={(e) => setCurrencySearchText(e.target.value)}
+                                                                className="w-full px-3 py-2 border-b border-gray-200 focus:outline-none text-sm"
+                                                                autoFocus
+                                                            />
+                                                            <div className="max-h-48 overflow-y-auto">
+                                                                {availableCurrencies
+                                                                    .filter(curr =>
+                                                                        curr.code.toLowerCase().includes(currencySearchText.toLowerCase()) ||
+                                                                        curr.symbol.toLowerCase().includes(currencySearchText.toLowerCase())
+                                                                    )
+                                                                    .map(curr => (
+                                                                        <button
+                                                                            key={curr.code}
+                                                                            onClick={() => {
+                                                                                handleCurrencyChange(curr);
+                                                                                setOpenCurrencyDropdown(false);
+                                                                                setCurrencySearchText('');
+                                                                            }}
+                                                                            className={`w-full px-3 py-2.5 text-left flex items-center gap-2 hover:bg-yellow-50 transition-colors ${
+                                                                                currency?.code === curr.code ? 'bg-yellow-50 border-l-2 border-[#FFDF57]' : ''
+                                                                            }`}
+                                                                        >
+                                                                            <span className="font-medium">{curr.symbol}</span>
+                                                                            <span className="text-gray-600 text-sm">{curr.code}</span>
+                                                                        </button>
+                                                                    ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                             {item.errors?.price && (
                                                 <p className="text-red-500 text-xs mt-1">{item.errors.price}</p>
                                             )}

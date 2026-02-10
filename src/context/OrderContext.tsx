@@ -9,6 +9,7 @@ export interface OrderItem {
   quantity: string;
   notes: string;
   images: File[];
+  currency?: string;
 }
 
 export interface OrderData {

@@ -8,6 +8,7 @@ import { useUser } from '../../context/UserContext';
 import { imageUtils } from '../../utils';
 import { ordererOrdersApi } from '../../services/orderer/orders';
 import { apiClient } from '../../services/apiClient';
+import { getSymbolForCurrency } from '../../services/currencies';
 
 interface OrderItem {
   id: string;
@@ -39,6 +40,7 @@ interface OrderDetailsData {
   items_cost: number;
   reward_amount: number;
   accepted_counter_offer_amount?: number;
+  currency?: string;
 }
 
 const OrdererOrderDetailsView = () => {
@@ -105,6 +107,12 @@ const OrdererOrderDetailsView = () => {
     return getSubtotal() + getJetPickerFee() + getPaymentProcessingFee();
   };
 
+  // Helper function to format price with currency
+  const formatPrice = (price: number, currency?: string) => {
+    const symbol = getSymbolForCurrency(currency || 'USD');
+    return `${symbol}${price.toFixed(2)}`;
+  };
+
   useEffect(() => {
     const fetchOrderDetails = async () => {
       try {
@@ -144,6 +152,7 @@ const OrdererOrderDetailsView = () => {
           items_cost: data.items_cost || 0,
           reward_amount: data.reward_amount || 0,
           accepted_counter_offer_amount: data.accepted_counter_offer_amount,
+          currency: data.currency,
         });
       } catch (err) {
         setError('Failed to load order details');
@@ -347,33 +356,33 @@ const OrdererOrderDetailsView = () => {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600 font-medium">Items Amount</span>
-                <span className="font-semibold text-gray-900">${getItemsTotal().toFixed(2)}</span>
+                <span className="font-semibold text-gray-900">{formatPrice(getItemsTotal(), order.currency)}</span>
               </div>
               
               <div className="flex justify-between items-center">
                 <span className="text-gray-600 font-medium">Reward Amount</span>
-                <span className="font-semibold text-gray-900">${getRewardAmount().toFixed(2)}</span>
+                <span className="font-semibold text-gray-900">{formatPrice(getRewardAmount(), order.currency)}</span>
               </div>
 
               {getCounterOfferAmount() > 0 && (
                 <div className="flex justify-between items-center bg-yellow-100 p-2 rounded">
                   <span className="text-gray-600 font-semibold">Counter Offer Amount</span>
-                  <span className="font-bold text-gray-900">${getCounterOfferAmount().toFixed(2)}</span>
+                  <span className="font-bold text-gray-900">{formatPrice(getCounterOfferAmount(), order.currency)}</span>
                 </div>
               )}
               
               <div className="flex justify-between items-center">
                 <span className="text-gray-600 font-medium">JetPicker Fee (6.5%)</span>
-                <span className="font-semibold text-gray-900">${getJetPickerFee().toFixed(2)}</span>
+                <span className="font-semibold text-gray-900">{formatPrice(getJetPickerFee(), order.currency)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600 font-medium">Payment Processing (4%)</span>
-                <span className="font-semibold text-gray-900">${getPaymentProcessingFee().toFixed(2)}</span>
+                <span className="font-semibold text-gray-900">{formatPrice(getPaymentProcessingFee(), order.currency)}</span>
               </div>
               
               <div className="border-t border-gray-200 pt-3 flex justify-between items-center bg-yellow-50 -mx-8 px-8 py-3 rounded">
                 <span className="text-gray-900 font-bold">Total</span>
-                <span className="text-gray-900 font-bold text-lg">${getTotal().toFixed(2)}</span>
+                <span className="text-gray-900 font-bold text-lg">{formatPrice(getTotal(), order.currency)}</span>
               </div>
             </div>
           </div>

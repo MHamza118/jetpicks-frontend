@@ -5,6 +5,7 @@ import { ordersApi } from '../../services';
 import { imageUtils } from '../../utils';
 import { useOrder } from '../../context/OrderContext';
 import { useUser } from '../../context/UserContext';
+import { getSymbolForCurrency } from '../../services/currencies';
 import DashboardSidebar from '../../components/layout/DashboardSidebar';
 import DashboardHeader from '../../components/layout/DashboardHeader';
 import placeOrderImage from '../../assets/placeorder.png';
@@ -15,6 +16,7 @@ interface OrderItem {
   store_link?: string;
   weight: string;
   price: number;
+  currency?: string;
   product_images?: string[];
 }
 
@@ -26,6 +28,7 @@ interface OrderDetailsType {
   items: OrderItem[];
   reward_amount: number;
   waiting_days?: number;
+  currency?: string;
 }
 
 const CreateOrderStep4 = () => {
@@ -38,6 +41,23 @@ const CreateOrderStep4 = () => {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [loading, setLoading] = useState(false);
   const [orderDetails, setOrderDetails] = useState<OrderDetailsType | null>(null);
+
+  // Get the primary currency from order (saved during step 2)
+  const getPrimaryCurrency = (): string => {
+    if (orderDetails?.currency) {
+      return orderDetails.currency;
+    }
+    // Fallback to first item's currency if order currency is not set
+    if (orderDetails?.items && orderDetails.items.length > 0) {
+      return orderDetails.items[0].currency || 'USD';
+    }
+    return 'USD';
+  };
+
+  // Get currency symbol
+  const getCurrencySymbol = (): string => {
+    return getSymbolForCurrency(getPrimaryCurrency());
+  };
 
   // Helper function to calculate items total
   const getItemsTotal = () => {
@@ -185,21 +205,21 @@ const CreateOrderStep4 = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-600 font-medium">Items Amount</span>
                     <span className="text-gray-900 font-semibold">
-                      ${getItemsTotal().toFixed(2)}
+                      {getCurrencySymbol()}{getItemsTotal().toFixed(2)}
                     </span>
                   </div>
                   
                   {/* Reward Amount */}
                   <div className="flex justify-between">
                     <span className="text-gray-600 font-medium">Reward Amount</span>
-                    <span className="text-gray-900 font-semibold">${getRewardAmount().toFixed(2)}</span>
+                    <span className="text-gray-900 font-semibold">{getCurrencySymbol()}{getRewardAmount().toFixed(2)}</span>
                   </div>
                   
                   {/* JetPicker Fee (6.5%) */}
                   <div className="flex justify-between">
                     <span className="text-gray-600 font-medium">JetPicker Fee (6.5%)</span>
                     <span className="text-gray-900 font-semibold">
-                      ${getJetPickerFee().toFixed(2)}
+                      {getCurrencySymbol()}{getJetPickerFee().toFixed(2)}
                     </span>
                   </div>
                   
@@ -207,7 +227,7 @@ const CreateOrderStep4 = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-600 font-medium">Payment Processing (4%)</span>
                     <span className="text-gray-900 font-semibold">
-                      ${getPaymentProcessingFee().toFixed(2)}
+                      {getCurrencySymbol()}{getPaymentProcessingFee().toFixed(2)}
                     </span>
                   </div>
                   
@@ -215,7 +235,7 @@ const CreateOrderStep4 = () => {
                   <div className="border-t border-gray-200 pt-3 flex justify-between bg-yellow-50 -mx-3 px-3 py-3 rounded">
                     <span className="text-gray-900 font-bold">Total</span>
                     <span className="text-gray-900 font-bold text-lg">
-                      ${getTotal().toFixed(2)}
+                      {getCurrencySymbol()}{getTotal().toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -358,21 +378,21 @@ const CreateOrderStep4 = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600 font-medium">Items Amount</span>
                       <span className="text-gray-900 font-semibold">
-                        ${getItemsTotal().toFixed(2)}
+                        {getCurrencySymbol()}{getItemsTotal().toFixed(2)}
                       </span>
                     </div>
                     
                     {/* Reward Amount */}
                     <div className="flex justify-between">
                       <span className="text-gray-600 font-medium">Reward Amount</span>
-                      <span className="text-gray-900 font-semibold">${getRewardAmount().toFixed(2)}</span>
+                      <span className="text-gray-900 font-semibold">{getCurrencySymbol()}{getRewardAmount().toFixed(2)}</span>
                     </div>
                     
                     {/* JetPicker Fee (6.5%) */}
                     <div className="flex justify-between">
                       <span className="text-gray-600 font-medium">JetPicker Fee (6.5%)</span>
                       <span className="text-gray-900 font-semibold">
-                        ${getJetPickerFee().toFixed(2)}
+                        {getCurrencySymbol()}{getJetPickerFee().toFixed(2)}
                       </span>
                     </div>
                     
@@ -380,7 +400,7 @@ const CreateOrderStep4 = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600 font-medium">Payment Processing (4%)</span>
                       <span className="text-gray-900 font-semibold">
-                        ${getPaymentProcessingFee().toFixed(2)}
+                        {getCurrencySymbol()}{getPaymentProcessingFee().toFixed(2)}
                       </span>
                     </div>
                     
@@ -388,7 +408,7 @@ const CreateOrderStep4 = () => {
                     <div className="border-t border-gray-200 pt-3 flex justify-between bg-yellow-50 -mx-3 px-3 py-3 rounded">
                       <span className="text-gray-900 font-bold">Total</span>
                       <span className="text-gray-900 font-bold text-lg">
-                        ${getTotal().toFixed(2)}
+                        {getCurrencySymbol()}{getTotal().toFixed(2)}
                       </span>
                     </div>
                   </div>

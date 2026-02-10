@@ -21,12 +21,14 @@ export interface OrdererOrderDetails {
   items_cost: number;
   reward_amount: number;
   accepted_counter_offer_amount?: number;
+  currency?: string;
   items: Array<{
     id: string;
     item_name: string;
     weight: string;
     price: number;
     quantity: number;
+    currency?: string;
     special_notes?: string;
     store_link?: string;
     product_images?: string[];
