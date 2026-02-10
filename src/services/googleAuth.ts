@@ -3,6 +3,7 @@ import type { AuthResponse } from '../@types/index';
 
 export interface GoogleLoginPayload {
   idToken: string;
+  role?: 'ORDERER' | 'PICKER';
 }
 
 export const googleAuthApi = {

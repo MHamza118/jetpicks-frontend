@@ -190,9 +190,17 @@ const Auth = () => {
         onSuccess: async (codeResponse: any) => {
             setLoading(true);
             try {
+                // For signup, require role selection
+                if (isSignup && !selectedRole) {
+                    setError('Please select a role before signing up with Google');
+                    setLoading(false);
+                    return;
+                }
+
                 // Send the access token to backend for verification
                 const response = await googleAuthApi.login({
                     idToken: codeResponse.access_token,
+                    role: isSignup ? selectedRole : undefined,
                 });
 
                 storage.set(STORAGE_KEYS.AUTH_TOKEN, response.data.token);
@@ -209,8 +217,10 @@ const Auth = () => {
                         navigate('/orderer/dashboard');
                     }
                 }
-            } catch (err: Error | unknown) {
-                const errorMessage = err instanceof Error ? err.message : 'Google login failed. Please try again.';
+            } catch (err: any) {
+                // Log the actual error for debugging
+                console.error('Google login error:', err.response?.data || err.message);
+                const errorMessage = err.response?.data?.message || err.message || 'Google login failed. Please try again.';
                 setError(errorMessage);
             } finally {
                 setLoading(false);
