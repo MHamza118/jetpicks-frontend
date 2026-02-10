@@ -75,10 +75,28 @@ export const GlobalNotificationProvider = ({ children }: { children: ReactNode }
           const newOrderNotifs = await fetchNewOrderNotifications(100);
           setNewOrdersHistory(newOrderNotifs);
 
-          for (const notif of newOrderNotifs) {
-            if (!shownNewOrdersRef.current.has(notif.id)) {
-              shownNewOrdersRef.current.add(notif.id);
-              setNewOrderNotification(notif);
+          // Check if any previously shown orders have been cancelled
+          const currentOrderIds = new Set(newOrderNotifs.map(n => n.id));
+          
+          shownNewOrdersRef.current.forEach(notifId => {
+            if (!currentOrderIds.has(notifId)) {
+              shownNewOrdersRef.current.delete(notifId);
+              
+              // If the currently displayed notification was cancelled, close the modal
+              if (newOrderNotification?.id === notifId) {
+                setShowNewOrderModal(false);
+                setNewOrderNotification(null);
+              }
+            }
+          });
+
+          // Only show the newest order notification
+          if (newOrderNotifs.length > 0) {
+            const newestNotif = newOrderNotifs[0];
+            
+            if (!shownNewOrdersRef.current.has(newestNotif.id)) {
+              shownNewOrdersRef.current.add(newestNotif.id);
+              setNewOrderNotification(newestNotif);
               setShowNewOrderModal(true);
 
               if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);

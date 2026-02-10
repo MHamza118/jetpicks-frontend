@@ -1,4 +1,5 @@
 import { notificationsApi } from './notifications';
+import { ordersApi } from './orders';
 
 export interface NewOrderNotification {
   id: string;
@@ -14,6 +15,7 @@ export interface NewOrderNotification {
 
 /**
  * Fetch new order notifications for picker - fetches all pages to get all NEW_ORDER_AVAILABLE notifications
+ * Filters out cancelled orders to prevent showing notifications for orders that no longer exist
  */
 export const fetchNewOrderNotifications = async (limit = 100): Promise<NewOrderNotification[]> => {
   try {
@@ -48,7 +50,24 @@ export const fetchNewOrderNotifications = async (limit = 100): Promise<NewOrderN
           };
         });
 
-      allNotifications.push(...filtered);
+      // Filter out cancelled orders by checking their current status
+      const validNotifications: NewOrderNotification[] = [];
+      for (const notif of filtered) {
+        try {
+          const orderResponse = await ordersApi.getOrderDetails(notif.orderId);
+          const orderData = (orderResponse as any).data || orderResponse;
+          
+          // Only include if order is not cancelled
+          if (orderData.status?.toUpperCase() !== 'CANCELLED') {
+            validNotifications.push(notif);
+          }
+        } catch (error) {
+          // If we can't fetch order details, skip this notification
+          continue;
+        }
+      }
+
+      allNotifications.push(...validNotifications);
 
       // Check if there are more pages
       hasMore = paginationData.has_more === true;

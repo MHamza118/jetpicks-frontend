@@ -228,8 +228,7 @@ const PickerDashboard = () => {
                                 </div>
                                 <h2 className="text-2xl font-bold text-gray-900 mb-2">New Order Available!</h2>
                                 <p className="text-gray-600 mb-2">{newOrderNotification.originCity} → {newOrderNotification.destinationCity}</p>
-                                <p className="text-sm text-gray-500 mb-2">From <span className="font-semibold text-gray-900">{newOrderNotification.ordererName}</span></p>
-                                <p className="text-lg font-bold text-[#4D0013] mb-6">Reward: ${newOrderNotification.rewardAmount.toFixed(2)}</p>
+                                <p className="text-sm text-gray-500 mb-6">From <span className="font-semibold text-gray-900">{newOrderNotification.ordererName}</span></p>
                                 <button
                                     onClick={() => handleNewOrderClick(newOrderNotification.orderId, newOrderNotification.id)}
                                     className="w-full bg-[#4D0013] text-white py-3 rounded-lg font-bold hover:bg-[#660019] transition-colors mb-2"
