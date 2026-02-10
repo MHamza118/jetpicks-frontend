@@ -6,6 +6,7 @@ import { useDashboardCache } from '../../context/DashboardCacheContext';
 import { useGlobalNotifications } from '../../context/GlobalNotificationContext';
 import { useUser } from '../../context/UserContext';
 import { imageUtils } from '../../utils';
+import { getSymbolForCurrency } from '../../services/currencies';
 import PickerDashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
@@ -23,6 +24,12 @@ const PickerDashboard = () => {
     
     // Global notification hook
     const { newOrderNotification, showNewOrderModal, setShowNewOrderModal, handleNewOrderClick } = useGlobalNotifications();
+
+    // Helper function to format price with currency
+    const formatPrice = (price: number, currency?: string) => {
+        const symbol = getSymbolForCurrency(currency || 'USD');
+        return `${symbol}${price.toFixed(2)}`;
+    };
 
     // Memoize header props to prevent unnecessary re-renders
     const headerProps = useMemo(() => ({
@@ -184,15 +191,15 @@ const PickerDashboard = () => {
                                         {/* Total Items and Reward */}
                                         <div className="text-right">
                                             <p className="text-xs text-gray-600 font-medium">Total items {order.items_count}</p>
-                                            <p className="font-bold text-red-900 text-sm">Total: ${(() => {
+                                            <p className="font-bold text-red-900 text-sm">{formatPrice((() => {
                                               const itemsCost = typeof order.items_cost === 'string' ? parseFloat(order.items_cost) : order.items_cost;
                                               const reward = typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount) : order.reward_amount;
                                               const subtotal = itemsCost + reward;
                                               const jetPickerFee = subtotal * 0.065;
                                               const paymentFee = subtotal * 0.04;
                                               const total = subtotal + jetPickerFee + paymentFee;
-                                              return total.toFixed(2);
-                                            })()}</p>
+                                              return total;
+                                            })(), order.currency)}</p>
                                         </div>
                                     </div>
 

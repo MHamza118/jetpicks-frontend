@@ -16,6 +16,7 @@ export interface PickerDashboardData {
       items_count: number;
       items_cost: number;
       reward_amount: number;
+      currency?: string;
       items_images: string[];
     }[];
     pagination: {

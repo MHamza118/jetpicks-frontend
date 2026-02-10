@@ -59,6 +59,7 @@ class ApiClient {
         config.headers = {
           'Content-Type': undefined,
         };
+        config.timeout = API_CONFIG.FILE_UPLOAD_TIMEOUT;
       }
       
       const response = await this.axiosInstance.post<T>(endpoint, data, config);
@@ -77,6 +78,7 @@ class ApiClient {
         config.headers = {
           'Content-Type': undefined,
         };
+        config.timeout = API_CONFIG.FILE_UPLOAD_TIMEOUT;
         const token = storage.get(STORAGE_KEYS.AUTH_TOKEN);
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
@@ -114,6 +116,9 @@ class ApiClient {
         case 404:
           message = ERROR_MESSAGES.NOT_FOUND;
           break;
+        case 413:
+          message = 'Request too large. Please upload fewer or smaller images. Try uploading one image at a time.';
+          break;
         case 422:
           // For validation errors, try to get the first error message
           if (error.response?.data?.errors) {
@@ -126,7 +131,12 @@ class ApiClient {
           message = message || ERROR_MESSAGES.VALIDATION_ERROR;
           break;
         case 0:
-          message = ERROR_MESSAGES.NETWORK_ERROR;
+          // Check if it's a timeout
+          if (error.code === 'ECONNABORTED') {
+            message = 'Upload timed out. Please try again with smaller files or better connection.';
+          } else {
+            message = ERROR_MESSAGES.NETWORK_ERROR;
+          }
           break;
       }
 

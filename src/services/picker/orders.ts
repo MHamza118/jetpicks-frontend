@@ -69,6 +69,7 @@ export const pickerOrdersApi = {
   markDelivered: (orderId: string, proofFile: File) => {
     const formData = new FormData();
     formData.append('proof_of_delivery', proofFile);
+    
     return apiClient.put(`/orders/${orderId}/mark-delivered`, formData);
   },
 

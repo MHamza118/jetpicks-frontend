@@ -5,6 +5,7 @@ import { pickerOrdersApi, type PickerOrderDetail } from '../../services/picker/o
 import { dashboardApi } from '../../services/dashboard';
 import { chatApi } from '../../services/chat';
 import { imageUtils } from '../../utils';
+import { getSymbolForCurrency } from '../../services/currencies';
 import PickerDashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
@@ -30,6 +31,7 @@ interface Order {
   items_count: number;
   items_cost: number;
   reward_amount: number | string;
+  currency?: string;
   items: OrderItem[];
   created_at: string;
 }
@@ -44,6 +46,12 @@ const PickerMyOrders = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [selectedOrderForCancel, setSelectedOrderForCancel] = useState<PickerOrderDetail | null>(null);
   const [cancelModalLoading, setCancelModalLoading] = useState(false);
+
+  // Helper function to format price with currency
+  const formatPrice = (price: number, currency?: string) => {
+    const symbol = getSymbolForCurrency(currency || 'USD');
+    return `${symbol}${price.toFixed(2)}`;
+  };
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -376,15 +384,15 @@ const PickerMyOrders = () => {
                             Total Items <span className="font-semibold text-gray-900">{order.items_count}</span>
                           </p>
                           <p className="text-xs text-gray-600">
-                            Total: <span className="font-semibold text-gray-900">${(() => {
+                            Total: <span className="font-semibold text-gray-900">{formatPrice((() => {
                               const itemsCost = typeof order.items_cost === 'string' ? parseFloat(order.items_cost) : order.items_cost;
                               const reward = typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount) : order.reward_amount;
                               const subtotal = itemsCost + reward;
                               const jetPickerFee = subtotal * 0.065;
                               const paymentFee = subtotal * 0.04;
                               const total = subtotal + jetPickerFee + paymentFee;
-                              return total.toFixed(2);
-                            })()}</span>
+                              return total;
+                            })(), order.currency)}</span>
                           </p>
                         </div>
                       </div>
@@ -452,16 +460,16 @@ const PickerMyOrders = () => {
               <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Item Cost:</span>
-                  <span className="font-semibold text-gray-900">${parseFloat(selectedOrderForCancel.items_cost.toString()).toFixed(2)}</span>
+                  <span className="font-semibold text-gray-900">{formatPrice(parseFloat(selectedOrderForCancel.items_cost.toString()), selectedOrderForCancel.currency)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Reward:</span>
-                  <span className="font-semibold text-gray-900">${parseFloat(selectedOrderForCancel.reward_amount.toString()).toFixed(2)}</span>
+                  <span className="font-semibold text-gray-900">{formatPrice(parseFloat(selectedOrderForCancel.reward_amount.toString()), selectedOrderForCancel.currency)}</span>
                 </div>
                 <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
                   <span className="text-gray-900 font-semibold">Total:</span>
                   <span className="font-bold text-lg text-gray-900">
-                    ${(parseFloat(selectedOrderForCancel.items_cost.toString()) + parseFloat(selectedOrderForCancel.reward_amount.toString())).toFixed(2)}
+                    {formatPrice(parseFloat(selectedOrderForCancel.items_cost.toString()) + parseFloat(selectedOrderForCancel.reward_amount.toString()), selectedOrderForCancel.currency)}
                   </span>
                 </div>
               </div>

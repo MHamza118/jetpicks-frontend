@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
 import { pickerOrdersApi } from '../../services/picker/orders';
 import { imageUtils } from '../../utils';
+import { getSymbolForCurrency } from '../../services/currencies';
 import PickerDashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
@@ -32,6 +33,7 @@ interface OrderDetailsViewData {
   reward_amount: number | string;
   accepted_counter_offer_amount?: number | string;
   waiting_days?: number;
+  currency?: string;
   items: OrderItem[];
   orderer: {
     id: string;
@@ -53,6 +55,12 @@ const PickerOrderDetailsView = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showPaymentNotice, setShowPaymentNotice] = useState(true);
+
+  // Helper function to format price with currency
+  const formatPrice = (price: number, currency?: string) => {
+    const symbol = getSymbolForCurrency(currency || 'USD');
+    return `${symbol}${price.toFixed(2)}`;
+  };
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -76,6 +84,7 @@ const PickerOrderDetailsView = () => {
           reward_amount: data.reward_amount,
           accepted_counter_offer_amount: data.accepted_counter_offer_amount,
           waiting_days: data.waiting_days,
+          currency: data.currency,
           items: data.items,
           orderer: data.orderer,
           created_at: data.created_at,
@@ -105,9 +114,40 @@ const PickerOrderDetailsView = () => {
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setUploadedProof(file);
+    if (!file) return;
+
+    // Validate file size (max 100MB)
+    const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+    if (file.size > MAX_FILE_SIZE) {
+      setError(`File size exceeds 100MB limit. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`);
+      return;
     }
+
+    // Validate file type - accept all common image formats and PDF
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+      'image/heic',
+      'image/heif',
+      'image/x-heic',
+      'image/x-heif',
+      'application/pdf'
+    ];
+    
+    // Also check by file extension for better compatibility
+    const fileName = file.name.toLowerCase();
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.heif', '.pdf'];
+    const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+    
+    if (!allowedTypes.includes(file.type) && !hasValidExtension) {
+      setError(`Invalid file type. Allowed: JPEG, PNG, WebP, GIF, HEIC (iPhone), PDF. Your file is ${file.type || 'unknown'}.`);
+      return;
+    }
+
+    setError(null);
+    setUploadedProof(file);
   };
 
   const handleToggleMarkAsDelivered = async () => {
@@ -115,13 +155,21 @@ const PickerOrderDetailsView = () => {
       setShowUploadSection(true);
     } else if (uploadedProof && orderId) {
       try {
-        setLoading(false);
+        setLoading(true);
+        setError(null);
+        
         await pickerOrdersApi.markDelivered(orderId, uploadedProof);
+        
         setIsDelivered(true);
         setShowUploadSection(false);
-      } catch (err) {
-        console.error('Failed to mark delivery:', err);
-        setError('Failed to mark delivery. Please try again.');
+        setUploadedProof(null);
+        setLoading(false);
+      } catch (err: any) {
+        
+        // Extract meaningful error message
+        const errorMessage = err?.message || 'Failed to mark delivery. Please try again.';
+        setError(errorMessage);
+        setLoading(false);
       }
     }
   };
@@ -219,7 +267,7 @@ const PickerOrderDetailsView = () => {
                     <div className="flex justify-between items-center">
                       <p className="text-gray-600">Reward</p>
                       <p className="font-semibold text-gray-900">
-                        ${typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount).toFixed(2) : order.reward_amount.toFixed(2)}
+                        {formatPrice(typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount) : order.reward_amount, order.currency)}
                       </p>
                     </div>
                     {order.waiting_days && (
@@ -233,29 +281,29 @@ const PickerOrderDetailsView = () => {
                         <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
                           <p className="text-gray-600">Items Cost</p>
                           <p className="font-semibold text-gray-900">
-                            ${order.items_cost.toFixed(2)}
+                            {formatPrice(order.items_cost || 0, order.currency)}
                           </p>
                         </div>
                         {order.accepted_counter_offer_amount && parseFloat(order.accepted_counter_offer_amount.toString()) > 0 && (
                           <div className="flex justify-between items-center">
                             <p className="text-gray-600">Counter Offer</p>
                             <p className="font-semibold text-gray-900">
-                              ${typeof order.accepted_counter_offer_amount === 'string' ? parseFloat(order.accepted_counter_offer_amount).toFixed(2) : order.accepted_counter_offer_amount.toFixed(2)}
+                              {formatPrice(typeof order.accepted_counter_offer_amount === 'string' ? parseFloat(order.accepted_counter_offer_amount) : order.accepted_counter_offer_amount, order.currency)}
                             </p>
                           </div>
                         )}
                         <div className="flex justify-between items-center font-bold text-lg">
                           <p className="text-gray-900">Total Amount</p>
                           <p className="text-gray-900">
-                            ${(() => {
+                            {formatPrice((() => {
                               const itemsCost = order.items_cost || 0;
                               const reward = typeof order.reward_amount === 'string' ? parseFloat(order.reward_amount) : order.reward_amount;
                               const subtotal = itemsCost + reward;
                               const jetPickerFee = subtotal * 0.065;
                               const paymentFee = subtotal * 0.04;
                               const total = subtotal + jetPickerFee + paymentFee;
-                              return total.toFixed(2);
-                            })()}
+                              return total;
+                            })(), order.currency)}
                           </p>
                         </div>
                       </>
@@ -356,16 +404,24 @@ const PickerOrderDetailsView = () => {
                           <label className="cursor-pointer">
                             <input
                               type="file"
-                              accept="image/*,application/pdf"
+                              accept="image/*,.heic,.heif,application/pdf"
                               onChange={handleFileUpload}
+                              disabled={loading}
                               className="hidden"
                             />
-                            <span className="text-[#4D0013] font-semibold text-sm hover:underline">
-                              Click to upload
+                            <span className={`font-semibold text-sm hover:underline ${loading ? 'text-gray-400 cursor-not-allowed' : 'text-[#4D0013] cursor-pointer'}`}>
+                              {loading ? 'Uploading...' : 'Click to upload'}
                             </span>
                           </label>
+                          <p className="text-gray-500 text-xs mt-2">Max 100MB • All image formats (JPEG, PNG, WebP, GIF, HEIC) or PDF</p>
                           {uploadedProof && (
-                            <p className="text-green-600 text-sm mt-2">✓ {uploadedProof.name}</p>
+                            <p className="text-green-600 text-sm mt-2">✓ {uploadedProof.name} ({(uploadedProof.size / 1024 / 1024).toFixed(2)}MB)</p>
+                          )}
+                          {loading && (
+                            <div className="mt-4 flex items-center justify-center gap-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#4D0013]"></div>
+                              <p className="text-sm text-gray-600">Uploading file...</p>
+                            </div>
                           )}
                         </div>
 
@@ -373,14 +429,14 @@ const PickerOrderDetailsView = () => {
                         <div className="flex justify-center">
                           <button
                             onClick={handleToggleMarkAsDelivered}
-                            disabled={!uploadedProof}
+                            disabled={!uploadedProof || !!error || loading}
                             className={`px-8 py-2 rounded-lg font-bold text-sm transition-colors ${
-                              uploadedProof
+                              uploadedProof && !error && !loading
                                 ? 'bg-[#4D0013] text-white hover:bg-[#660019]'
                                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             }`}
                           >
-                            Confirm Delivery
+                            {loading ? 'Uploading...' : 'Confirm Delivery'}
                           </button>
                         </div>
                       </>

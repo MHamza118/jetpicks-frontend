@@ -157,21 +157,44 @@ const CreateOrderStep2 = () => {
     const handleImageUpload = (itemId: string, e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files) {
-            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+            const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB in bytes
             const validFiles: File[] = [];
             let hasInvalidFiles = false;
 
             Array.from(files).forEach(file => {
+                // Validate file size
                 if (file.size > MAX_FILE_SIZE) {
                     hasInvalidFiles = true;
-                    console.warn(`File ${file.name} exceeds 5MB limit`);
-                } else {
-                    validFiles.push(file);
+                    return;
                 }
+
+                // Validate file type - accept all common image formats
+                const allowedTypes = [
+                    'image/jpeg',
+                    'image/png',
+                    'image/webp',
+                    'image/gif',
+                    'image/heic',
+                    'image/heif',
+                    'image/x-heic',
+                    'image/x-heif'
+                ];
+                
+                // Also check by file extension for better compatibility
+                const fileName = file.name.toLowerCase();
+                const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.heif'];
+                const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+                
+                if (!allowedTypes.includes(file.type) && !hasValidExtension) {
+                    hasInvalidFiles = true;
+                    return;
+                }
+
+                validFiles.push(file);
             });
 
             if (hasInvalidFiles) {
-                setValidationError('Some images exceed 5MB limit. Only valid images have been added.');
+                setValidationError('Some images are invalid or exceed 10MB limit. Only valid images have been added.');
             }
 
             if (validFiles.length > 0) {
@@ -250,7 +273,6 @@ const CreateOrderStep2 = () => {
                 formData.append('quantity', (parseInt(item.quantity) || 1).toString());
                 formData.append('price', item.price);
                 const currencyToSave = item.currency || currency?.code || 'USD';
-                console.log('Saving item with currency:', currencyToSave, 'Item:', item);
                 formData.append('currency', currencyToSave);
 
                 if (item.weight?.trim()) {
@@ -276,9 +298,26 @@ const CreateOrderStep2 = () => {
 
             updateOrderData({ items, waitingDays });
             navigate(`/orderer/create-order/${orderId}/step3`);
-        } catch (error) {
-            console.error('Failed to save items:', error);
-            setValidationError('Something went wrong. Please try again.');
+        } catch (error: any) {
+            // Extract specific error message from backend
+            let errorMessage = 'Something went wrong. Please try again.';
+            
+            if (error?.message) {
+                // Check for specific validation errors
+                if (error.message.includes('product_images')) {
+                    if (error.message.includes('100MB')) {
+                        errorMessage = 'One or more images exceed 10MB limit. Please use smaller images.';
+                    } else if (error.message.includes('valid image')) {
+                        errorMessage = 'One or more files are not valid images. Please use JPEG, PNG, WebP, GIF, or HEIC formats.';
+                    } else {
+                        errorMessage = error.message;
+                    }
+                } else {
+                    errorMessage = error.message;
+                }
+            }
+            
+            setValidationError(errorMessage);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } finally {
             setLoading(false);
@@ -358,7 +397,7 @@ const CreateOrderStep2 = () => {
                                             <input
                                                 type="file"
                                                 multiple
-                                                accept="image/*"
+                                                accept="image/*,.heic,.heif"
                                                 onChange={(e) => handleImageUpload(item.id, e)}
                                                 className="hidden"
                                             />

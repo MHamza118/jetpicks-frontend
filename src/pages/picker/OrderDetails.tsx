@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ordersApi } from '../../services/orders';
 import { imageUtils } from '../../utils';
+import { getSymbolForCurrency } from '../../services/currencies';
 import DashboardSidebar from '../../components/layout/PickerDashboardSidebar';
 import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
@@ -34,6 +35,7 @@ interface OrderDetails {
   status: string;
   items_count: number;
   items_cost: number;
+  currency?: string;
   items: OrderItem[];
   orderer: {
     id: string;
@@ -54,6 +56,12 @@ const PickerOrderDetails = () => {
   const [agreedToCustomLaws, setAgreedToCustomLaws] = useState(false);
   const [hasCounterOffer, setHasCounterOffer] = useState(false);
   const [currentImageIndices, setCurrentImageIndices] = useState<{ [key: string]: number }>({});
+
+  // Helper function to format price with currency
+  const formatPrice = (price: number, currency?: string) => {
+    const symbol = getSymbolForCurrency(currency || 'USD');
+    return `${symbol}${price.toFixed(2)}`;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -259,7 +267,7 @@ const PickerOrderDetails = () => {
 
                         {/* Price */}
                         <p className="text-gray-900 text-sm">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          {formatPrice(item.price * item.quantity, order.currency)}
                         </p>
                       </div>
                     </div>
@@ -275,29 +283,29 @@ const PickerOrderDetails = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Item Cost</span>
-                    <span className="text-gray-900 font-semibold">${itemsCost.toFixed(2)}</span>
+                    <span className="text-gray-900 font-semibold">{formatPrice(itemsCost, order.currency)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Reward Amount</span>
-                    <span className="text-gray-900 font-semibold">${initialReward.toFixed(2)}</span>
+                    <span className="text-gray-900 font-semibold">{formatPrice(initialReward, order.currency)}</span>
                   </div>
                   {counterOffer > 0 && (
                     <div className="flex justify-between items-center bg-yellow-50 p-2 rounded">
                       <span className="text-gray-600 font-semibold">Counter Offer Amount</span>
-                      <span className="text-gray-900 font-bold">${counterOffer.toFixed(2)}</span>
+                      <span className="text-gray-900 font-bold">{formatPrice(counterOffer, order.currency)}</span>
                     </div>
                   )}
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">JetPicker Fee (6.5%)</span>
-                    <span className="text-gray-900 font-semibold">${fees.jetPickerFee}</span>
+                    <span className="text-gray-900 font-semibold">{formatPrice(parseFloat(fees.jetPickerFee), order.currency)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Payment Processing (4%)</span>
-                    <span className="text-gray-900 font-semibold">${fees.paymentProcessingFee}</span>
+                    <span className="text-gray-900 font-semibold">{formatPrice(parseFloat(fees.paymentProcessingFee), order.currency)}</span>
                   </div>
                   <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
                     <span className="text-gray-900 font-bold">Total</span>
-                    <span className="text-gray-900 font-bold text-lg">${totalAmount}</span>
+                    <span className="text-gray-900 font-bold text-lg">{formatPrice(parseFloat(totalAmount), order.currency)}</span>
                   </div>
                 </div>
               </div>
