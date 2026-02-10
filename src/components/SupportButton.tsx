@@ -12,6 +12,23 @@ const SupportButton = () => {
     const buttonColor = isPicker ? 'bg-[#4D0013] hover:bg-[#660019]' : 'bg-[#FFDF57] hover:bg-yellow-500';
     const buttonTextColor = isPicker ? 'text-white' : 'text-gray-900';
 
+    // Hide support button on these pages
+    const hiddenPages = [
+        '/',
+        '/login',
+        '/signup',
+        '/profile-setup',
+        '/travel-availability-setup',
+        '/forgot-password',
+        '/reset-password',
+    ];
+
+    const shouldHide = hiddenPages.includes(location.pathname);
+
+    if (shouldHide) {
+        return null;
+    }
+
     const handleSupportClick = () => {
         // Open Gmail compose in new tab
         const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${supportEmail}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
