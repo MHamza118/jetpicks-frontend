@@ -52,9 +52,9 @@ class ApiClient {
     }
   }
 
-  async post<T>(endpoint: string, data?: any): Promise<T> {
+  async post<T>(endpoint: string, data?: Record<string, unknown> | FormData): Promise<T> {
     try {
-      const config: any = {};
+      const config: Record<string, unknown> = {};
       if (data instanceof FormData) {
         config.headers = {
           'Content-Type': undefined,
@@ -69,9 +69,9 @@ class ApiClient {
     }
   }
 
-  async put<T>(endpoint: string, data?: any): Promise<T> {
+  async put<T>(endpoint: string, data?: Record<string, unknown> | FormData): Promise<T> {
     try {
-      const config: any = {};
+      const config: Record<string, unknown> = {};
       
       // If data is FormData, remove Content-Type header so axios sets it with boundary
       if (data instanceof FormData) {
@@ -81,7 +81,7 @@ class ApiClient {
         config.timeout = API_CONFIG.FILE_UPLOAD_TIMEOUT;
         const token = storage.get(STORAGE_KEYS.AUTH_TOKEN);
         if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+          (config.headers as Record<string, unknown>).Authorization = `Bearer ${token}`;
         }
       }
       
@@ -101,10 +101,10 @@ class ApiClient {
     }
   }
 
-  private handleError(error: any): ApiError {
+  private handleError(error: unknown): ApiError {
     if (axios.isAxiosError(error)) {
       const status = error.response?.status || 0;
-      let message = error.response?.data?.message || error.message || ERROR_MESSAGES.SERVER_ERROR;
+      let message = (error.response?.data as Record<string, unknown>)?.message as string || error.message || ERROR_MESSAGES.SERVER_ERROR;
 
       switch (status) {
         case 401:

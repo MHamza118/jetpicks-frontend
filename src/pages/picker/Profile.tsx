@@ -142,7 +142,6 @@ const PickerProfile = () => {
       }
 
       const responseData = await response.json();
-      console.log('Avatar upload response:', responseData);
 
       setUploadSuccess('Avatar updated successfully');
       

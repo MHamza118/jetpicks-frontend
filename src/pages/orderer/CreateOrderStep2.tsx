@@ -64,16 +64,16 @@ const CreateOrderStep2 = () => {
 
             try {
                 const res = await ordersApi.getOrderDetails(orderId);
-                const order = (res as any).data;
+                const orderData = (res as Record<string, unknown>).data as Record<string, unknown>;
                 
                 // Update context with order data
                 updateOrderData({
-                    orderId: order.id,
-                    originCountry: order.origin_country,
-                    originCity: order.origin_city,
-                    destinationCountry: order.destination_country,
-                    destinationCity: order.destination_city,
-                    specialNotes: order.special_notes || '',
+                    orderId: orderData.id as string,
+                    originCountry: orderData.origin_country as string,
+                    originCity: orderData.origin_city as string,
+                    destinationCountry: orderData.destination_country as string,
+                    destinationCity: orderData.destination_city as string,
+                    specialNotes: (orderData.special_notes as string) || '',
                 });
             } catch (error) {
                 console.error('Failed to fetch order:', error);
@@ -82,7 +82,7 @@ const CreateOrderStep2 = () => {
         };
 
         fetchOrderDetails();
-    }, [orderId]);
+    }, [orderId, navigate, updateOrderData]);
 
     // Load all available currencies
     useEffect(() => {
@@ -141,7 +141,6 @@ const CreateOrderStep2 = () => {
     };
 
     const handleCurrencyChange = (newCurrency: { code: string; symbol: string }) => {
-        console.log('Currency changed to:', newCurrency.code);
         setCurrency(newCurrency);
         // Update all items with the new currency
         setItems(prevItems => {
@@ -149,7 +148,6 @@ const CreateOrderStep2 = () => {
                 ...item,
                 currency: newCurrency.code
             }));
-            console.log('Items updated with currency:', updatedItems);
             return updatedItems;
         });
     };
@@ -298,22 +296,24 @@ const CreateOrderStep2 = () => {
 
             updateOrderData({ items, waitingDays });
             navigate(`/orderer/create-order/${orderId}/step3`);
-        } catch (error: any) {
+        } catch (error: unknown) {
             // Extract specific error message from backend
             let errorMessage = 'Something went wrong. Please try again.';
             
-            if (error?.message) {
+            if (error && typeof error === 'object' && 'message' in error) {
+                const err = error as Record<string, unknown>;
+                const message = err.message as string;
                 // Check for specific validation errors
-                if (error.message.includes('product_images')) {
-                    if (error.message.includes('100MB')) {
+                if (message.includes('product_images')) {
+                    if (message.includes('10MB')) {
                         errorMessage = 'One or more images exceed 10MB limit. Please use smaller images.';
-                    } else if (error.message.includes('valid image')) {
+                    } else if (message.includes('valid image')) {
                         errorMessage = 'One or more files are not valid images. Please use JPEG, PNG, WebP, GIF, or HEIC formats.';
                     } else {
-                        errorMessage = error.message;
+                        errorMessage = message;
                     }
                 } else {
-                    errorMessage = error.message;
+                    errorMessage = message;
                 }
             }
             

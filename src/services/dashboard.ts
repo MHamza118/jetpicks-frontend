@@ -26,7 +26,7 @@ export interface PickerDashboardData {
       has_more: boolean;
     };
   };
-  travel_journeys: any[];
+  travel_journeys: Record<string, unknown>[];
   statistics: {
     total_available_orders: number;
     active_journeys: number;
