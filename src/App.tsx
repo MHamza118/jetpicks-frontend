@@ -6,6 +6,7 @@ import { DashboardCacheProvider } from './context/DashboardCacheContext';
 import { ChatProvider } from './context/ChatContext';
 import { UserProvider } from './context/UserContext';
 import { GlobalNotificationProvider } from './context/GlobalNotificationContext';
+import SupportButton from './components/SupportButton';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
               <DashboardCacheProvider>
                 <ChatProvider>
                   <AppRoutes />
+                  <SupportButton />
                 </ChatProvider>
               </DashboardCacheProvider>
             </OrderProvider>
