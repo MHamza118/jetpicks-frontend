@@ -7,20 +7,36 @@ import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader
 import MobileFooter from '../../components/layout/MobileFooter';
 import { useChat } from '../../context/ChatContext';
 import { useUser } from '../../context/UserContext';
+import { authApi } from '../../services/auth';
 import type { ChatMessage } from '../../context/ChatContext';
 
 const Chat = () => {
   const { roomId } = useParams<{ roomId?: string }>();
   const navigate = useNavigate();
   const { avatarUrl, avatarError, handleAvatarError } = useUser();
-  const { chatRooms, currentRoom, messages, fetchChatRooms, fetchChatRoom, fetchMessages, sendMessage } = useChat();
+  const { chatRooms, currentRoom, messages, fetchChatRooms, fetchChatRoom, fetchMessages, sendMessage, markRoomMessagesAsRead } = useChat();
 
   const [messageInput, setMessageInput] = useState('');
   const [showTranslated, setShowTranslated] = useState<{ [key: string]: boolean }>({});
   const [sending, setSending] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Get current user ID on mount
+  useEffect(() => {
+    const getCurrentUserId = async () => {
+      try {
+        const response = await authApi.getCurrentUser();
+        const userId = (response as any).data?.id;
+        setCurrentUserId(userId);
+      } catch (error) {
+        console.error('Failed to get current user:', error);
+      }
+    };
+    getCurrentUserId();
+  }, []);
 
   // Fetch chat rooms on mount
   useEffect(() => {
@@ -35,6 +51,13 @@ const Chat = () => {
       fetchMessages(roomId);
     }
   }, [roomId, fetchChatRoom, fetchMessages]);
+
+  // Mark messages as read when room is opened
+  useEffect(() => {
+    if (currentRoom && currentUserId) {
+      markRoomMessagesAsRead(currentRoom.id, currentUserId);
+    }
+  }, [currentRoom, currentUserId, markRoomMessagesAsRead]);
 
   // Auto-scroll to latest message
   useEffect(() => {

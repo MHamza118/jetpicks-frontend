@@ -65,6 +65,7 @@ interface ChatContextType {
   fetchMessages: (roomId: string, page?: number) => Promise<void>;
   sendMessage: (roomId: string, content: string, translate?: boolean) => Promise<void>;
   markMessageAsRead: (messageId: string) => Promise<void>;
+  markRoomMessagesAsRead: (roomId: string, currentUserId: string) => Promise<void>;
   setCurrentRoom: (room: ChatRoom | null) => void;
   clearError: () => void;
 }
@@ -96,6 +97,17 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('Error marking message as read:', err);
     }
   }, []);
+
+  const markRoomMessagesAsRead = useCallback(async (roomId: string, currentUserId: string) => {
+    try {
+      const unreadMessages = messages.filter(msg => !msg.is_read && msg.sender_id !== currentUserId);
+      for (const msg of unreadMessages) {
+        await markMessageAsRead(msg.id);
+      }
+    } catch (err) {
+      console.error('Error marking room messages as read:', err);
+    }
+  }, [messages, markMessageAsRead]);
 
   const fetchChatRooms = useCallback(async () => {
     try {
@@ -129,15 +141,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       const response = await chatApi.getChatRoom(roomId);
       const data = (response as any).data;
       setCurrentRoom(data);
-      
-      // Mark all unread messages in this room as read
-      if (messages.length > 0) {
-        const unreadMessages = messages.filter(msg => !msg.is_read && msg.sender_id !== 'current-user');
-        for (const msg of unreadMessages) {
-          await markMessageAsRead(msg.id);
-        }
-      }
-      
       setError(null);
     } catch (err) {
       setError('Failed to fetch chat room');
@@ -146,7 +149,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  }, [messages, markMessageAsRead]);
+  }, []);
 
   const fetchMessages = useCallback(async (roomId: string, page = 1) => {
     try {
@@ -250,6 +253,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         fetchMessages,
         sendMessage,
         markMessageAsRead,
+        markRoomMessagesAsRead,
         setCurrentRoom,
         clearError,
       }}
