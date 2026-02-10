@@ -28,6 +28,7 @@ interface OrderContextType {
   orderData: OrderData;
   updateOrderData: (data: Partial<OrderData>) => void;
   resetOrderData: () => void;
+  clearItems: () => void;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -55,8 +56,12 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     setOrderData(initialOrderData);
   };
 
+  const clearItems = () => {
+    setOrderData(prev => ({ ...prev, items: [] }));
+  };
+
   return (
-    <OrderContext.Provider value={{ orderData, updateOrderData, resetOrderData }}>
+    <OrderContext.Provider value={{ orderData, updateOrderData, resetOrderData, clearItems }}>
       {children}
     </OrderContext.Provider>
   );

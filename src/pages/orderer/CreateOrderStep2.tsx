@@ -185,7 +185,10 @@ const CreateOrderStep2 = () => {
 
         setLoading(true);
         try {
-            // First, update the order with waiting_days
+            // First, delete all existing items for this order (replace strategy)
+            await ordersApi.deleteOrderItems(orderId!);
+
+            // Then, update the order with waiting_days
             await ordersApi.updateOrder(orderId!, { waiting_days: parseInt(waitingDays) });
 
             // Save all items to backend

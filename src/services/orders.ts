@@ -33,6 +33,9 @@ export const ordersApi = {
   addOrderItem: (orderId: string, data: AddOrderItemPayload | FormData) =>
     apiClient.post(`/orders/${orderId}/items`, data),
 
+  deleteOrderItems: (orderId: string) =>
+    apiClient.delete(`/orders/${orderId}/items`),
+
   setReward: (orderId: string, data: SetOrderRewardPayload) =>
     apiClient.put(`/orders/${orderId}/reward`, data),
 
