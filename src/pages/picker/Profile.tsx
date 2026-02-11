@@ -124,7 +124,7 @@ const PickerProfile = () => {
       formData.append('image', file);
 
       // Get the API base URL from environment
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.jetpicks.com/api';
       const token = storage.get(STORAGE_KEYS.AUTH_TOKEN);
 
       // Use the avatar endpoint
