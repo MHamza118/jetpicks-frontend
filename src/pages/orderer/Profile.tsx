@@ -140,7 +140,7 @@ const OrdererProfile = () => {
         throw new Error(errorData.message || 'Failed to upload avatar');
       }
 
-      const responseData = await response.json();
+      await response.json();
 
       setUploadSuccess('Avatar updated successfully');
       

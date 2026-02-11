@@ -52,7 +52,7 @@ class ApiClient {
     }
   }
 
-  async post<T>(endpoint: string, data?: Record<string, unknown> | FormData): Promise<T> {
+  async post<T>(endpoint: string, data?: Record<string, unknown> | FormData | unknown): Promise<T> {
     try {
       const config: Record<string, unknown> = {};
       if (data instanceof FormData) {
@@ -69,7 +69,7 @@ class ApiClient {
     }
   }
 
-  async put<T>(endpoint: string, data?: Record<string, unknown> | FormData): Promise<T> {
+  async put<T>(endpoint: string, data?: Record<string, unknown> | FormData | unknown): Promise<T> {
     try {
       const config: Record<string, unknown> = {};
       

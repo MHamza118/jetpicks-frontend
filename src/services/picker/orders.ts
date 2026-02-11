@@ -15,6 +15,7 @@ export interface PickerOrder {
   items_count: number;
   items_cost: number;
   reward_amount: number | string;
+  currency?: string;
   items: Array<{
     id: string;
     item_name: string;

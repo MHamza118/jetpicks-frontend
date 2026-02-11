@@ -98,7 +98,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  const markRoomMessagesAsRead = useCallback(async (roomId: string, currentUserId: string) => {
+  const markRoomMessagesAsRead = useCallback(async (_roomId: string, currentUserId: string) => {
     try {
       const unreadMessages = messages.filter(msg => !msg.is_read && msg.sender_id !== currentUserId);
       for (const msg of unreadMessages) {
