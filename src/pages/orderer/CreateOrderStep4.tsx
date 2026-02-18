@@ -11,6 +11,7 @@ import DashboardHeader from '../../components/layout/DashboardHeader';
 import placeOrderImage from '../../assets/placeorder.png';
 
 interface OrderItem {
+  id?: string;
   item_name: string;
   quantity: number;
   store_link?: string;
@@ -29,6 +30,7 @@ interface OrderDetailsType {
   reward_amount: number;
   waiting_days?: number;
   currency?: string;
+  special_notes?: string;
 }
 
 const CreateOrderStep4 = () => {
@@ -41,6 +43,10 @@ const CreateOrderStep4 = () => {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [loading, setLoading] = useState(false);
   const [orderDetails, setOrderDetails] = useState<OrderDetailsType | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedWaitingDays, setEditedWaitingDays] = useState<number | null>(null);
+  const [editedRewardAmount, setEditedRewardAmount] = useState<number | null>(null);
+  const [editedItems, setEditedItems] = useState<OrderItem[]>([]);
 
   // Get the primary currency from order (saved during step 2)
   const getPrimaryCurrency = (): string => {
@@ -61,7 +67,12 @@ const CreateOrderStep4 = () => {
 
   // Helper function to calculate items total
   const getItemsTotal = () => {
-    return orderDetails?.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
+    const items = isEditMode ? editedItems : (orderDetails?.items || []);
+    return items.reduce((sum, item) => {
+      const price = typeof item.price === 'number' ? item.price : 0;
+      const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
+      return sum + (price * quantity);
+    }, 0) || 0;
   };
 
   // Helper function to get reward amount as number
@@ -123,6 +134,62 @@ const CreateOrderStep4 = () => {
     navigate(-1);
   };
 
+  const updateEditedItem = (index: number, field: keyof OrderItem, value: any) => {
+    const updated = [...editedItems];
+    updated[index] = { ...updated[index], [field]: value };
+    setEditedItems(updated);
+  };
+
+  const handleNumberInputWheel = (e: React.WheelEvent<HTMLInputElement>) => {
+    e.currentTarget.blur();
+  };
+
+  const handleEdit = () => {
+    if (isEditMode) {
+      // Cancel edit mode
+      setIsEditMode(false);
+      setEditedWaitingDays(null);
+      setEditedRewardAmount(null);
+      setEditedItems([]);
+    } else {
+      // Enter edit mode
+      setIsEditMode(true);
+      setEditedWaitingDays(orderDetails?.waiting_days || null);
+      setEditedRewardAmount(getRewardAmount());
+      setEditedItems(orderDetails?.items || []);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!orderId) return;
+    
+    try {
+      setLoading(true);
+      await ordersApi.updateOrder(orderId, {
+        waiting_days: editedWaitingDays,
+        reward_amount: editedRewardAmount,
+        items: editedItems,
+      });
+      
+      // Update local state
+      if (orderDetails) {
+        setOrderDetails({
+          ...orderDetails,
+          waiting_days: editedWaitingDays || orderDetails.waiting_days,
+          reward_amount: editedRewardAmount || orderDetails.reward_amount,
+          items: editedItems,
+        });
+      }
+      
+      setIsEditMode(false);
+    } catch (error) {
+      console.error('Failed to update order:', error);
+      alert('Failed to update order. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePlaceOrder = async () => {
     if (termsAgreed && lawsAgreed) {
       setLoading(true);
@@ -157,110 +224,7 @@ const CreateOrderStep4 = () => {
 
           <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white">
             <div className="max-w-2xl mx-auto md:bg-white md:rounded-2xl md:p-8 md:shadow-[0_2px_15px_rgba(0,0,0,0.05)] md:border md:border-gray-100">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Order Summary</h2>
-
-              {/* Summary Card */}
-              <div className="bg-gray-50 rounded-xl p-6 mb-6 space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-gray-600 font-medium">Route</span>
-                  <span className="text-gray-900 font-semibold">From {orderDetails?.origin_city} to {orderDetails?.destination_city}</span>
-                </div>
-                
-                {/* Items List */}
-                {orderDetails?.items && orderDetails.items.length > 0 && (
-                  <div className="border-t border-gray-200 pt-4">
-                    <p className="text-gray-600 font-medium mb-3">Items</p>
-                    <div className="space-y-3">
-                      {orderDetails.items.map((item: OrderItem, idx: number) => (
-                        <div key={idx} className="bg-white rounded-lg p-3">
-                          <div className="flex justify-between mb-2">
-                            <span className="text-gray-900 font-semibold">{item.item_name}</span>
-                            <span className="text-gray-600 text-sm">Qty: {item.quantity}</span>
-                          </div>
-                          {item.store_link && (
-                            <div className="flex justify-between mb-2">
-                              <span className="text-gray-600 text-sm">Store:</span>
-                              <a href={item.store_link} target="_blank" rel="noopener noreferrer" className="text-[#4D0013] text-sm underline font-semibold">
-                                {item.store_link}
-                              </a>
-                            </div>
-                          )}
-                          <div className="flex justify-between">
-                            <span className="text-gray-600 text-sm">Weight:</span>
-                            <span className="text-gray-900 text-sm">{item.weight}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <div className="border-t border-gray-200 pt-4 space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 font-medium">Waiting Days</span>
-                    <span className="text-gray-900 font-semibold">{orderDetails?.waiting_days} days</span>
-                  </div>
-                  
-                  {/* Items Amount */}
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 font-medium">Items Amount</span>
-                    <span className="text-gray-900 font-semibold">
-                      {getCurrencySymbol()}{getItemsTotal().toFixed(2)}
-                    </span>
-                  </div>
-                  
-                  {/* Reward Amount */}
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 font-medium">Reward Amount</span>
-                    <span className="text-gray-900 font-semibold">{getCurrencySymbol()}{getRewardAmount().toFixed(2)}</span>
-                  </div>
-                  
-                  {/* JetPicker Fee (6.5%) */}
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 font-medium">JetPicker Fee (6.5%)</span>
-                    <span className="text-gray-900 font-semibold">
-                      {getCurrencySymbol()}{getJetPickerFee().toFixed(2)}
-                    </span>
-                  </div>
-                  
-                  {/* Payment Processing (4%) */}
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 font-medium">Payment Processing (4%)</span>
-                    <span className="text-gray-900 font-semibold">
-                      {getCurrencySymbol()}{getPaymentProcessingFee().toFixed(2)}
-                    </span>
-                  </div>
-                  
-                  {/* Total */}
-                  <div className="border-t border-gray-200 pt-3 flex justify-between bg-yellow-50 -mx-3 px-3 py-3 rounded">
-                    <span className="text-gray-900 font-bold">Total</span>
-                    <span className="text-gray-900 font-bold text-lg">
-                      {getCurrencySymbol()}{getTotal().toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Product Images */}
-              {orderDetails?.items && orderDetails.items.length > 0 && (
-                <div className="mb-8">
-                  <p className="text-gray-600 font-medium mb-4">Product Images</p>
-                  <div className="flex gap-3 flex-wrap">
-                    {orderDetails.items.map((item: OrderItem, itemIdx: number) =>
-                      item.product_images && item.product_images.length > 0 ? (
-                        item.product_images.map((imagePath: string, imgIdx: number) => {
-                          const fullUrl = imageUtils.getImageUrl(imagePath);
-                          return (
-                            <div key={`${itemIdx}-${imgIdx}`} className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200">
-                              <img src={fullUrl} alt={`Product ${itemIdx + 1}-${imgIdx + 1}`} className="w-full h-full object-cover" />
-                            </div>
-                          );
-                        })
-                      ) : null
-                    )}
-                  </div>
-                </div>
-              )}
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Summary</h2>
             </div>
           </div>
 
@@ -314,8 +278,29 @@ const CreateOrderStep4 = () => {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-0 bg-white">
           <div className="max-w-2xl mx-auto md:bg-white md:rounded-2xl md:p-8 md:shadow-[0_2px_15px_rgba(0,0,0,0.05)] md:border md:border-gray-100">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Summary</h2>
-            <p className="text-gray-600 text-sm mb-6">Before placing your order, please review your complete order summary to ensure all details are correct.</p>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleBack}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                  title="Go back"
+                >
+                  <ArrowLeft size={24} className="text-gray-900" />
+                </button>
+                <h2 className="text-2xl font-bold text-gray-900">Order Summary</h2>
+              </div>
+              <button
+                onClick={handleEdit}
+                className={`px-3 py-2 rounded-lg transition-colors font-semibold text-sm ${
+                  isEditMode
+                    ? 'bg-gray-300 hover:bg-gray-400 text-gray-900'
+                    : 'bg-[#FFDF57] hover:bg-yellow-500 text-gray-900'
+                }`}
+              >
+                {isEditMode ? 'Cancel' : 'Edit'}
+              </button>
+            </div>
+            <p className="text-gray-500 text-xs mb-6 pl-11">Before placing your order, please review your complete order summary to ensure all details are correct.</p>
 
             {/* Summary Card */}
             <div className="bg-gray-50 rounded-xl p-6 mb-6">
@@ -344,24 +329,83 @@ const CreateOrderStep4 = () => {
                     <div className="border-t border-gray-200 pt-4">
                       <p className="text-gray-600 font-medium mb-3">Items</p>
                       <div className="space-y-3">
-                        {orderDetails.items.map((item: OrderItem, idx: number) => (
+                        {(isEditMode ? editedItems : orderDetails.items).map((item: OrderItem, idx: number) => (
                           <div key={idx} className="bg-white rounded-lg p-3">
-                            <div className="flex justify-between mb-2">
-                              <span className="text-gray-900 font-semibold">{item.item_name}</span>
-                              <span className="text-gray-600 text-sm">Qty: {item.quantity}</span>
-                            </div>
-                            {item.store_link && (
-                              <div className="flex justify-between mb-2">
-                                <span className="text-gray-600 text-sm">Store:</span>
-                                <a href={item.store_link} target="_blank" rel="noopener noreferrer" className="text-[#4D0013] text-sm underline font-semibold">
-                                  {item.store_link}
-                                </a>
-                              </div>
+                            {isEditMode ? (
+                              <>
+                                <div className="mb-3">
+                                  <label className="text-gray-600 text-sm font-medium block mb-1">Item Name</label>
+                                  <input
+                                    type="text"
+                                    value={item.item_name}
+                                    onChange={(e) => updateEditedItem(idx, 'item_name', e.target.value)}
+                                    className="w-full px-2 py-1 border border-gray-300 rounded text-gray-900 text-sm"
+                                  />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mb-3">
+                                  <div>
+                                    <label className="text-gray-600 text-sm font-medium block mb-1">Quantity</label>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={item.quantity || ''}
+                                      onChange={(e) => updateEditedItem(idx, 'quantity', e.target.value ? parseInt(e.target.value) : '')}
+                                      onWheel={handleNumberInputWheel}
+                                      className="w-full px-2 py-1 border border-gray-300 rounded text-gray-900 text-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-gray-600 text-sm font-medium block mb-1">Weight</label>
+                                    <input
+                                      type="text"
+                                      value={item.weight}
+                                      onChange={(e) => updateEditedItem(idx, 'weight', e.target.value)}
+                                      className="w-full px-2 py-1 border border-gray-300 rounded text-gray-900 text-sm"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="mb-3">
+                                  <label className="text-gray-600 text-sm font-medium block mb-1">Price</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={item.price || ''}
+                                    onChange={(e) => updateEditedItem(idx, 'price', e.target.value ? parseFloat(e.target.value) : '')}
+                                    onWheel={handleNumberInputWheel}
+                                    className="w-full px-2 py-1 border border-gray-300 rounded text-gray-900 text-sm"
+                                  />
+                                </div>
+                                <div className="mb-3">
+                                  <label className="text-gray-600 text-sm font-medium block mb-1">Store Link</label>
+                                  <input
+                                    type="text"
+                                    value={item.store_link || ''}
+                                    onChange={(e) => updateEditedItem(idx, 'store_link', e.target.value)}
+                                    className="w-full px-2 py-1 border border-gray-300 rounded text-gray-900 text-sm"
+                                  />
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="flex justify-between mb-2">
+                                  <span className="text-gray-900 font-semibold">{item.item_name}</span>
+                                  <span className="text-gray-600 text-sm">Qty: {item.quantity}</span>
+                                </div>
+                                {item.store_link && (
+                                  <div className="flex justify-between mb-2">
+                                    <span className="text-gray-600 text-sm">Store:</span>
+                                    <a href={item.store_link} target="_blank" rel="noopener noreferrer" className="text-[#4D0013] text-sm underline font-semibold">
+                                      {item.store_link}
+                                    </a>
+                                  </div>
+                                )}
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600 text-sm">Weight:</span>
+                                  <span className="text-gray-900 text-sm">{item.weight}</span>
+                                </div>
+                              </>
                             )}
-                            <div className="flex justify-between">
-                              <span className="text-gray-600 text-sm">Weight:</span>
-                              <span className="text-gray-900 text-sm">{item.weight}</span>
-                            </div>
                           </div>
                         ))}
                       </div>
@@ -369,9 +413,20 @@ const CreateOrderStep4 = () => {
                   )}
                   
                   <div className="border-t border-gray-200 pt-4 space-y-3">
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-gray-600 font-medium">Waiting Days</span>
-                      <span className="text-gray-900 font-semibold">{orderDetails?.waiting_days} days</span>
+                      {isEditMode ? (
+                        <input
+                          type="number"
+                          min="1"
+                          value={editedWaitingDays || ''}
+                          onChange={(e) => setEditedWaitingDays(e.target.value ? parseInt(e.target.value) : null)}
+                          onWheel={handleNumberInputWheel}
+                          className="w-20 px-2 py-1 border border-gray-300 rounded text-gray-900 font-semibold"
+                        />
+                      ) : (
+                        <span className="text-gray-900 font-semibold">{orderDetails?.waiting_days} days</span>
+                      )}
                     </div>
                     
                     {/* Items Amount */}
@@ -383,9 +438,21 @@ const CreateOrderStep4 = () => {
                     </div>
                     
                     {/* Reward Amount */}
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-gray-600 font-medium">Reward Amount</span>
-                      <span className="text-gray-900 font-semibold">{getCurrencySymbol()}{getRewardAmount().toFixed(2)}</span>
+                      {isEditMode ? (
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={editedRewardAmount || ''}
+                          onChange={(e) => setEditedRewardAmount(e.target.value ? parseFloat(e.target.value) : null)}
+                          onWheel={handleNumberInputWheel}
+                          className="w-24 px-2 py-1 border border-gray-300 rounded text-gray-900 font-semibold"
+                        />
+                      ) : (
+                        <span className="text-gray-900 font-semibold">{getCurrencySymbol()}{getRewardAmount().toFixed(2)}</span>
+                      )}
                     </div>
                     
                     {/* JetPicker Fee (6.5%) */}
@@ -437,36 +504,48 @@ const CreateOrderStep4 = () => {
               </div>
             )}
 
-            {/* Checkboxes */}
-            <div className="space-y-3 mb-8">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={termsAgreed}
-                  onChange={(e) => setTermsAgreed(e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 cursor-pointer accent-gray-900"
-                />
-                <span className="text-gray-700 text-sm">I agree to terms and conditions</span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={lawsAgreed}
-                  onChange={(e) => setLawsAgreed(e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 cursor-pointer accent-gray-900"
-                />
-                <span className="text-gray-700 text-sm">I agree to the custom laws</span>
-              </label>
-            </div>
+            {/* Checkboxes - Hidden in edit mode */}
+            {!isEditMode && (
+              <div className="space-y-3 mb-8">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={termsAgreed}
+                    onChange={(e) => setTermsAgreed(e.target.checked)}
+                    className="w-5 h-5 rounded border-gray-300 cursor-pointer accent-gray-900"
+                  />
+                  <span className="text-gray-700 text-sm">I agree to terms and conditions</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={lawsAgreed}
+                    onChange={(e) => setLawsAgreed(e.target.checked)}
+                    className="w-5 h-5 rounded border-gray-300 cursor-pointer accent-gray-900"
+                  />
+                  <span className="text-gray-700 text-sm">I agree to the custom laws</span>
+                </label>
+              </div>
+            )}
 
-            {/* Place Order Button */}
-            <button
-              onClick={handlePlaceOrder}
-              disabled={!termsAgreed || !lawsAgreed || loading}
-              className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Placing Order...' : 'Place Order'}
-            </button>
+            {/* Place Order / Save Button */}
+            {isEditMode ? (
+              <button
+                onClick={handleSaveEdit}
+                disabled={loading}
+                className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Saving...' : 'Save Changes'}
+              </button>
+            ) : (
+              <button
+                onClick={handlePlaceOrder}
+                disabled={!termsAgreed || !lawsAgreed || loading}
+                className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Placing Order...' : 'Place Order'}
+              </button>
+            )}
           </div>
         </div>
       </div>
