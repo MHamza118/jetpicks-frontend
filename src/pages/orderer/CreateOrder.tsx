@@ -21,6 +21,7 @@ const CreateOrder = () => {
     
     const [currentStep, setCurrentStep] = useState(1);
     const [loading, setLoading] = useState(false);
+    const [validationError, setValidationError] = useState<string | null>(null);
     const [countries, setCountries] = useState<Country[]>([]);
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const [searchText, setSearchText] = useState<{ [key: string]: string }>({});
@@ -126,22 +127,29 @@ const CreateOrder = () => {
     const handleNext = async () => {
         if (currentStep < 4) {
             if (currentStep === 1) {
+                // Validate required fields
+                if (!formData.originCountry || !formData.destinationCountry) {
+                    setValidationError('Please select both origin and destination countries');
+                    return;
+                }
+
                 setLoading(true);
+                setValidationError(null);
                 try {
                     let orderId = orderData.orderId;
+
+                    // Auto-fill cities with "Any City" if not selected
+                    const originCity = formData.originCity || 'Any City';
+                    const destinationCity = formData.destinationCity || 'Any City';
 
                     // Only create a new order if one doesn't exist
                     if (!orderId) {
                         const orderPayload: any = {
                             origin_country: formData.originCountry,
-                            origin_city: formData.originCity,
+                            origin_city: originCity,
                             destination_country: formData.destinationCountry,
-                            destination_city: formData.destinationCity,
+                            destination_city: destinationCity,
                         };
-                        
-                        if (formData.specialNotes.trim()) {
-                            orderPayload.special_notes = formData.specialNotes;
-                        }
 
                         // Add picker_id if this order was created from picker selection
                         if (selectedPicker?.picker?.id) {
@@ -157,17 +165,16 @@ const CreateOrder = () => {
 
                     updateOrderData({
                         originCountry: formData.originCountry,
-                        originCity: formData.originCity,
+                        originCity: originCity,
                         destinationCountry: formData.destinationCountry,
-                        destinationCity: formData.destinationCity,
-                        specialNotes: formData.specialNotes,
+                        destinationCity: destinationCity,
                         orderId,
                         selectedPickerId: selectedPicker?.picker?.id,
                     });
                     navigate(`/orderer/create-order/${orderId}/step2`);
                 } catch (error) {
-                    console.error('Failed to create order:', error);
-                    alert('Failed to create order. Please try again.');
+                    const errorMessage = error instanceof Error ? error.message : 'Failed to create order. Please try again.';
+                    setValidationError(errorMessage);
                 } finally {
                     setLoading(false);
                 }
@@ -279,6 +286,12 @@ const CreateOrder = () => {
                     <div className="max-w-2xl mx-auto md:bg-white md:rounded-2xl md:p-8 md:shadow-[0_2px_15px_rgba(0,0,0,0.05)] md:border md:border-gray-100">
                         <h2 className="text-2xl font-bold text-gray-900 mb-2">Delivery Route</h2>
                         <p className="text-gray-600 mb-6 md:mb-8">Add delivery route you want to order products</p>
+
+                        {validationError && (
+                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                <p className="text-red-700 font-medium text-sm">{validationError}</p>
+                            </div>
+                        )}
 
                         {/* Step 1: Delivery Route */}
                         {currentStep === 1 && (

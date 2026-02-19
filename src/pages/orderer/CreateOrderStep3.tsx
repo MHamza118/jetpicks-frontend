@@ -35,13 +35,7 @@ const CreateOrderStep3 = () => {
           destinationCountry: order.destination_country,
           destinationCity: order.destination_city,
           specialNotes: order.special_notes || '',
-          reward: order.reward_amount && order.reward_amount > 0 ? order.reward_amount.toString() : '',
         });
-        
-        // Only set reward if it's greater than 0
-        if (order.reward_amount && order.reward_amount > 0) {
-          setReward(order.reward_amount.toString());
-        }
       } catch (error) {
         console.error('Failed to fetch order:', error);
         navigate('/orderer/create-order');
@@ -59,12 +53,13 @@ const CreateOrderStep3 = () => {
 
     setLoading(true);
     try {
-      // Save reward to backend
+      // Save reward to backend as integer
+      const rewardAmount = Math.round(parseFloat(reward));
       await ordersApi.setReward(orderId!, {
-        reward_amount: parseFloat(reward),
+        reward_amount: rewardAmount,
       });
 
-      updateOrderData({ reward });
+      updateOrderData({ reward: rewardAmount.toString() });
       navigate(`/orderer/create-order/${orderId}/step4`);
     } catch (error) {
       console.error('Failed to set reward:', error);

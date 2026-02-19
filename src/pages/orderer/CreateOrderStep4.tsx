@@ -369,7 +369,7 @@ const CreateOrderStep4 = () => {
                                   <input
                                     type="number"
                                     min="0"
-                                    step="0.01"
+                                    step="1"
                                     value={item.price || ''}
                                     onChange={(e) => updateEditedItem(idx, 'price', e.target.value ? parseFloat(e.target.value) : '')}
                                     onWheel={handleNumberInputWheel}
@@ -433,7 +433,7 @@ const CreateOrderStep4 = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600 font-medium">Items Amount</span>
                       <span className="text-gray-900 font-semibold">
-                        {getCurrencySymbol()}{getItemsTotal().toFixed(2)}
+                        {getCurrencySymbol()}{Math.round(getItemsTotal())}
                       </span>
                     </div>
                     
@@ -444,14 +444,14 @@ const CreateOrderStep4 = () => {
                         <input
                           type="number"
                           min="0"
-                          step="0.01"
+                          step="1"
                           value={editedRewardAmount || ''}
                           onChange={(e) => setEditedRewardAmount(e.target.value ? parseFloat(e.target.value) : null)}
                           onWheel={handleNumberInputWheel}
                           className="w-24 px-2 py-1 border border-gray-300 rounded text-gray-900 font-semibold"
                         />
                       ) : (
-                        <span className="text-gray-900 font-semibold">{getCurrencySymbol()}{getRewardAmount().toFixed(2)}</span>
+                        <span className="text-gray-900 font-semibold">{getCurrencySymbol()}{Math.round(getRewardAmount())}</span>
                       )}
                     </div>
                     
@@ -459,7 +459,7 @@ const CreateOrderStep4 = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600 font-medium">JetPicker Fee (6.5%)</span>
                       <span className="text-gray-900 font-semibold">
-                        {getCurrencySymbol()}{getJetPickerFee().toFixed(2)}
+                        {getCurrencySymbol()}{Math.round(getJetPickerFee())}
                       </span>
                     </div>
                     
@@ -467,7 +467,7 @@ const CreateOrderStep4 = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600 font-medium">Payment Processing (4%)</span>
                       <span className="text-gray-900 font-semibold">
-                        {getCurrencySymbol()}{getPaymentProcessingFee().toFixed(2)}
+                        {getCurrencySymbol()}{Math.round(getPaymentProcessingFee())}
                       </span>
                     </div>
                     
@@ -475,7 +475,7 @@ const CreateOrderStep4 = () => {
                     <div className="border-t border-gray-200 pt-3 flex justify-between bg-yellow-50 -mx-3 px-3 py-3 rounded">
                       <span className="text-gray-900 font-bold">Total</span>
                       <span className="text-gray-900 font-bold text-lg">
-                        {getCurrencySymbol()}{getTotal().toFixed(2)}
+                        {getCurrencySymbol()}{Math.round(getTotal())}
                       </span>
                     </div>
                   </div>

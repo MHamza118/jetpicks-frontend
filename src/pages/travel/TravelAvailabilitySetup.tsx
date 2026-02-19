@@ -151,10 +151,10 @@ const TravelAvailabilitySetup = () => {
         try {
             const payload: TravelJourneyPayload = {
                 departure_country: formData.departure_country,
-                departure_city: formData.departure_city,
+                departure_city: formData.departure_city || 'Any City',
                 departure_date: formData.departure_date,
                 arrival_country: formData.arrival_country,
-                arrival_city: formData.arrival_city,
+                arrival_city: formData.arrival_city || 'Any City',
                 arrival_date: formData.arrival_date,
                 luggage_weight_capacity: formData.luggage_weight_capacity,
             };
@@ -198,18 +198,40 @@ const TravelAvailabilitySetup = () => {
                         {isFromDashboard && isEditing ? (
                         <div>
                             <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <h1 className="text-[22px] font-bold text-gray-900">Edit Journey</h1>
-                                    <p className="text-gray-500 text-xs font-medium">Share your travel details to get relevant Jetorders</p>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => setIsEditing(false)}
+                                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                                        title="Go back"
+                                    >
+                                        <svg className="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                    </button>
+                                    <div>
+                                        <h1 className="text-[22px] font-bold text-gray-900">Edit Journey</h1>
+                                        <p className="text-gray-500 text-xs font-medium">Share your travel details to get relevant Jetorders</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     ) : isFromDashboard && !isEditing ? (
                         <div>
                             <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <h1 className="text-[22px] font-bold text-gray-900">Travel Availability Setup</h1>
-                                    <p className="text-gray-500 text-xs font-medium">Share your travel details to get relevant Jetorders</p>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => navigate('/picker/dashboard')}
+                                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                                        title="Go back"
+                                    >
+                                        <svg className="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                    </button>
+                                    <div>
+                                        <h1 className="text-[22px] font-bold text-gray-900">Travel Availability Setup</h1>
+                                        <p className="text-gray-500 text-xs font-medium">Share your travel details to get relevant Jetorders</p>
+                                    </div>
                                 </div>
                                 <button
                                     onClick={() => setIsEditing(true)}
