@@ -370,8 +370,8 @@ const PickerDashboardHeader = ({
                                         <p className="text-sm font-semibold text-gray-900">
                                             {'offerId' in notif
                                                 ? `${(notif as any).pickerName} sent a counter offer`
-                                                : 'originCity' in notif
-                                                ? `New Order: ${(notif as any).originCity} → ${(notif as any).destinationCity}`
+                                                : 'originCountry' in notif
+                                                ? `New Order: ${(notif as any).originCountry} → ${(notif as any).destinationCountry}`
                                                 : `${(notif as any).pickerName} has accepted your order`
                                             }
                                         </p>

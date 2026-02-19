@@ -13,7 +13,9 @@ interface Order {
   id: string;
   picker_id?: string;
   origin_city: string;
+  origin_country: string;
   destination_city: string;
+  destination_country: string;
   status: 'pending' | 'delivered' | 'cancelled' | 'draft' | 'accepted';
   items_count: number;
   items_cost: number;
@@ -72,7 +74,9 @@ const OrdererMyOrders = () => {
             id: order.id,
             picker_id: order.picker_id,
             origin_city: order.origin_city,
+            origin_country: order.origin_country,
             destination_city: order.destination_city,
+            destination_country: order.destination_country,
             status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled' | 'draft' | 'accepted',
             items_count: order.items_count,
             items_cost: order.items_cost,
@@ -255,7 +259,7 @@ const OrdererMyOrders = () => {
                   <div className="mb-4 flex items-center justify-between">
                     <div>
                       <p className="font-semibold text-gray-900">
-                        {order.origin_city} - {order.destination_city}
+                        {order.origin_country} - {order.destination_country}
                       </p>
                       <p className="text-sm text-gray-600">
                         {new Date(order.created_at).toLocaleDateString('en-US', {

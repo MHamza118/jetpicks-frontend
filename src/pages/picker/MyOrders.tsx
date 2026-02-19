@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
 import { pickerOrdersApi, type PickerOrderDetail } from '../../services/picker/orders';
-import { dashboardApi } from '../../services/dashboard';
 import { chatApi } from '../../services/chat';
 import { imageUtils } from '../../utils';
 import { getSymbolForCurrency } from '../../services/currencies';
@@ -26,7 +25,9 @@ interface Order {
     rating: number;
   };
   origin_city: string;
+  origin_country: string;
   destination_city: string;
+  destination_country: string;
   status: 'pending' | 'delivered' | 'cancelled' | 'accepted';
   items_count: number;
   items_cost: number;
@@ -81,35 +82,8 @@ const PickerMyOrders = () => {
           return;
         }
         
-        // Fetch picker's travel journeys to filter matching orders
-        const dashboardRes = await dashboardApi.getPickerDashboard(1, 100);
-        const dashboardData = (dashboardRes as any).data;
-        const travelJourneys = dashboardData?.travel_journeys || [];
-        
-        // Create a set of matching routes (origin_city -> destination_city)
-        const matchingRoutes = new Set(
-          travelJourneys.map((journey: any) => 
-            `${journey.departure_city}|${journey.arrival_city}`
-          )
-        );
-        
-        // Filter orders to only show those matching picker's travel journeys
-        // For CANCELLED orders, show them regardless of route matching (they were previously accepted)
-        const filteredOrdersData = ordersData.filter((order: any) => {
-          const orderRoute = `${order.origin_city}|${order.destination_city}`;
-          const isRouteMatch = matchingRoutes.has(orderRoute);
-          const isCancelled = order.status === 'CANCELLED';
-          
-          // Always show cancelled orders (they were previously assigned to this picker)
-          if (isCancelled) {
-            return true;
-          }
-          // For other statuses, check if route matches
-          return isRouteMatch;
-        });
-        
         // Transform API response to match Order interface
-        const transformedOrders: Order[] = filteredOrdersData.map((order: any) => ({
+        const transformedOrders: Order[] = ordersData.map((order: any) => ({
           ...order,
           status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled' | 'accepted',
         }));
@@ -213,30 +187,7 @@ const PickerMyOrders = () => {
       const response = await pickerOrdersApi.getPickerOrders(undefined, 1, 100);
       const ordersData = (response as any)?.data || [];
       
-      const dashboardRes = await dashboardApi.getPickerDashboard(1, 100);
-      const dashboardData = (dashboardRes as any).data;
-      const travelJourneys = dashboardData?.travel_journeys || [];
-      
-      const matchingRoutes = new Set(
-        travelJourneys.map((journey: any) => 
-          `${journey.departure_city}|${journey.arrival_city}`
-        )
-      );
-      
-      const filteredOrdersData = ordersData.filter((order: any) => {
-        const orderRoute = `${order.origin_city}|${order.destination_city}`;
-        const isRouteMatch = matchingRoutes.has(orderRoute);
-        const isCancelled = order.status === 'CANCELLED';
-        
-        // Always show cancelled orders (they were previously assigned to this picker)
-        if (isCancelled) {
-          return true;
-        }
-        // For other statuses, check if route matches
-        return isRouteMatch;
-      });
-      
-      const transformedOrders: Order[] = filteredOrdersData.map((order: any) => ({
+      const transformedOrders: Order[] = ordersData.map((order: any) => ({
         ...order,
         status: order.status.toLowerCase() as 'pending' | 'delivered' | 'cancelled' | 'accepted',
       }));
@@ -341,7 +292,7 @@ const PickerMyOrders = () => {
                   {/* Route Info */}
                   <div className="mb-4">
                     <p className="text-sm text-gray-600">
-                      {order.origin_city} → {order.destination_city}
+                      {order.origin_country} → {order.destination_country}
                     </p>
                   </div>
 

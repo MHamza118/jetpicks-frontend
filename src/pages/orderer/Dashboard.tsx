@@ -179,7 +179,7 @@ const OrdererDashboard = () => {
 
                                         <div className="bg-[#FFF8D6] rounded-lg p-2 mb-3 text-center">
                                             <p className="text-xs font-bold text-gray-900 mb-0.5">
-                                                From {item.departure_city} - {item.arrival_city}
+                                                {item.departure_country} → {item.arrival_country}
                                             </p>
                                             <p className="text-xs font-medium text-gray-600">
                                                 {new Date(item.departure_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}

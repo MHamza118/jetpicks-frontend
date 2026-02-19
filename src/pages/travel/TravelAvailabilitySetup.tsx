@@ -319,6 +319,16 @@ const TravelAvailabilitySetup = () => {
                                                         autoFocus
                                                     />
                                                     <div className="max-h-48 overflow-y-auto">
+                                                        <button
+                                                            onClick={() => {
+                                                                setFormData(prev => ({ ...prev, departure_city: 'Any City' }));
+                                                                setOpenDropdown(null);
+                                                                setSearchText(prev => ({ ...prev, departure_city: '' }));
+                                                            }}
+                                                            className="w-full px-3 py-2 text-left hover:bg-yellow-50 transition-colors font-semibold text-gray-900 border-b border-gray-200 text-sm"
+                                                        >
+                                                            Any City
+                                                        </button>
                                                         {(citiesMap[formData.departure_country] || [])
                                                             .filter(city => !searchText.departure_city || city.toLowerCase().includes(searchText.departure_city.toLowerCase()))
                                                             .map(city => (
@@ -430,6 +440,16 @@ const TravelAvailabilitySetup = () => {
                                                         autoFocus
                                                     />
                                                     <div className="max-h-48 overflow-y-auto">
+                                                        <button
+                                                            onClick={() => {
+                                                                setFormData(prev => ({ ...prev, arrival_city: 'Any City' }));
+                                                                setOpenDropdown(null);
+                                                                setSearchText(prev => ({ ...prev, arrival_city: '' }));
+                                                            }}
+                                                            className="w-full px-3 py-2 text-left hover:bg-yellow-50 transition-colors font-semibold text-gray-900 border-b border-gray-200 text-sm"
+                                                        >
+                                                            Any City
+                                                        </button>
                                                         {(citiesMap[formData.arrival_country] || [])
                                                             .filter(city => !searchText.arrival_city || city.toLowerCase().includes(searchText.arrival_city.toLowerCase()))
                                                             .map(city => (

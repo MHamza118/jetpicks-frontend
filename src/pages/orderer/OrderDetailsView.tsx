@@ -30,7 +30,9 @@ interface Picker {
 interface OrderDetailsData {
   id: string;
   origin_city: string;
+  origin_country: string;
   destination_city: string;
+  destination_country: string;
   items: OrderItem[];
   picker: Picker;
   status: 'pending' | 'delivered' | 'cancelled' | 'accepted';
@@ -124,7 +126,9 @@ const OrdererOrderDetailsView = () => {
         setOrder({
           id: data.id,
           origin_city: data.origin_city,
+          origin_country: data.origin_country,
           destination_city: data.destination_city,
+          destination_country: data.destination_country,
           items: data.items.map((item: any) => ({
             id: item.id,
             name: item.item_name,
@@ -265,7 +269,7 @@ const OrdererOrderDetailsView = () => {
           {/* Route Header with Status */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900">
-              {order.origin_city} - {order.destination_city}
+              {order.origin_city}, {order.origin_country} - {order.destination_city}, {order.destination_country}
             </h1>
             {/* Status Badge and Cancelled Message */}
             <div className="mt-3 flex items-center gap-4">
@@ -315,9 +319,8 @@ const OrdererOrderDetailsView = () => {
           {/* Order Summary Card */}
           <div className="bg-white border border-gray-200 rounded-2xl p-8 mb-6">
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <p className="text-gray-600 font-medium">Route</p>
-                <p className="font-semibold text-gray-900">From {order.origin_city} to {order.destination_city}</p>
+              <div className="flex justify-center items-center">
+                <p className="font-semibold text-gray-900">{order.origin_city}, {order.origin_country} to {order.destination_city}, {order.destination_country}</p>
               </div>
               
               {/* Items List */}

@@ -10,7 +10,9 @@ export interface PickerOrder {
     rating: number;
   };
   origin_city: string;
+  origin_country: string;
   destination_city: string;
+  destination_country: string;
   status: 'PENDING' | 'ACCEPTED' | 'DELIVERED' | 'CANCELLED';
   items_count: number;
   items_cost: number;

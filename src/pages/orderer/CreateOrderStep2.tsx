@@ -573,17 +573,6 @@ const CreateOrderStep2 = () => {
                                                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] text-sm"
                                             />
                                         </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-600 mb-2">Special notes <span className="text-gray-400">(optional)</span></label>
-                                            <textarea
-                                                value={item.notes}
-                                                onChange={(e) => handleItemChange(item.id, 'notes', e.target.value)}
-                                                placeholder="Write here"
-                                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] resize-none text-sm"
-                                                rows={3}
-                                            />
-                                        </div>
                                     </div>
                                 </div>
                             ))}

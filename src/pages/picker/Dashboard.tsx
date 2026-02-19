@@ -119,7 +119,7 @@ const PickerDashboard = () => {
                     {dashboardData?.travel_journeys && dashboardData.travel_journeys.length > 0 && (
                         <div className="text-center mb-6">
                             <p className="text-gray-900 font-semibold text-lg">
-                                From {dashboardData.travel_journeys[0].departure_city} - {dashboardData.travel_journeys[0].arrival_city} {' '}
+                                {dashboardData.travel_journeys[0].departure_country} → {dashboardData.travel_journeys[0].arrival_country} {' '}
                                 <span className="text-gray-500">{new Date(dashboardData.travel_journeys[0].arrival_date).toLocaleDateString('en-US', {
                                     year: 'numeric',
                                     month: 'short',
@@ -234,7 +234,7 @@ const PickerDashboard = () => {
                                     </svg>
                                 </div>
                                 <h2 className="text-2xl font-bold text-gray-900 mb-2">New Order Available!</h2>
-                                <p className="text-gray-600 mb-2">{newOrderNotification.originCity} → {newOrderNotification.destinationCity}</p>
+                                <p className="text-gray-600 mb-2">{newOrderNotification.originCountry} → {newOrderNotification.destinationCountry}</p>
                                 <p className="text-sm text-gray-500 mb-6">From <span className="font-semibold text-gray-900">{newOrderNotification.ordererName}</span></p>
                                 <button
                                     onClick={() => handleNewOrderClick(newOrderNotification.orderId, newOrderNotification.id)}

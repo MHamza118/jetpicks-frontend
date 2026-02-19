@@ -386,6 +386,16 @@ const CreateOrder = () => {
                                                                 autoFocus
                                                             />
                                                             <div className="max-h-48 overflow-y-auto">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        handleInputChange('originCity', 'Any City');
+                                                                        setOpenDropdown(null);
+                                                                        setSearchText(prev => ({ ...prev, originCity: '' }));
+                                                                    }}
+                                                                    className="w-full px-3 md:px-4 py-2.5 text-left hover:bg-yellow-50 transition-colors font-semibold text-gray-900 border-b border-gray-200"
+                                                                >
+                                                                    Any City
+                                                                </button>
                                                                 {filterCities(citiesMap[formData.originCountry] || [], searchText.originCity || '').map(city => (
                                                                     <button
                                                                         key={city}
@@ -511,6 +521,16 @@ const CreateOrder = () => {
                                                                 autoFocus
                                                             />
                                                             <div className="max-h-48 overflow-y-auto">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        handleInputChange('destinationCity', 'Any City');
+                                                                        setOpenDropdown(null);
+                                                                        setSearchText(prev => ({ ...prev, destinationCity: '' }));
+                                                                    }}
+                                                                    className="w-full px-3 md:px-4 py-2.5 text-left hover:bg-yellow-50 transition-colors font-semibold text-gray-900 border-b border-gray-200"
+                                                                >
+                                                                    Any City
+                                                                </button>
                                                                 {filterCities(citiesMap[formData.destinationCountry] || [], searchText.destinationCity || '').map(city => (
                                                                     <button
                                                                         key={city}
@@ -533,17 +553,7 @@ const CreateOrder = () => {
                                     </div>
                                 </div>
 
-                                {/* Special Notes */}
-                                <div>
-                                    <label className="block text-xs md:text-sm font-medium text-gray-600 mb-2">Special notes <span className="text-gray-400">(optional)</span></label>
-                                    <textarea
-                                        value={formData.specialNotes}
-                                        onChange={(e) => handleInputChange('specialNotes', e.target.value)}
-                                        placeholder="Write here"
-                                        className="w-full px-3 md:px-4 py-2.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFDF57] resize-none text-sm md:text-base"
-                                        rows={4}
-                                    />
-                                </div>
+
                             </div>
                         )}
 

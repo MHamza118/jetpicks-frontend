@@ -6,7 +6,9 @@ export interface NewOrderNotification {
   orderId: string;
   ordererName: string;
   originCity: string;
+  originCountry: string;
   destinationCity: string;
+  destinationCountry: string;
   rewardAmount: number;
   isRead: boolean;
   isShown: boolean;
@@ -42,7 +44,9 @@ export const fetchNewOrderNotifications = async (limit = 100): Promise<NewOrderN
             orderId: notif.entity_id,
             ordererName: notif.data?.orderer_name || 'Unknown',
             originCity: notif.data?.origin_city || '',
+            originCountry: notif.data?.origin_country || '',
             destinationCity: notif.data?.destination_city || '',
+            destinationCountry: notif.data?.destination_country || '',
             rewardAmount: parseFloat(notif.data?.reward_amount) || 0,
             isRead: notif.is_read,
             isShown: notif.notification_shown_at !== null,
