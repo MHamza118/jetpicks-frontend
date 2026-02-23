@@ -25,7 +25,7 @@ const Auth = () => {
     });
 
     // Signup state
-    const [selectedRole, setSelectedRole] = useState<'ORDERER' | 'PICKER' | null>(null);
+    const [selectedRoles, setSelectedRoles] = useState<('ORDERER' | 'PICKER')[]>([]);
     const [showSignupPassword, setShowSignupPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
@@ -114,8 +114,8 @@ const Auth = () => {
             setError('Passwords do not match');
             return false;
         }
-        if (!selectedRole) {
-            setError('Please select a role');
+        if (selectedRoles.length === 0) {
+            setError('Please select at least one role');
             return false;
         }
         if (!agreed) {
@@ -139,11 +139,16 @@ const Auth = () => {
 
             storage.set(STORAGE_KEYS.AUTH_TOKEN, response.data.token);
             storage.set(STORAGE_KEYS.USER, response.data.user);
-
-            if (response.data.user.roles && response.data.user.roles.includes('PICKER')) {
-                navigate('/picker/dashboard');
-            } else {
-                navigate('/orderer/dashboard');
+            
+            // Initialize active role to first role
+            if (response.data.user.roles && Array.isArray(response.data.user.roles) && response.data.user.roles.length > 0) {
+                storage.set(STORAGE_KEYS.ACTIVE_ROLE, response.data.user.roles[0]);
+                
+                if (response.data.user.roles.includes('PICKER')) {
+                    navigate('/picker/dashboard');
+                } else {
+                    navigate('/orderer/dashboard');
+                }
             }
         } catch (err: Error | unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.';
@@ -164,13 +169,18 @@ const Auth = () => {
                 phone_number: signupFormData.phone_number,
                 password: signupFormData.password,
                 confirm_password: signupFormData.confirm_password,
-                roles: [selectedRole as 'ORDERER' | 'PICKER'],
+                roles: selectedRoles,
             };
 
             const response = await authApi.register(payload);
 
             storage.set(STORAGE_KEYS.AUTH_TOKEN, response.data.token);
             storage.set(STORAGE_KEYS.USER, response.data.user);
+            
+            // Initialize active role to first selected role
+            if (selectedRoles.length > 0) {
+                storage.set(STORAGE_KEYS.ACTIVE_ROLE, selectedRoles[0]);
+            }
 
             navigate('/profile-setup', { replace: true });
         } catch (err: Error | unknown) {
@@ -191,8 +201,8 @@ const Auth = () => {
             setLoading(true);
             try {
                 // For signup, require role selection
-                if (isSignup && !selectedRole) {
-                    setError('Please select a role before signing up with Google');
+                if (isSignup && selectedRoles.length === 0) {
+                    setError('Please select at least one role before signing up with Google');
                     setLoading(false);
                     return;
                 }
@@ -200,18 +210,24 @@ const Auth = () => {
                 // Send the access token to backend for verification
                 const response = await googleAuthApi.login({
                     idToken: codeResponse.access_token,
-                    role: isSignup ? (selectedRole || undefined) : undefined,
+                    role: isSignup && selectedRoles.length > 0 ? selectedRoles[0] : undefined,
                 });
 
                 storage.set(STORAGE_KEYS.AUTH_TOKEN, response.data.token);
                 storage.set(STORAGE_KEYS.USER, response.data.user);
+                
+                // Initialize active role
+                if (response.data.user.roles && Array.isArray(response.data.user.roles) && response.data.user.roles.length > 0) {
+                    storage.set(STORAGE_KEYS.ACTIVE_ROLE, response.data.user.roles[0]);
+                }
 
                 // If new user, go to profile setup
                 if ((response.data as any).isNewUser) {
                     navigate('/profile-setup', { replace: true });
                 } else {
-                    // Existing user, go to dashboard
-                    if (response.data.user.roles && response.data.user.roles.includes('PICKER')) {
+                    // Existing user, go to dashboard based on active role
+                    const activeRole = storage.get(STORAGE_KEYS.ACTIVE_ROLE);
+                    if (activeRole === 'PICKER') {
                         navigate('/picker/dashboard');
                     } else {
                         navigate('/orderer/dashboard');
@@ -257,7 +273,7 @@ const Auth = () => {
                         )}
 
                         <div className="mb-2">
-                            <RoleSelector selectedRole={selectedRole} onRoleChange={setSelectedRole} />
+                            <RoleSelector selectedRoles={selectedRoles} onRolesChange={setSelectedRoles} />
                         </div>
 
                         <div className="grid gap-2">

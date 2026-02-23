@@ -29,6 +29,9 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
       user = userData;
     }
     
+    // Get active role
+    const activeRole = storage.get(STORAGE_KEYS.ACTIVE_ROLE);
+    
     // Verify user has the required role
     if (!user.roles || !Array.isArray(user.roles) || !user.roles.includes(requiredRole)) {
       if (user.roles && user.roles.includes('PICKER')) {
@@ -40,7 +43,17 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
       return <Navigate to="/" replace />;
     }
 
-    // User has the required role, render the component
+    // Check if active role matches required role
+    if (activeRole !== requiredRole) {
+      // Redirect to appropriate dashboard based on active role
+      if (activeRole === 'PICKER') {
+        return <Navigate to="/picker/dashboard" replace />;
+      } else if (activeRole === 'ORDERER') {
+        return <Navigate to="/orderer/dashboard" replace />;
+      }
+    }
+
+    // User has the required role and it's active, render the component
     return <>{children}</>;
   } catch (error) {
     console.error('Error parsing user data:', error);

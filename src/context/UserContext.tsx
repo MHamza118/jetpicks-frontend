@@ -7,6 +7,9 @@ interface UserContextType {
   avatarUrl: string | null;
   avatarError: boolean;
   loading: boolean;
+  activeRole: 'PICKER' | 'ORDERER' | null;
+  canSwitchRole: boolean;
+  switchRole: (role: 'PICKER' | 'ORDERER') => void;
   handleAvatarError: () => void;
   refetchAvatar: () => Promise<void>;
   clearAvatar: () => void;
@@ -18,6 +21,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [activeRole, setActiveRole] = useState<'PICKER' | 'ORDERER' | null>(() => {
+    const stored = localStorage.getItem(STORAGE_KEYS.ACTIVE_ROLE);
+    return stored as 'PICKER' | 'ORDERER' | null;
+  });
   const fetchInProgressRef = useRef(false);
   const lastTokenRef = useRef<string | null>(localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN));
 
@@ -50,6 +57,28 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Initialize activeRole on mount
+  useEffect(() => {
+    const user = localStorage.getItem(STORAGE_KEYS.USER);
+    if (user) {
+      try {
+        const userData = typeof user === 'string' ? JSON.parse(user) : user;
+        if (userData.roles && Array.isArray(userData.roles)) {
+          const stored = localStorage.getItem(STORAGE_KEYS.ACTIVE_ROLE);
+          if (stored && userData.roles.includes(stored)) {
+            setActiveRole(stored as 'PICKER' | 'ORDERER');
+          } else {
+            const defaultRole = userData.roles[0] as 'PICKER' | 'ORDERER';
+            setActiveRole(defaultRole);
+            localStorage.setItem(STORAGE_KEYS.ACTIVE_ROLE, defaultRole);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to initialize active role:', error);
+      }
+    }
+  }, []);
+
   // Fetch avatar on mount only if authenticated
   useEffect(() => {
     const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
@@ -71,7 +100,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           setAvatarUrl(null);
           setAvatarError(false);
           setLoading(false);
+          setActiveRole(null);
           fetchInProgressRef.current = false;
+          localStorage.removeItem(STORAGE_KEYS.ACTIVE_ROLE);
         } else {
           // Login detected - reset and fetch new avatar
           setAvatarUrl(null);
@@ -94,8 +125,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           setAvatarUrl(null);
           setAvatarError(false);
           setLoading(false);
+          setActiveRole(null);
           fetchInProgressRef.current = false;
           lastTokenRef.current = null;
+          localStorage.removeItem(STORAGE_KEYS.ACTIVE_ROLE);
         } else {
           // Login detected - reset and fetch new avatar
           setAvatarUrl(null);
@@ -127,8 +160,41 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     await fetchAvatar();
   }, []);
 
+  const switchRole = useCallback((role: 'PICKER' | 'ORDERER') => {
+    const user = localStorage.getItem(STORAGE_KEYS.USER);
+    if (user) {
+      try {
+        const userData = typeof user === 'string' ? JSON.parse(user) : user;
+        if (userData.roles && Array.isArray(userData.roles) && userData.roles.includes(role)) {
+          setActiveRole(role);
+          localStorage.setItem(STORAGE_KEYS.ACTIVE_ROLE, role);
+        }
+      } catch (error) {
+        console.error('Failed to switch role:', error);
+      }
+    }
+  }, []);
+
+  const [canSwitchRole, setCanSwitchRole] = useState(false);
+
+  // Update canSwitchRole whenever user data changes
+  useEffect(() => {
+    const user = localStorage.getItem(STORAGE_KEYS.USER);
+    if (user) {
+      try {
+        const userData = typeof user === 'string' ? JSON.parse(user) : user;
+        const hasMultipleRoles = userData.roles && Array.isArray(userData.roles) && userData.roles.length > 1;
+        setCanSwitchRole(hasMultipleRoles);
+      } catch (error) {
+        setCanSwitchRole(false);
+      }
+    } else {
+      setCanSwitchRole(false);
+    }
+  }, []);
+
   return (
-    <UserContext.Provider value={{ avatarUrl, avatarError, loading, handleAvatarError, refetchAvatar, clearAvatar }}>
+    <UserContext.Provider value={{ avatarUrl, avatarError, loading, activeRole, canSwitchRole, switchRole, handleAvatarError, refetchAvatar, clearAvatar }}>
       {children}
     </UserContext.Provider>
   );

@@ -6,6 +6,7 @@ import { useAcceptedOrderPolling, useCounterOfferPolling } from '../../context/O
 import { memo } from 'react';
 import type { SearchPickerResult } from '../../services/search';
 import { imageUtils } from '../../utils';
+import RoleToggle from '../RoleToggle';
 
 interface DashboardHeaderProps {
   title: string;
@@ -150,12 +151,13 @@ const DashboardHeader = ({
     <div className="bg-[#FFDF57] px-6 py-4 md:px-8 md:py-4">
       {/* Mobile Header - Top Row */}
       <div className="flex justify-between items-center md:hidden mb-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           {showBackButton && (
             <button onClick={() => navigate(-1)} className="p-1">
               <ArrowLeft size={24} className="text-gray-900" />
             </button>
           )}
+          <RoleToggle currentRole="ORDERER" />
           <button
             onClick={() => navigate(profilePath)}
             className="focus:outline-none"
@@ -254,7 +256,8 @@ const DashboardHeader = ({
       {/* Desktop Header */}
       <div className="hidden md:flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <RoleToggle currentRole="ORDERER" />
           <div className="relative w-64" ref={searchContainerRef}>
             <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
             <input

@@ -33,7 +33,9 @@ const ProfileSetup = () => {
     useEffect(() => {
         const user = storage.get(STORAGE_KEYS.USER);
         if (user && user.roles && user.roles.length > 0) {
-            setUserRole(user.roles[0] as 'ORDERER' | 'PICKER');
+            // Get active role from storage, or use first role
+            const activeRole = storage.get(STORAGE_KEYS.ACTIVE_ROLE) || user.roles[0];
+            setUserRole(activeRole as 'ORDERER' | 'PICKER');
         }
     }, []);
 

@@ -6,6 +6,7 @@ import { useGlobalNotifications } from '../../context/GlobalNotificationContext'
 import { memo } from 'react';
 import type { SearchOrderResult } from '../../services/search';
 import { imageUtils } from '../../utils';
+import RoleToggle from '../RoleToggle';
 
 interface PickerDashboardHeaderProps {
     title: string;
@@ -135,12 +136,13 @@ const PickerDashboardHeader = ({
         <div className="bg-[#4D0013] px-6 py-4 md:px-8 md:py-4">
             {/* Mobile Header */}
             <div className="flex justify-between items-center md:hidden mb-4">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
                     {showBackButton && (
                         <button onClick={() => navigate(-1)} className="p-1">
                             <ArrowLeft size={24} className="text-white" />
                         </button>
                     )}
+                    <RoleToggle currentRole="PICKER" />
                     <button
                         onClick={() => navigate('/picker/profile')}
                         className="focus:outline-none"
@@ -238,7 +240,8 @@ const PickerDashboardHeader = ({
             {/* Desktop Header */}
             <div className="hidden md:flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-white">{title}</h1>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                    <RoleToggle currentRole="PICKER" />
                     <div className="relative w-64" ref={searchContainerRef}>
                         <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
                         <input

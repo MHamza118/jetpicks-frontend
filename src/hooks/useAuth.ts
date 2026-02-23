@@ -20,6 +20,12 @@ export const useAuth = () => {
       
       storage.set(STORAGE_KEYS.AUTH_TOKEN, token);
       storage.set(STORAGE_KEYS.USER, user);
+      
+      // Initialize active role
+      if (user.roles && Array.isArray(user.roles) && user.roles.length > 0) {
+        storage.set(STORAGE_KEYS.ACTIVE_ROLE, user.roles[0]);
+      }
+      
       setUser(user);
       
       navigate(ROUTES.PROFILE_SETUP);
@@ -42,6 +48,12 @@ export const useAuth = () => {
       
       storage.set(STORAGE_KEYS.AUTH_TOKEN, token);
       storage.set(STORAGE_KEYS.USER, user);
+      
+      // Initialize active role
+      if (user.roles && Array.isArray(user.roles) && user.roles.length > 0) {
+        storage.set(STORAGE_KEYS.ACTIVE_ROLE, user.roles[0]);
+      }
+      
       setUser(user);
       
       navigate(ROUTES.PROFILE_SETUP);
@@ -64,6 +76,7 @@ export const useAuth = () => {
     } finally {
       storage.remove(STORAGE_KEYS.AUTH_TOKEN);
       storage.remove(STORAGE_KEYS.USER);
+      storage.remove(STORAGE_KEYS.ACTIVE_ROLE);
       setUser(null);
       setError(null);
       navigate(ROUTES.LOGIN);
