@@ -175,23 +175,21 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const [canSwitchRole, setCanSwitchRole] = useState(false);
-
-  // Update canSwitchRole whenever user data changes
-  useEffect(() => {
+  // Calculate canSwitchRole based on user roles
+  const getCanSwitchRole = useCallback(() => {
     const user = localStorage.getItem(STORAGE_KEYS.USER);
     if (user) {
       try {
         const userData = typeof user === 'string' ? JSON.parse(user) : user;
-        const hasMultipleRoles = userData.roles && Array.isArray(userData.roles) && userData.roles.length > 1;
-        setCanSwitchRole(hasMultipleRoles);
+        return userData.roles && Array.isArray(userData.roles) && userData.roles.length > 1;
       } catch (error) {
-        setCanSwitchRole(false);
+        return false;
       }
-    } else {
-      setCanSwitchRole(false);
     }
+    return false;
   }, []);
+
+  const canSwitchRole = getCanSwitchRole();
 
   return (
     <UserContext.Provider value={{ avatarUrl, avatarError, loading, activeRole, canSwitchRole, switchRole, handleAvatarError, refetchAvatar, clearAvatar }}>

@@ -5,7 +5,6 @@ import { useGoogleLogin } from '@react-oauth/google';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Toggle from '../../components/ui/Toggle';
-import RoleSelector from '../../components/auth/RoleSelector';
 import signupbg2Image from '../../assets/signupbg2.png';
 import { authApi } from '../../services';
 import { googleAuthApi } from '../../services/googleAuth';
@@ -24,8 +23,7 @@ const Auth = () => {
         password: '',
     });
 
-    // Signup state
-    const [selectedRoles, setSelectedRoles] = useState<('ORDERER' | 'PICKER')[]>([]);
+    // Signup state - auto-assign both roles
     const [showSignupPassword, setShowSignupPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
@@ -114,10 +112,6 @@ const Auth = () => {
             setError('Passwords do not match');
             return false;
         }
-        if (selectedRoles.length === 0) {
-            setError('Please select at least one role');
-            return false;
-        }
         if (!agreed) {
             setError('You must agree to terms and conditions');
             return false;
@@ -169,7 +163,7 @@ const Auth = () => {
                 phone_number: signupFormData.phone_number,
                 password: signupFormData.password,
                 confirm_password: signupFormData.confirm_password,
-                roles: selectedRoles,
+                roles: ['ORDERER', 'PICKER'],
             };
 
             const response = await authApi.register(payload);
@@ -177,14 +171,40 @@ const Auth = () => {
             storage.set(STORAGE_KEYS.AUTH_TOKEN, response.data.token);
             storage.set(STORAGE_KEYS.USER, response.data.user);
             
-            // Initialize active role to first selected role
-            if (selectedRoles.length > 0) {
-                storage.set(STORAGE_KEYS.ACTIVE_ROLE, selectedRoles[0]);
-            }
+            // Initialize active role to ORDERER (so they go to orderer dashboard)
+            storage.set(STORAGE_KEYS.ACTIVE_ROLE, 'ORDERER');
 
             navigate('/profile-setup', { replace: true });
         } catch (err: Error | unknown) {
-            const errorMessage = err instanceof Error ? err.message : 'Signup failed. Please try again.';
+            let errorMessage = 'Signup failed. Please try again.';
+            
+            // Check if it's our ApiError object
+            if (err && typeof err === 'object' && 'message' in err) {
+                const apiErr = err as any;
+                if (apiErr.message) {
+                    errorMessage = apiErr.message;
+                }
+            } else if (err && typeof err === 'object' && 'response' in err) {
+                // Check if it's an axios error with response data
+                const axiosErr = err as any;
+                if (axiosErr.response?.data?.message) {
+                    errorMessage = axiosErr.response.data.message;
+                } else if (axiosErr.response?.data?.errors) {
+                    // Handle validation errors
+                    const errors = axiosErr.response.data.errors;
+                    if (typeof errors === 'object') {
+                        const firstError = Object.values(errors)[0];
+                        if (Array.isArray(firstError)) {
+                            errorMessage = firstError[0];
+                        } else if (typeof firstError === 'string') {
+                            errorMessage = firstError;
+                        }
+                    }
+                }
+            } else if (err instanceof Error) {
+                errorMessage = err.message;
+            }
+            
             setError(errorMessage);
         } finally {
             setLoading(false);
@@ -200,41 +220,25 @@ const Auth = () => {
         onSuccess: async (codeResponse: any) => {
             setLoading(true);
             try {
-                // For signup, require role selection
-                if (isSignup && selectedRoles.length === 0) {
-                    setError('Please select at least one role before signing up with Google');
-                    setLoading(false);
-                    return;
-                }
-
                 // Send the access token to backend for verification
                 const response = await googleAuthApi.login({
                     idToken: codeResponse.access_token,
-                    role: isSignup && selectedRoles.length > 0 ? selectedRoles[0] : undefined,
                 });
 
                 storage.set(STORAGE_KEYS.AUTH_TOKEN, response.data.token);
                 storage.set(STORAGE_KEYS.USER, response.data.user);
                 
-                // Initialize active role
-                if (response.data.user.roles && Array.isArray(response.data.user.roles) && response.data.user.roles.length > 0) {
-                    storage.set(STORAGE_KEYS.ACTIVE_ROLE, response.data.user.roles[0]);
-                }
+                // Initialize active role to ORDERER
+                storage.set(STORAGE_KEYS.ACTIVE_ROLE, 'ORDERER');
 
                 // If new user, go to profile setup
                 if ((response.data as any).isNewUser) {
                     navigate('/profile-setup', { replace: true });
                 } else {
-                    // Existing user, go to dashboard based on active role
-                    const activeRole = storage.get(STORAGE_KEYS.ACTIVE_ROLE);
-                    if (activeRole === 'PICKER') {
-                        navigate('/picker/dashboard');
-                    } else {
-                        navigate('/orderer/dashboard');
-                    }
+                    // Existing user, go to orderer dashboard
+                    navigate('/orderer/dashboard');
                 }
             } catch (err: any) {
-                // Log the actual error for debugging
                 console.error('Google login error:', err.response?.data || err.message);
                 const errorMessage = err.response?.data?.message || err.message || 'Google login failed. Please try again.';
                 setError(errorMessage);
@@ -271,10 +275,6 @@ const Auth = () => {
                                 {error}
                             </div>
                         )}
-
-                        <div className="mb-2">
-                            <RoleSelector selectedRoles={selectedRoles} onRolesChange={setSelectedRoles} />
-                        </div>
 
                         <div className="grid gap-2">
                             <Input

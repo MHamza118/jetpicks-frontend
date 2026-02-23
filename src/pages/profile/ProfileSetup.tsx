@@ -11,7 +11,7 @@ import { useLocations } from '../../hooks';
 const ProfileSetup = () => {
     const navigate = useNavigate();
     const { countries, fetchCities } = useLocations();
-    const [userRole, setUserRole] = useState<'ORDERER' | 'PICKER' | null>(null);
+    const [userRole, setUserRole] = useState<'ORDERER' | null>(null);
     const [selectedNationality, setSelectedNationality] = useState('');
     const [selectedTravelFrom, setSelectedTravelFrom] = useState('');
     const [selectedTravelTo, setSelectedTravelTo] = useState('');
@@ -33,9 +33,7 @@ const ProfileSetup = () => {
     useEffect(() => {
         const user = storage.get(STORAGE_KEYS.USER);
         if (user && user.roles && user.roles.length > 0) {
-            // Get active role from storage, or use first role
-            const activeRole = storage.get(STORAGE_KEYS.ACTIVE_ROLE) || user.roles[0];
-            setUserRole(activeRole as 'ORDERER' | 'PICKER');
+            setUserRole('ORDERER');
         }
     }, []);
 
@@ -100,13 +98,8 @@ const ProfileSetup = () => {
             return;
         }
 
-        if (userRole === 'ORDERER' && !selectedNationality) {
+        if (!selectedNationality) {
             setError('Please select your current residing country');
-            return;
-        }
-
-        if (userRole === 'PICKER' && (!selectedTravelFrom || !selectedTravelTo)) {
-            setError('Please select both travel from and travel to countries');
             return;
         }
 
@@ -116,11 +109,7 @@ const ProfileSetup = () => {
         try {
             const formData = new FormData();
 
-            if (userRole === 'ORDERER') {
-                formData.append('country', selectedNationality);
-            } else if (userRole === 'PICKER') {
-                formData.append('country', selectedTravelFrom);
-            }
+            formData.append('country', selectedNationality);
 
             selectedLanguages.forEach((lang, index) => {
                 formData.append(`languages[${index}]`, lang);
@@ -137,13 +126,8 @@ const ProfileSetup = () => {
 
             storage.set(STORAGE_KEYS.USER, updatedUser);
 
-            if (userRole === 'PICKER') {
-                storage.set('TRAVEL_FROM_COUNTRY', selectedTravelFrom);
-                storage.set('TRAVEL_TO_COUNTRY', selectedTravelTo);
-                navigate('/travel-availability-setup');
-            } else {
-                navigate('/orderer/dashboard');
-            }
+            // Go to orderer dashboard
+            navigate('/orderer/dashboard');
         } catch (err: any) {
             const errorMessage = err?.response?.data?.message || err?.message || 'Failed to update profile. Please try again.';
             setError(errorMessage);
@@ -256,136 +240,6 @@ const ProfileSetup = () => {
 
                         <p className="text-gray-500 text-xs mt-1.5">The country Jetpickers will deliver your order to you</p>
                     </div>
-                )}
-
-                {userRole === 'PICKER' && (
-                    <>
-                        {/* Travel From Country */}
-                        <div className="mb-6">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Flag size={20} className="text-gray-900" />
-                                <label className="text-gray-700 font-semibold text-base">Country of travel from</label>
-                            </div>
-
-                            <div className="relative z-20 travel-from-dropdown">
-                                <button
-                                    onClick={() => {
-                                        setIsTravelFromDropdownOpen(!isTravelFromDropdownOpen);
-                                        setTravelFromSearchText('');
-                                    }}
-                                    className="w-full flex items-center gap-3 mb-3 pb-3 border-b border-gray-300 hover:opacity-80 transition-opacity focus:outline-none"
-                                >
-                                    <FlagIcon countryCode={countries.find(c => c.name === selectedTravelFrom)?.code || ''} className="w-6 h-6 flex-shrink-0" />
-                                    <span className="text-gray-900 font-semibold text-lg">{selectedTravelFrom || 'Select country'}</span>
-                                    <ChevronDown size={20} className={`text-gray-900 transition-transform flex-shrink-0 ml-auto ${isTravelFromDropdownOpen ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                {isTravelFromDropdownOpen && (
-                                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
-                                        <input
-                                            type="text"
-                                            placeholder="Search countries..."
-                                            value={travelFromSearchText}
-                                            onChange={(e) => setTravelFromSearchText(e.target.value)}
-                                            className="w-full px-4 py-2 border-b border-gray-200 focus:outline-none text-sm"
-                                            autoFocus
-                                        />
-                                        <div className="max-h-48 overflow-y-auto">
-                                            {filterCountries(travelFromSearchText).length > 0 ? (
-                                                filterCountries(travelFromSearchText).map(country => (
-                                                    <button
-                                                        key={country.code}
-                                                        onClick={() => {
-                                                            setSelectedTravelFrom(country.name);
-                                                            setIsTravelFromDropdownOpen(false);
-                                                            setTravelFromSearchText('');
-                                                            fetchCities(country.name);
-                                                        }}
-                                                        className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${selectedTravelFrom === country.name
-                                                            ? 'bg-yellow-50 text-gray-900'
-                                                            : 'text-gray-700 hover:bg-gray-50'
-                                                            }`}
-                                                    >
-                                                        <FlagIcon countryCode={country.code} className="w-6 h-6 flex-shrink-0" />
-                                                        <span className="truncate">{country.name}</span>
-                                                    </button>
-                                                ))
-                                            ) : (
-                                                <div className="px-4 py-3 text-center text-gray-500 text-sm">
-                                                    No countries found
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <p className="text-gray-500 text-xs mt-1.5">The country you will get items from</p>
-                        </div>
-
-                        {/* Travel To Country */}
-                        <div className="mb-6">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Flag size={20} className="text-gray-900" />
-                                <label className="text-gray-700 font-semibold text-base">Country of travel to</label>
-                            </div>
-
-                            <div className="relative z-10 travel-to-dropdown">
-                                <button
-                                    onClick={() => {
-                                        setIsTravelToDropdownOpen(!isTravelToDropdownOpen);
-                                        setTravelToSearchText('');
-                                    }}
-                                    className="w-full flex items-center gap-3 mb-3 pb-3 border-b border-gray-300 hover:opacity-80 transition-opacity focus:outline-none"
-                                >
-                                    <FlagIcon countryCode={countries.find(c => c.name === selectedTravelTo)?.code || ''} className="w-6 h-6 flex-shrink-0" />
-                                    <span className="text-gray-900 font-semibold text-lg">{selectedTravelTo || 'Select country'}</span>
-                                    <ChevronDown size={20} className={`text-gray-900 transition-transform flex-shrink-0 ml-auto ${isTravelToDropdownOpen ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                {isTravelToDropdownOpen && (
-                                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
-                                        <input
-                                            type="text"
-                                            placeholder="Search countries..."
-                                            value={travelToSearchText}
-                                            onChange={(e) => setTravelToSearchText(e.target.value)}
-                                            className="w-full px-4 py-2 border-b border-gray-200 focus:outline-none text-sm"
-                                            autoFocus
-                                        />
-                                        <div className="max-h-48 overflow-y-auto">
-                                            {filterCountries(travelToSearchText).length > 0 ? (
-                                                filterCountries(travelToSearchText).map(country => (
-                                                    <button
-                                                        key={country.code}
-                                                        onClick={() => {
-                                                            setSelectedTravelTo(country.name);
-                                                            setIsTravelToDropdownOpen(false);
-                                                            setTravelToSearchText('');
-                                                            fetchCities(country.name);
-                                                        }}
-                                                        className={`w-full px-4 py-3 text-left font-medium transition-colors flex items-center gap-3 ${selectedTravelTo === country.name
-                                                            ? 'bg-yellow-50 text-gray-900'
-                                                            : 'text-gray-700 hover:bg-gray-50'
-                                                            }`}
-                                                    >
-                                                        <FlagIcon countryCode={country.code} className="w-6 h-6 flex-shrink-0" />
-                                                        <span className="truncate">{country.name}</span>
-                                                    </button>
-                                                ))
-                                            ) : (
-                                                <div className="px-4 py-3 text-center text-gray-500 text-sm">
-                                                    No countries found
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <p className="text-gray-500 text-xs mt-1.5">The country you will deliver your items to your Jetbuyer</p>
-                        </div>
-                    </>
                 )}
 
                 {/* Languages Selector */}
