@@ -13,20 +13,14 @@ const ProfileSetup = () => {
     const { countries, fetchCities } = useLocations();
     const [userRole, setUserRole] = useState<'ORDERER' | null>(null);
     const [selectedNationality, setSelectedNationality] = useState('');
-    const [selectedTravelFrom, setSelectedTravelFrom] = useState('');
-    const [selectedTravelTo, setSelectedTravelTo] = useState('');
     const [selectedLanguages, setSelectedLanguages] = useState<string[]>(['English']);
     const [isNationalityDropdownOpen, setIsNationalityDropdownOpen] = useState(false);
-    const [isTravelFromDropdownOpen, setIsTravelFromDropdownOpen] = useState(false);
-    const [isTravelToDropdownOpen, setIsTravelToDropdownOpen] = useState(false);
     const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const [countrySearchText, setCountrySearchText] = useState('');
-    const [travelFromSearchText, setTravelFromSearchText] = useState('');
-    const [travelToSearchText, setTravelToSearchText] = useState('');
 
     const languages = ['Spanish', 'English', 'French', 'German', 'Italian', 'Portuguese', 'Dutch', 'Polish'];
 
@@ -40,8 +34,6 @@ const ProfileSetup = () => {
     useEffect(() => {
         if (countries.length > 0) {
             setSelectedNationality(countries[0].name);
-            setSelectedTravelFrom(countries[0].name);
-            setSelectedTravelTo(countries[1]?.name || countries[0].name);
         }
     }, [countries]);
 
@@ -50,21 +42,17 @@ const ProfileSetup = () => {
             const target = e.target as HTMLElement;
             // Check if click is outside all dropdowns
             if (!target.closest('.nationality-dropdown') && 
-                !target.closest('.travel-from-dropdown') && 
-                !target.closest('.travel-to-dropdown') && 
                 !target.closest('.language-dropdown')) {
                 setIsNationalityDropdownOpen(false);
-                setIsTravelFromDropdownOpen(false);
-                setIsTravelToDropdownOpen(false);
                 setIsLanguageDropdownOpen(false);
             }
         };
 
-        if (isNationalityDropdownOpen || isTravelFromDropdownOpen || isTravelToDropdownOpen || isLanguageDropdownOpen) {
+        if (isNationalityDropdownOpen || isLanguageDropdownOpen) {
             document.addEventListener('click', handleClickOutside);
             return () => document.removeEventListener('click', handleClickOutside);
         }
-    }, [isNationalityDropdownOpen, isTravelFromDropdownOpen, isTravelToDropdownOpen, isLanguageDropdownOpen]);
+    }, [isNationalityDropdownOpen, isLanguageDropdownOpen]);
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
