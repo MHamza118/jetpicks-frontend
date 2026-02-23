@@ -48,11 +48,7 @@ const AppRoutes = () => {
             {/* Travel Availability - Used during signup and in dashboard */}
             <Route 
               path="/travel-availability-setup" 
-              element={
-                <ProtectedRoute requiredRole="PICKER">
-                  <TravelAvailabilitySetup />
-                </ProtectedRoute>
-              } 
+              element={<TravelAvailabilitySetup />}
             />
             
             {/* Orderer Routes - Protected */}

@@ -126,8 +126,8 @@ const ProfileSetup = () => {
 
             storage.set(STORAGE_KEYS.USER, updatedUser);
 
-            // Go to orderer dashboard
-            navigate('/orderer/dashboard');
+            // Go to travel availability setup
+            navigate('/travel-availability-setup');
         } catch (err: any) {
             const errorMessage = err?.response?.data?.message || err?.message || 'Failed to update profile. Please try again.';
             setError(errorMessage);

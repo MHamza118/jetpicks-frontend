@@ -160,7 +160,13 @@ const TravelAvailabilitySetup = () => {
             };
 
             await travelApi.createJourney(payload);
-            navigate('/picker/dashboard');
+            
+            // If from dashboard, stay on dashboard. If from signup, go to orderer dashboard
+            if (isFromDashboard) {
+                navigate('/picker/dashboard');
+            } else {
+                navigate('/orderer/dashboard');
+            }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to save travel details. Please try again.';
             setError(errorMessage);
@@ -170,7 +176,12 @@ const TravelAvailabilitySetup = () => {
     };
 
     const handleSkip = () => {
-        navigate('/picker/dashboard');
+        // If from dashboard, stay on dashboard. If from signup, go to orderer dashboard
+        if (isFromDashboard) {
+            navigate('/picker/dashboard');
+        } else {
+            navigate('/orderer/dashboard');
+        }
     };
 
     const handleAvatarError = () => {
