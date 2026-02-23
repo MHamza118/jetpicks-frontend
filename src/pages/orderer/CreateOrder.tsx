@@ -300,7 +300,7 @@ const CreateOrder = () => {
                                 <div>
                                     <div className="flex items-center gap-2 mb-4">
                                         <MapPin size={20} className="text-gray-900 flex-shrink-0" />
-                                        <label className="text-gray-900 font-semibold text-sm md:text-base">Choose country and city you want to order</label>
+                                        <label className="text-gray-900 font-semibold text-sm md:text-base">Choose the city and / or country that you want to order from</label>
                                     </div>
                                     <div className="space-y-3">
                                         <div>

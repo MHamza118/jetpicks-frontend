@@ -17,6 +17,7 @@ const RoleToggle = ({ currentRole }: RoleToggleProps) => {
   }
 
   const otherRole = currentRole === 'PICKER' ? 'ORDERER' : 'PICKER';
+  const isPickerMode = currentRole === 'PICKER';
 
   const handleToggle = () => {
     // Clear caches
@@ -37,16 +38,24 @@ const RoleToggle = ({ currentRole }: RoleToggleProps) => {
   return (
     <button
       onClick={handleToggle}
-      className="px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 flex items-center gap-2"
+      className="relative inline-flex h-9 w-20 items-center rounded-full transition-all duration-300 focus:outline-none border-2 bg-white"
       style={{
-        backgroundColor: currentRole === 'PICKER' ? '#4D0013' : '#FFDF57',
-        color: currentRole === 'PICKER' ? '#FFDF57' : '#4D0013',
-        border: `2px solid ${currentRole === 'PICKER' ? '#FFDF57' : '#4D0013'}`,
+        borderColor: isPickerMode ? '#4D0013' : '#FFDF57',
       }}
       title={`Switch to ${otherRole} mode`}
     >
-      <span className="hidden sm:inline">{otherRole}</span>
-      <span className="sm:hidden">{otherRole.charAt(0)}</span>
+      {/* Toggle circle */}
+      <span
+        className="absolute h-7 w-9 rounded-full transition-all duration-300 flex items-center justify-center text-sm font-bold"
+        style={{
+          backgroundColor: isPickerMode ? '#4D0013' : '#FFDF57',
+          color: isPickerMode ? '#FFDF57' : '#4D0013',
+          left: isPickerMode ? '1px' : 'auto',
+          right: isPickerMode ? 'auto' : '1px',
+        }}
+      >
+        {isPickerMode ? 'P' : 'O'}
+      </span>
     </button>
   );
 };
