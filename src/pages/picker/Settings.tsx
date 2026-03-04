@@ -22,7 +22,7 @@ const Settings = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Fetch settings on mount
+  //Fetch settings on mount
   useEffect(() => {
     const fetchSettings = async () => {
       try {
