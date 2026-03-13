@@ -12,7 +12,7 @@ import { facebookAuthApi } from "../../services/facebookAuth";
 import { storage } from "../../utils";
 import { STORAGE_KEYS } from "../../constants";
 import type { LoginPayload, SignupPayload } from "../../@types";
-
+import { initializeFacebook } from "../../main";
 const Auth = () => {
   const navigate = useNavigate();
   const [isSignup, setIsSignup] = useState(false);
@@ -261,48 +261,54 @@ const Auth = () => {
   });
 
   const handleFacebookLogin = async () => {
-    if (!(window as any).FB) {
-      setError("Facebook SDK not loaded. Please try again.");
-      return;
-    }
-
     setLoading(true);
     try {
+      // Initialize Facebook SDK if not already loaded
+      await initializeFacebook();
+
+      if (!(window as any).FB || !(window as any).fbSdkLoaded) {
+        setError("Facebook SDK not loaded. Please try again.");
+        setLoading(false);
+        return;
+      }
+
       (window as any).FB.login(
-        async (response: any) => {
+        (response: any) => {
           if (response.authResponse) {
-            try {
-              // Send the access token to backend for verification
-              const result = await facebookAuthApi.login({
+            // Send the access token to backend for verification
+            facebookAuthApi
+              .login({
                 accessToken: response.authResponse.accessToken,
+              })
+              .then((result) => {
+                storage.set(STORAGE_KEYS.AUTH_TOKEN, result.data.token);
+                storage.set(STORAGE_KEYS.USER, result.data.user);
+
+                // Initialize active role to ORDERER
+                storage.set(STORAGE_KEYS.ACTIVE_ROLE, "ORDERER");
+
+                // If new user, go to profile setup
+                if ((result.data as any).isNewUser) {
+                  navigate("/profile-setup", { replace: true });
+                } else {
+                  // Existing user, go to orderer dashboard
+                  navigate("/orderer/dashboard");
+                }
+              })
+              .catch((err: any) => {
+                console.error(
+                  "Facebook login error:",
+                  err.response?.data || err.message,
+                );
+                const errorMessage =
+                  err.response?.data?.message ||
+                  err.message ||
+                  "Facebook login failed. Please try again.";
+                setError(errorMessage);
+              })
+              .finally(() => {
+                setLoading(false);
               });
-
-              storage.set(STORAGE_KEYS.AUTH_TOKEN, result.data.token);
-              storage.set(STORAGE_KEYS.USER, result.data.user);
-
-              // Initialize active role to ORDERER
-              storage.set(STORAGE_KEYS.ACTIVE_ROLE, "ORDERER");
-
-              // If new user, go to profile setup
-              if ((result.data as any).isNewUser) {
-                navigate("/profile-setup", { replace: true });
-              } else {
-                // Existing user, go to orderer dashboard
-                navigate("/orderer/dashboard");
-              }
-            } catch (err: any) {
-              console.error(
-                "Facebook login error:",
-                err.response?.data || err.message,
-              );
-              const errorMessage =
-                err.response?.data?.message ||
-                err.message ||
-                "Facebook login failed. Please try again.";
-              setError(errorMessage);
-            } finally {
-              setLoading(false);
-            }
           } else {
             setError("Facebook login was cancelled or failed to authenticate.");
             setLoading(false);
