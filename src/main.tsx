@@ -8,7 +8,8 @@ const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 // Initialize Facebook SDK only when needed
 export function initializeFacebook() {
-  if ((window as any).FB && (window as any).fbSdkLoaded) return Promise.resolve(); // Already initialized
+  if ((window as any).FB && (window as any).fbSdkLoaded)
+    return Promise.resolve(); // Already initialized
 
   return new Promise<void>((resolve) => {
     if ((window as any).fbAsyncInit) {
