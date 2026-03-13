@@ -1,4 +1,4 @@
-import { StrictMode, useEffect } from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import "./index.css";
@@ -29,10 +29,10 @@ function initializeFacebook() {
 
   // Load the Facebook SDK
   (function (d, s, id) {
-    var js,
+    var js: HTMLScriptElement,
       fjs = d.getElementsByTagName(s)[0];
     if (d.getElementById(id)) return;
-    js = d.createElement(s);
+    js = d.createElement(s) as HTMLScriptElement;
     js.id = id;
     js.src = "https://connect.facebook.net/en_US/sdk.js";
     fjs!.parentNode!.insertBefore(js, fjs);
