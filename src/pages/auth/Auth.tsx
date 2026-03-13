@@ -278,45 +278,49 @@ const Auth = () => {
 
     setLoading(true);
 
-    try {
-      (window as any).FB.login(
-        async (response: any) => {
-          if (response?.authResponse?.accessToken) {
-            const fbAccessToken = response.authResponse.accessToken;
+    const handleFbResponse = (response: any) => {
+      if (!response?.authResponse?.accessToken) {
+        setError("Facebook login failed. Please try again.");
+        setLoading(false);
+        return;
+      }
 
-            const loginResponse = await facebookAuthApi.login({
-              accessToken: fbAccessToken,
-            });
+      const fbAccessToken = response.authResponse.accessToken;
 
-            storage.set(STORAGE_KEYS.AUTH_TOKEN, loginResponse.data.token);
-            storage.set(STORAGE_KEYS.USER, loginResponse.data.user);
-            storage.set(STORAGE_KEYS.ACTIVE_ROLE, "ORDERER");
+      void (async () => {
+        try {
+          const loginResponse = await facebookAuthApi.login({
+            accessToken: fbAccessToken,
+          });
 
-            if ((loginResponse.data as any).isNewUser) {
-              navigate("/profile-setup", { replace: true });
-            } else {
-              navigate("/orderer/dashboard");
-            }
+          storage.set(STORAGE_KEYS.AUTH_TOKEN, loginResponse.data.token);
+          storage.set(STORAGE_KEYS.USER, loginResponse.data.user);
+          storage.set(STORAGE_KEYS.ACTIVE_ROLE, "ORDERER");
+
+          if ((loginResponse.data as any).isNewUser) {
+            navigate("/profile-setup", { replace: true });
           } else {
-            setError("Facebook login failed. Please try again.");
+            navigate("/orderer/dashboard");
           }
-
+        } catch (err: any) {
+          console.error(
+            "Facebook login error:",
+            err?.response?.data || err?.message,
+          );
+          const errorMessage =
+            err?.response?.data?.message ||
+            err?.message ||
+            "Facebook login failed. Please try again.";
+          setError(errorMessage);
+        } finally {
           setLoading(false);
-        },
-        { scope: "public_profile,email" },
-      );
-    } catch (err: any) {
-      console.error(
-        "Facebook login error:",
-        err?.response?.data || err?.message,
-      );
-      const errorMessage =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Facebook login failed. Please try again.";
-      setError(errorMessage);
-      setLoading(false);
-    }
+        }
+      })();
+    };
+
+    (window as any).FB.login(handleFbResponse, {
+      scope: "public_profile,email",
+    });
   };
 
   const handleGoogleLogin = useGoogleLogin({
