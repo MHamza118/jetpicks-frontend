@@ -270,6 +270,46 @@ const Auth = () => {
     loadFacebookSdk();
   }, []);
 
+  function handleFbResponse(response: any) {
+    if (!response?.authResponse?.accessToken) {
+      setError("Facebook login failed. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    const fbAccessToken = response.authResponse.accessToken;
+
+    (async () => {
+      try {
+        const loginResponse = await facebookAuthApi.login({
+          accessToken: fbAccessToken,
+        });
+
+        storage.set(STORAGE_KEYS.AUTH_TOKEN, loginResponse.data.token);
+        storage.set(STORAGE_KEYS.USER, loginResponse.data.user);
+        storage.set(STORAGE_KEYS.ACTIVE_ROLE, "ORDERER");
+
+        if ((loginResponse.data as any).isNewUser) {
+          navigate("/profile-setup", { replace: true });
+        } else {
+          navigate("/orderer/dashboard");
+        }
+      } catch (err: any) {
+        console.error(
+          "Facebook login error:",
+          err?.response?.data || err?.message,
+        );
+        const errorMessage =
+          err?.response?.data?.message ||
+          err?.message ||
+          "Facebook login failed. Please try again.";
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }
+
   const handleFacebookLogin = async () => {
     if (!fbSdkLoaded) {
       setError("Facebook is not ready yet. Please try again.");
@@ -277,46 +317,6 @@ const Auth = () => {
     }
 
     setLoading(true);
-
-    const handleFbResponse = (response: any) => {
-      if (!response?.authResponse?.accessToken) {
-        setError("Facebook login failed. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      const fbAccessToken = response.authResponse.accessToken;
-
-      void (async () => {
-        try {
-          const loginResponse = await facebookAuthApi.login({
-            accessToken: fbAccessToken,
-          });
-
-          storage.set(STORAGE_KEYS.AUTH_TOKEN, loginResponse.data.token);
-          storage.set(STORAGE_KEYS.USER, loginResponse.data.user);
-          storage.set(STORAGE_KEYS.ACTIVE_ROLE, "ORDERER");
-
-          if ((loginResponse.data as any).isNewUser) {
-            navigate("/profile-setup", { replace: true });
-          } else {
-            navigate("/orderer/dashboard");
-          }
-        } catch (err: any) {
-          console.error(
-            "Facebook login error:",
-            err?.response?.data || err?.message,
-          );
-          const errorMessage =
-            err?.response?.data?.message ||
-            err?.message ||
-            "Facebook login failed. Please try again.";
-          setError(errorMessage);
-        } finally {
-          setLoading(false);
-        }
-      })();
-    };
 
     (window as any).FB.login(handleFbResponse, {
       scope: "public_profile,email",
