@@ -224,12 +224,18 @@ const Auth = () => {
 
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (codeResponse: any) => {
+      console.log("🔥 Google login onSuccess called with:", codeResponse);
       setLoading(true);
       try {
+        console.log("📡 Sending token to backend:", codeResponse.access_token);
         // Send the access token to backend for verification
         const response = await googleAuthApi.login({
           idToken: codeResponse.access_token,
         });
+
+        console.log("✅ Backend response:", response);
+        console.log("👤 User data:", response.data.user);
+        console.log("🎫 Token:", response.data.token);
 
         storage.set(STORAGE_KEYS.AUTH_TOKEN, response.data.token);
         storage.set(STORAGE_KEYS.USER, response.data.user);
@@ -239,48 +245,64 @@ const Auth = () => {
 
         // If new user, go to profile setup
         if ((response.data as any).isNewUser) {
+          console.log("🆕 New user detected, redirecting to profile setup");
           navigate("/profile-setup", { replace: true });
         } else {
+          console.log("👋 Existing user, redirecting to dashboard");
           // Existing user, go to orderer dashboard
           navigate("/orderer/dashboard");
         }
       } catch (err: any) {
-        console.error("Google login error:", err.response?.data || err.message);
+        console.error("❌ Google login error:", err);
+        console.error("❌ Error response:", err.response?.data);
+        console.error("❌ Error message:", err.message);
         const errorMessage =
           err.response?.data?.message ||
           err.message ||
           "Google login failed. Please try again.";
+        console.error("🚨 Final error message:", errorMessage);
         setError(errorMessage);
       } finally {
+        console.log("🔄 Setting loading to false");
         setLoading(false);
       }
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("💥 Google login onError called:", error);
+      console.error("💥 Error details:", error);
       setError("Google login failed. Please try again.");
     },
   });
 
   const handleFacebookLogin = async () => {
+    console.log("🔄 handleFacebookLogin called");
     setLoading(true);
     try {
+      console.log("📦 Initializing Facebook SDK");
       // Initialize Facebook SDK if not already loaded
       await initializeFacebook();
 
+      console.log("🔍 Checking if Facebook SDK is ready");
       if (!(window as any).FB || !(window as any).fbSdkLoaded) {
+        console.error("❌ Facebook SDK not loaded");
         setError("Facebook SDK not loaded. Please try again.");
         setLoading(false);
         return;
       }
 
+      console.log("✅ Facebook SDK ready, calling FB.login");
       (window as any).FB.login(
         (response: any) => {
+          console.log("🎯 Facebook login callback received:", response);
           if (response.authResponse) {
+            console.log("✅ Facebook auth successful, sending to backend");
             // Send the access token to backend for verification
             facebookAuthApi
               .login({
                 accessToken: response.authResponse.accessToken,
               })
               .then((result) => {
+                console.log("✅ Facebook backend response:", result);
                 storage.set(STORAGE_KEYS.AUTH_TOKEN, result.data.token);
                 storage.set(STORAGE_KEYS.USER, result.data.user);
 
@@ -289,17 +311,20 @@ const Auth = () => {
 
                 // If new user, go to profile setup
                 if ((result.data as any).isNewUser) {
+                  console.log(
+                    "🆕 New Facebook user, redirecting to profile setup",
+                  );
                   navigate("/profile-setup", { replace: true });
                 } else {
+                  console.log(
+                    "👋 Existing Facebook user, redirecting to dashboard",
+                  );
                   // Existing user, go to orderer dashboard
                   navigate("/orderer/dashboard");
                 }
               })
               .catch((err: any) => {
-                console.error(
-                  "Facebook login error:",
-                  err.response?.data || err.message,
-                );
+                console.error("❌ Facebook backend error:", err);
                 const errorMessage =
                   err.response?.data?.message ||
                   err.message ||
@@ -307,9 +332,11 @@ const Auth = () => {
                 setError(errorMessage);
               })
               .finally(() => {
+                console.log("🔄 Facebook login loading set to false");
                 setLoading(false);
               });
           } else {
+            console.log("❌ Facebook login cancelled or failed");
             setError("Facebook login was cancelled or failed to authenticate.");
             setLoading(false);
           }
@@ -317,7 +344,7 @@ const Auth = () => {
         { scope: "public_profile,email" },
       );
     } catch (err: any) {
-      console.error("Facebook login error:", err);
+      console.error("💥 Facebook login error:", err);
       setError("Facebook login failed. Please try again.");
       setLoading(false);
     }
