@@ -7,35 +7,67 @@ import DashboardHeader from '../../components/layout/DashboardHeader';
 import MobileFooter from '../../components/layout/MobileFooter';
 import { useChat } from '../../context/ChatContext';
 import { useUser } from '../../context/UserContext';
-import { authApi } from '../../services/auth';
+import { authApi, ordererProfileApi } from '../../services';
 import type { ChatMessage } from '../../context/ChatContext';
 
 const Chat = () => {
   const { roomId } = useParams<{ roomId?: string }>();
   const navigate = useNavigate();
-  const { chatRooms, currentRoom, messages, fetchChatRooms, fetchChatRoom, fetchMessages, sendMessage, markRoomMessagesAsRead } = useChat();
+  const { chatRooms, currentRoom, messages, fetchChatRooms, fetchChatRoom, fetchMessages, sendMessage, translateMessage, markRoomMessagesAsRead } = useChat();
   const { avatarUrl, avatarError, handleAvatarError } = useUser();
-  
+
   const [messageInput, setMessageInput] = useState('');
   const [showTranslated, setShowTranslated] = useState<{ [key: string]: boolean }>({});
   const [sending, setSending] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  
+  const [userSettings, setUserSettings] = useState<any>({
+    translation_language: 'English',
+    auto_translate_messages: false,
+    show_original_and_translated: true,
+  });
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchUserSettings = async () => {
+    try {
+      const settingsResponse = await ordererProfileApi.getSettings();
+      if (settingsResponse.data) {
+        setUserSettings(settingsResponse.data);
+      }
+    } catch (err) {
+      // ignore
+    }
+  };
 
   // Get current user ID on mount
   useEffect(() => {
     const getCurrentUserId = async () => {
       try {
         const response = await authApi.getCurrentUser();
-        const userId = (response as any).data?.id;
-        setCurrentUserId(userId);
+        const userData = (response as any).data || response;
+        const userId = userData.id || (userData as any).data?.id;
+        if (userId) {
+          setCurrentUserId(userId.toString().toLowerCase());
+        }
+
+        // Fetch user settings
+        await fetchUserSettings();
       } catch (error) {
-        console.error('Failed to get current user:', error);
+        console.error('Failed to get current user context:', error);
       }
     };
     getCurrentUserId();
+  }, []);
+
+  // Refresh settings whenever the window regains focus (so changes in Settings are reflected)
+  useEffect(() => {
+    const onFocus = () => {
+      fetchUserSettings();
+    };
+
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, []);
 
   useEffect(() => {
@@ -67,7 +99,7 @@ const Chat = () => {
 
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !roomId || sending) return;
-    
+
     setSending(true);
     try {
       await sendMessage(roomId, messageInput);
@@ -95,22 +127,75 @@ const Chat = () => {
     return imageUtils.getImageUrl(imagePath);
   };
 
-  const toggleTranslation = (messageId: string) => {
+  const toggleTranslation = async (messageId: string) => {
+    const message = messages.find(m => m.id === messageId);
+
+    // Ensure we have the latest language settings before translating
+    await fetchUserSettings();
+
+    if (message && userSettings?.translation_language) {
+      // Always re-translate when the user requests it, so we honor their current preference.
+      await translateMessage(messageId, userSettings.translation_language);
+    }
+
     setShowTranslated(prev => ({
       ...prev,
       [messageId]: !prev[messageId],
     }));
   };
 
-  const getMessageContent = (message: ChatMessage) => {
-    if (showTranslated[message.id] && message.content_translated) {
-      return message.content_translated;
+  const isSenderMessage = (senderId?: string) => {
+    return senderId?.toLowerCase() === currentUserId;
+  };
+
+  const renderMessageContent = (message: ChatMessage) => {
+    const hasTranslation = !!message.content_translated;
+    const isAutoTranslate = userSettings?.auto_translate_messages;
+    const isShowBoth = userSettings?.show_original_and_translated;
+    const manualTranslate = showTranslated[message.id];
+
+    // Senders don't need a translation of their own message
+    const isSender = isSenderMessage(message.sender_id);
+
+    if (hasTranslation && !isSender) {
+      if (isShowBoth) {
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-xs opacity-60 italic border-b border-gray-900/10 pb-1 mb-1">
+              {message.content_original}
+            </span>
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase font-bold tracking-wider opacity-50 mb-0.5">Translation</span>
+              <span>{message.content_translated}</span>
+            </div>
+          </div>
+        );
+      }
+
+      if (isAutoTranslate || manualTranslate) {
+        return (
+          <div className="flex flex-col">
+            {manualTranslate && !isAutoTranslate && (
+              <span className="text-[10px] uppercase font-bold tracking-wider opacity-50 mb-0.5">Translation</span>
+            )}
+            <span>{message.content_translated}</span>
+          </div>
+        );
+      }
     }
+
     return message.content_original;
   };
 
   const shouldShowTranslateButton = (message: ChatMessage) => {
-    return message.content_translated && message.sender_id !== currentRoom?.orderer.id;
+    const isSender = isSenderMessage(message.sender_id);
+    if (isSender) return false;
+
+    // Show button if:
+    // 1. Not translated yet
+    // OR 2. Auto-translate is OFF and Show-Both is OFF
+    return !message.content_translated ||
+      (!userSettings?.auto_translate_messages && !userSettings?.show_original_and_translated);
   };
 
   return (
@@ -142,11 +227,10 @@ const Chat = () => {
                       fetchChatRoom(room.id);
                       fetchMessages(room.id);
                     }}
-                    className={`px-4 py-3 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 ${
-                      currentRoom?.id === room.id
+                    className={`px-4 py-3 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 ${currentRoom?.id === room.id
                         ? 'bg-[#FFF8D6]'
                         : 'hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start gap-3">
                       <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
@@ -232,18 +316,16 @@ const Chat = () => {
                     messages.map((message) => (
                       <div
                         key={message.id}
-                        className={`flex ${
-                          message.sender_id === currentRoom?.orderer.id ? 'justify-end' : 'justify-start'
-                        }`}
+                        className={`flex ${message.sender_id === currentUserId ? 'justify-end' : 'justify-start'
+                          }`}
                       >
                         <div
-                          className={`max-w-xs px-4 py-2 rounded-lg ${
-                            message.sender_id === currentRoom?.orderer.id
+                          className={`max-w-xs px-4 py-2 rounded-lg ${message.sender_id === currentUserId
                               ? 'bg-[#FFDF57] text-gray-900'
                               : 'bg-gray-100 text-gray-900'
-                          }`}
+                            }`}
                         >
-                          <p className="text-sm">{getMessageContent(message)}</p>
+                          <div className="text-sm">{renderMessageContent(message)}</div>
                           <div className="flex items-center justify-between gap-2 mt-1">
                             <span className="text-xs text-gray-600">
                               {new Date(message.created_at).toLocaleTimeString('en-US', {
@@ -252,9 +334,8 @@ const Chat = () => {
                               })}
                             </span>
                             {message.sender_id === currentRoom?.orderer.id && (
-                              <span className={`text-xs font-bold ${
-                                message.is_read ? 'text-blue-500' : 'text-gray-400'
-                              }`}>
+                              <span className={`text-xs font-bold ${message.is_read ? 'text-blue-500' : 'text-gray-400'
+                                }`}>
                                 {message.is_read ? '✓✓' : '✓'}
                               </span>
                             )}

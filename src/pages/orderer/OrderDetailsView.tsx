@@ -1,20 +1,24 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { Star, ChevronRight } from 'lucide-react';
-import DashboardSidebar from '../../components/layout/DashboardSidebar';
-import DashboardHeader from '../../components/layout/DashboardHeader';
-import MobileFooter from '../../components/layout/MobileFooter';
-import { useUser } from '../../context/UserContext';
-import { imageUtils } from '../../utils';
-import { ordererOrdersApi } from '../../services/orderer/orders';
-import { apiClient } from '../../services/apiClient';
-import { getSymbolForCurrency } from '../../services/currencies';
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { Star, ChevronRight } from "lucide-react";
+import DashboardSidebar from "../../components/layout/DashboardSidebar";
+import DashboardHeader from "../../components/layout/DashboardHeader";
+import MobileFooter from "../../components/layout/MobileFooter";
+import CheckoutModal from "../../components/CheckoutModal";
+import { useUser } from "../../context/UserContext";
+import { imageUtils } from "../../utils";
+import { ordererOrdersApi } from "../../services/orderer/orders";
+import { apiClient } from "../../services/apiClient";
+import { getSymbolForCurrency } from "../../services/currencies";
+import { formatAmountToCents } from "../../services/stripe";
 
 interface OrderItem {
   id: string;
   name: string;
   store: string;
   weight: string;
+  price?: number | string;
+  quantity?: number | string;
   reward: number;
   image_url?: string;
   product_images?: string[];
@@ -35,8 +39,9 @@ interface OrderDetailsData {
   destination_country: string;
   items: OrderItem[];
   picker: Picker;
-  status: 'pending' | 'delivered' | 'cancelled' | 'accepted';
-  delivery_status?: 'completed' | 'issue' | null;
+  status: "pending" | "delivered" | "cancelled" | "accepted";
+  payment_status?: "PENDING" | "PAID" | "FAILED" | "REFUNDED";
+  delivery_status?: "completed" | "issue" | null;
   remaining_time?: string;
   total_cost: number;
   items_cost: number;
@@ -54,35 +59,57 @@ const OrdererOrderDetailsView = () => {
   const [deliveryCompleted, setDeliveryCompleted] = useState(false);
   const [issueWithDelivery, setIssueWithDelivery] = useState(false);
   const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState('');
-  const [selectedTip, setSelectedTip] = useState('5');
-  const [customTipAmount, setCustomTipAmount] = useState('');
+  const [comment, setComment] = useState("");
+  const [selectedTip, setSelectedTip] = useState("5");
+  const [customTipAmount, setCustomTipAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showPaymentNotice, setShowPaymentNotice] = useState(true);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
-  const [paymentCompleted, setPaymentCompleted] = useState(false);
+
+  const toNumber = (value: unknown): number => {
+    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+    if (typeof value === "string") {
+      const parsed = parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+  };
 
   // Helper function to calculate items total
   const getItemsTotal = () => {
     if (!order) return 0;
-    return typeof order.items_cost === 'string' ? parseFloat(order.items_cost) : (order.items_cost || 0);
+
+    const directItemsCost = toNumber(order.items_cost);
+    if (directItemsCost > 0) {
+      return directItemsCost;
+    }
+
+    // Fallback: derive from items in case API field is missing/zero/string-invalid
+    return (order.items || []).reduce((sum, item) => {
+      const price = toNumber(item.price);
+      const quantity = toNumber(item.quantity || 1);
+      return sum + price * quantity;
+    }, 0);
   };
 
   // Helper function to get reward amount as number
   const getRewardAmount = () => {
     if (!order) return 0;
     const reward = order.reward_amount;
-    return typeof reward === 'string' ? parseFloat(reward) : (reward || 0);
+    return typeof reward === "string" ? parseFloat(reward) : reward || 0;
   };
 
   // Helper function to get counter offer amount as number
   const getCounterOfferAmount = () => {
     if (!order) return 0;
     const counterOffer = order.accepted_counter_offer_amount;
-    return typeof counterOffer === 'string' ? parseFloat(counterOffer) : (counterOffer || 0);
+    return typeof counterOffer === "string"
+      ? parseFloat(counterOffer)
+      : counterOffer || 0;
   };
 
   // Helper function to calculate subtotal (items + reward or counter offer)
@@ -111,8 +138,38 @@ const OrdererOrderDetailsView = () => {
 
   // Helper function to format price with currency
   const formatPrice = (price: number, currency?: string) => {
-    const symbol = getSymbolForCurrency(currency || 'USD');
+    const symbol = getSymbolForCurrency(currency || "USD");
     return `${symbol}${price.toFixed(2)}`;
+  };
+
+  const getPayableAmountCents = () => {
+    const total = getTotal();
+    return formatAmountToCents(total > 0 ? total : 0);
+  };
+
+  const handleOpenPaymentModal = () => {
+    setPaymentError(null);
+
+    if (getPayableAmountCents() <= 0) {
+      setPaymentError(
+        "Payment amount is zero. Please refresh order details and try again.",
+      );
+      return;
+    }
+
+    // Stripe only accepts a limited set of currencies.
+    // We block the modal client‑side to avoid a 500/400 from backend for unsupported currencies.
+    const unsupported = ["aoa", "kz"]; // add more codes as necessary
+    const cur = (order?.currency || "").toLowerCase();
+    if (unsupported.includes(cur)) {
+      setPaymentError(
+        `We couldn\'t process payment in ${order?.currency}. ` +
+          "Stripe does not support that currency; please switch to USD or contact support.",
+      );
+      return;
+    }
+
+    setShowPaymentModal(true);
   };
 
   useEffect(() => {
@@ -122,7 +179,7 @@ const OrdererOrderDetailsView = () => {
         setError(null);
         const response = await ordererOrdersApi.getOrderDetails(orderId!);
         const data = (response as any).data || response;
-        
+
         setOrder({
           id: data.id,
           origin_city: data.origin_city,
@@ -132,26 +189,31 @@ const OrdererOrderDetailsView = () => {
           items: data.items.map((item: any) => ({
             id: item.id,
             name: item.item_name,
-            store: 'Amazone',
+            store: item.store_link || "Amazon",
             weight: item.weight,
+            price: item.price,
+            quantity: item.quantity,
             reward: data.reward_amount,
             image_url: item.product_images?.[0],
             product_images: item.product_images || [],
           })),
-          picker: data.picker ? {
-            id: data.picker.id,
-            name: data.picker.full_name,
-            rating: data.picker.rating || 0,
-            avatar_url: data.picker.avatar_url,
-          } : {
-            id: '',
-            name: 'Unknown',
-            rating: 0,
-            avatar_url: undefined,
-          },
+          picker: data.picker
+            ? {
+                id: data.picker.id,
+                name: data.picker.full_name,
+                rating: data.picker.rating || 0,
+                avatar_url: data.picker.avatar_url,
+              }
+            : {
+                id: "",
+                name: "Unknown",
+                rating: 0,
+                avatar_url: undefined,
+              },
           status: data.status.toLowerCase(),
+          payment_status: data.payment_status || "PENDING",
           delivery_status: null,
-          remaining_time: '47h:12m',
+          remaining_time: "47h:12m",
           total_cost: data.total_cost || 0,
           items_cost: data.items_cost || 0,
           reward_amount: data.reward_amount || 0,
@@ -159,7 +221,7 @@ const OrdererOrderDetailsView = () => {
           currency: data.currency,
         });
       } catch (err) {
-        setError('Failed to load order details');
+        setError("Failed to load order details");
       } finally {
         setLoading(false);
       }
@@ -170,19 +232,24 @@ const OrdererOrderDetailsView = () => {
     }
   }, [orderId]);
 
-  // Auto-hide payment notice after 30 seconds
+  // Auto-hide payment notice after 30 seconds for active unpaid orders
   useEffect(() => {
-    if (showPaymentNotice && order?.status === 'accepted') {
+    if (
+      showPaymentNotice &&
+      order &&
+      order.payment_status !== "PAID" &&
+      !["cancelled", "completed"].includes(order.status)
+    ) {
       const timer = setTimeout(() => {
         setShowPaymentNotice(false);
       }, 30000);
       return () => clearTimeout(timer);
     }
-  }, [showPaymentNotice, order?.status]);
+  }, [showPaymentNotice, order]);
 
   const handleSubmitReview = async () => {
     if (!rating) {
-      alert('Please select a rating');
+      alert("Please select a rating");
       return;
     }
 
@@ -197,20 +264,20 @@ const OrdererOrderDetailsView = () => {
         order.id,
         rating,
         comment,
-        order.picker.id
+        order.picker.id,
       );
 
       // Submit tip if selected
-      if (selectedTip !== '0') {
+      if (selectedTip !== "0") {
         let tipAmount = 0;
-        if (selectedTip === 'custom') {
+        if (selectedTip === "custom") {
           tipAmount = parseFloat(customTipAmount) || 0;
         } else {
           tipAmount = parseFloat(selectedTip);
         }
 
         if (tipAmount > 0) {
-          await apiClient.post('/tips', {
+          await apiClient.post("/tips", {
             order_id: order.id,
             amount: tipAmount,
           });
@@ -222,12 +289,12 @@ const OrdererOrderDetailsView = () => {
         setSubmitSuccess(false);
         // Reset form
         setRating(0);
-        setComment('');
-        setSelectedTip('5');
-        setCustomTipAmount('');
+        setComment("");
+        setSelectedTip("5");
+        setCustomTipAmount("");
       }, 2000);
     } catch (err) {
-      setError('Failed to submit review. Please try again.');
+      setError("Failed to submit review. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -245,7 +312,9 @@ const OrdererOrderDetailsView = () => {
           onAvatarError={handleAvatarError}
         />
 
-        <div className={`flex-1 overflow-y-auto p-4 md:p-8 ${order?.status.toUpperCase() === 'CANCELLED' ? 'pb-32 md:pb-8' : 'pb-24 md:pb-0'} bg-white`}>
+        <div
+          className={`flex-1 overflow-y-auto p-4 md:p-8 ${order?.status.toUpperCase() === "CANCELLED" ? "pb-32 md:pb-8" : "pb-24 md:pb-0"} bg-white`}
+        >
           {loading && (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFDF57]"></div>
@@ -260,413 +329,618 @@ const OrdererOrderDetailsView = () => {
 
           {submitSuccess && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-              <p className="text-green-700">Review and tip submitted successfully!</p>
+              <p className="text-green-700">
+                Review and tip submitted successfully!
+              </p>
             </div>
           )}
 
           {!loading && order && (
             <>
-          {/* Route Header with Status */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {order.origin_city}, {order.origin_country} - {order.destination_city}, {order.destination_country}
-            </h1>
-            {/* Status Badge and Cancelled Message */}
-            <div className="mt-3 flex items-center gap-4">
-              <span className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${
-                order.status.toUpperCase() === 'CANCELLED'
-                  ? 'bg-red-100 text-red-700'
-                  : order.status.toUpperCase() === 'DELIVERED'
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-yellow-100 text-yellow-700'
-              }`}>
-                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-              </span>
-              {order.status.toUpperCase() === 'CANCELLED' && (
-                <p className="text-red-700 text-xs">This order has been cancelled and cannot be proceeded further.</p>
-              )}
-            </div>
-          </div>
-
-          {/* Payment Notice Popup - Only for Accepted Orders */}
-          {order.status.toUpperCase() === 'ACCEPTED' && showPaymentNotice && (
-            <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4 relative">
-              <button
-                onClick={() => setShowPaymentNotice(false)}
-                className="absolute top-2 right-2 text-yellow-600 hover:text-yellow-700 text-lg font-bold"
-              >
-                ✕
-              </button>
-              <div className="pr-6">
-                <h3 className="text-base font-semibold text-yellow-900 mb-1">Complete Payment to Proceed</h3>
-                <p className="text-yellow-800 text-xs mb-1">
-                  Your order is ready! Please complete the payment to confirm your purchase. Once payment is verified, the picker will proceed with buying the items for you.
-                </p>
-                <p className="text-yellow-700 text-xs font-medium mb-3">
-                  Auto-closes in 30 seconds.
-                </p>
-                <button
-                  onClick={() => setShowPaymentModal(true)}
-                  className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
-                >
-                  Pay
-                </button>
+              {/* Route Header with Status */}
+              <div className="mb-8">
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {order.origin_city}, {order.origin_country} -{" "}
+                  {order.destination_city}, {order.destination_country}
+                </h1>
+                {/* Status Badge and Cancelled Message */}
+                <div className="mt-3 flex items-center gap-4 flex-wrap">
+                  <span
+                    className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${
+                      order.status.toUpperCase() === "CANCELLED"
+                        ? "bg-red-100 text-red-700"
+                        : order.status.toUpperCase() === "DELIVERED"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-yellow-100 text-yellow-700"
+                    }`}
+                  >
+                    {order.status.charAt(0).toUpperCase() +
+                      order.status.slice(1)}
+                  </span>
+                  <span
+                    className={`inline-block px-4 py-2 rounded-full text-xs font-bold ${
+                      order.payment_status === "PAID"
+                        ? "bg-green-100 text-green-700"
+                        : order.payment_status === "FAILED"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-yellow-100 text-yellow-700"
+                    }`}
+                  >
+                    Payment: {order.payment_status || "PENDING"}
+                  </span>
+                  {order.status.toUpperCase() === "CANCELLED" && (
+                    <p className="text-red-700 text-xs">
+                      This order has been cancelled and cannot be proceeded
+                      further.
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
 
-          <div className="max-w-xl mx-auto space-y-6">
-          {/* Order Summary Card */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-8 mb-6">
-            <div className="space-y-4">
-              <div className="flex justify-center items-center">
-                <p className="font-semibold text-gray-900">{order.origin_city}, {order.origin_country} to {order.destination_city}, {order.destination_country}</p>
-              </div>
-              
-              {/* Items List */}
-              {order.items && order.items.length > 0 && (
-                <div className="border-t border-gray-200 pt-4">
-                  <div className="space-y-3">
-                    {order.items.map((item: any, idx: number) => (
-                      <div key={idx} className="bg-gray-50 rounded-lg p-3">
-                        <div className="flex justify-between mb-2">
-                          <span className="text-gray-900 font-semibold">{item.name}</span>
-                          <span className="text-gray-600 text-sm">Qty: {item.quantity || 1}</span>
-                        </div>
-                        {item.store_link && (
-                          <div className="flex justify-between mb-2">
-                            <span className="text-gray-600 text-sm">Store:</span>
-                            <a href={item.store_link} target="_blank" rel="noopener noreferrer" className="text-[#4D0013] text-sm underline font-semibold">
-                              {item.store_link}
-                            </a>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span className="text-gray-600 text-sm">Weight:</span>
-                          <span className="text-gray-900 text-sm">{item.weight}</span>
+              {/* Payment Notice Popup - For All Active Unpaid Orders */}
+              {order.payment_status !== "PAID" &&
+                !["CANCELLED", "COMPLETED"].includes(
+                  order.status.toUpperCase(),
+                ) &&
+                showPaymentNotice && (
+                  <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4 relative">
+                    <button
+                      onClick={() => setShowPaymentNotice(false)}
+                      className="absolute top-2 right-2 text-yellow-600 hover:text-yellow-700 text-lg font-bold"
+                    >
+                      ✕
+                    </button>
+
+                    {paymentError && (
+                      <div className="mb-3 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+                        {paymentError}
+                      </div>
+                    )}
+
+                    <div className="pr-6">
+                      <h3 className="text-base font-semibold text-yellow-900 mb-1">
+                        Complete Payment to Proceed
+                      </h3>
+                      <p className="text-yellow-800 text-xs mb-1">
+                        Your order is ready! Please complete the payment to
+                        confirm your purchase. Once payment is verified, the
+                        picker will proceed with buying the items for you.
+                      </p>
+                      <p className="text-yellow-700 text-xs font-medium mb-3">
+                        Auto-closes in 30 seconds.
+                      </p>
+                      <button
+                        onClick={handleOpenPaymentModal}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
+                      >
+                        Pay
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+              <div className="max-w-xl mx-auto space-y-6">
+                {/* Order Summary Card */}
+                <div className="bg-white border border-gray-200 rounded-2xl p-8 mb-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-center items-center">
+                      <p className="font-semibold text-gray-900">
+                        {order.origin_city}, {order.origin_country} to{" "}
+                        {order.destination_city}, {order.destination_country}
+                      </p>
+                    </div>
+
+                    {/* Items List */}
+                    {order.items && order.items.length > 0 && (
+                      <div className="border-t border-gray-200 pt-4">
+                        <div className="space-y-3">
+                          {order.items.map((item: any, idx: number) => (
+                            <div
+                              key={idx}
+                              className="bg-gray-50 rounded-lg p-3"
+                            >
+                              <div className="flex justify-between mb-2">
+                                <span className="text-gray-900 font-semibold">
+                                  {item.name}
+                                </span>
+                                <span className="text-gray-600 text-sm">
+                                  Qty: {item.quantity || 1}
+                                </span>
+                              </div>
+                              {item.store_link && (
+                                <div className="flex justify-between mb-2">
+                                  <span className="text-gray-600 text-sm">
+                                    Store:
+                                  </span>
+                                  <a
+                                    href={item.store_link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[#4D0013] text-sm underline font-semibold"
+                                  >
+                                    {item.store_link}
+                                  </a>
+                                </div>
+                              )}
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 text-sm">
+                                  Weight:
+                                </span>
+                                <span className="text-gray-900 text-sm">
+                                  {item.weight}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Fee Breakdown Card */}
-          <div className="bg-gray-50 rounded-2xl p-8 mb-6">
-            <h3 className="font-bold text-gray-900 mb-4">Order Cost Breakdown</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600 font-medium">Items Amount</span>
-                <span className="font-semibold text-gray-900">{formatPrice(getItemsTotal(), order.currency)}</span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600 font-medium">Reward Amount</span>
-                <span className="font-semibold text-gray-900">{formatPrice(getRewardAmount(), order.currency)}</span>
-              </div>
-
-              {getCounterOfferAmount() > 0 && (
-                <div className="flex justify-between items-center bg-yellow-100 p-2 rounded">
-                  <span className="text-gray-600 font-semibold">Counter Offer Amount</span>
-                  <span className="font-bold text-gray-900">{formatPrice(getCounterOfferAmount(), order.currency)}</span>
-                </div>
-              )}
-              
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600 font-medium">JetPicker Fee (6.5%)</span>
-                <span className="font-semibold text-gray-900">{formatPrice(getJetPickerFee(), order.currency)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600 font-medium">Payment Processing (4%)</span>
-                <span className="font-semibold text-gray-900">{formatPrice(getPaymentProcessingFee(), order.currency)}</span>
-              </div>
-              
-              <div className="border-t border-gray-200 pt-3 flex justify-between items-center bg-yellow-50 -mx-8 px-8 py-3 rounded">
-                <span className="text-gray-900 font-bold">Total</span>
-                <span className="text-gray-900 font-bold text-lg">{formatPrice(getTotal(), order.currency)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Product Image and Picker Info Section */}
-          {order.picker.id ? (
-            <div className="flex items-center justify-center gap-6 mb-6">
-              {/* Product Image Carousel */}
-              <div className="relative w-56 h-56 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
-                {order.items[0]?.product_images && order.items[0].product_images.length > 0 ? (
-                  <>
-                    <img
-                      src={imageUtils.getImageUrl(order.items[0].product_images[currentImageIndex])}
-                      alt="Product"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                    {/* Forward Arrow Only */}
-                    {order.items[0].product_images.length > 1 && (
-                      <button
-                        onClick={() => setCurrentImageIndex((prev) => (prev === order.items[0].product_images!.length - 1 ? 0 : prev + 1))}
-                        className="absolute bottom-3 right-3 bg-[#FFDF57] hover:bg-yellow-500 text-gray-900 p-2 rounded-full transition-all shadow-lg"
-                      >
-                        <ChevronRight size={24} />
-                      </button>
                     )}
-                  </>
-                ) : null}
-                {!order.items[0]?.product_images || order.items[0].product_images.length === 0 || (order.items[0] as any).imageError ? (
-                  <div className="flex flex-col items-center justify-center text-gray-400">
-                    <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span className="text-xs font-medium">No image</span>
                   </div>
-                ) : null}
-              </div>
-
-              {/* Picker Info Section */}
-              <div className="flex items-center gap-4">
-                <div className="relative w-16 h-16 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                  {order.picker.avatar_url ? (
-                    <img
-                      src={imageUtils.getImageUrl(order.picker.avatar_url)}
-                      alt={order.picker.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  ) : null}
-                  {!order.picker.avatar_url || (order.picker as any).avatarError ? (
-                    <span className="text-lg font-semibold text-gray-600">{order.picker.name.charAt(0).toUpperCase()}</span>
-                  ) : null}
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">JetPicker</h3>
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold text-gray-900">{order.picker.name}</p>
-                    <div className="flex items-center gap-1">
-                      <Star size={16} className="fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-semibold text-gray-900">{order.picker.rating}</span>
+
+                {/* Fee Breakdown Card */}
+                <div className="bg-gray-50 rounded-2xl p-8 mb-6">
+                  <h3 className="font-bold text-gray-900 mb-4">
+                    Order Cost Breakdown
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 font-medium">
+                        Items Amount
+                      </span>
+                      <span className="font-semibold text-gray-900">
+                        {formatPrice(getItemsTotal(), order.currency)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 font-medium">
+                        Reward Amount
+                      </span>
+                      <span className="font-semibold text-gray-900">
+                        {formatPrice(getRewardAmount(), order.currency)}
+                      </span>
+                    </div>
+
+                    {getCounterOfferAmount() > 0 && (
+                      <div className="flex justify-between items-center bg-yellow-100 p-2 rounded">
+                        <span className="text-gray-600 font-semibold">
+                          Counter Offer Amount
+                        </span>
+                        <span className="font-bold text-gray-900">
+                          {formatPrice(getCounterOfferAmount(), order.currency)}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 font-medium">
+                        JetPicker Fee (6.5%)
+                      </span>
+                      <span className="font-semibold text-gray-900">
+                        {formatPrice(getJetPickerFee(), order.currency)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 font-medium">
+                        Payment Processing (4%)
+                      </span>
+                      <span className="font-semibold text-gray-900">
+                        {formatPrice(getPaymentProcessingFee(), order.currency)}
+                      </span>
+                    </div>
+
+                    <div className="border-t border-gray-200 pt-3 flex justify-between items-center bg-yellow-50 -mx-8 px-8 py-3 rounded">
+                      <span className="text-gray-900 font-bold">Total</span>
+                      <span className="text-gray-900 font-bold text-lg">
+                        {formatPrice(getTotal(), order.currency)}
+                      </span>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-6 mb-6">
-              {/* Product Image Carousel */}
-              <div className="relative w-56 h-56 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
-                {order.items[0]?.product_images && order.items[0].product_images.length > 0 ? (
-                  <>
-                    <img
-                      src={imageUtils.getImageUrl(order.items[0].product_images[currentImageIndex])}
-                      alt="Product"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                    {/* Forward Arrow Only */}
-                    {order.items[0].product_images.length > 1 && (
+
+                {/* Product Image and Picker Info Section */}
+                {order.picker.id ? (
+                  <div className="flex items-center justify-center gap-6 mb-6">
+                    {/* Product Image Carousel */}
+                    <div className="relative w-56 h-56 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
+                      {order.items[0]?.product_images &&
+                      order.items[0].product_images.length > 0 ? (
+                        <>
+                          <img
+                            src={imageUtils.getImageUrl(
+                              order.items[0].product_images[currentImageIndex],
+                            )}
+                            alt="Product"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display =
+                                "none";
+                            }}
+                          />
+                          {/* Forward Arrow Only */}
+                          {order.items[0].product_images.length > 1 && (
+                            <button
+                              onClick={() =>
+                                setCurrentImageIndex((prev) =>
+                                  prev ===
+                                  order.items[0].product_images!.length - 1
+                                    ? 0
+                                    : prev + 1,
+                                )
+                              }
+                              className="absolute bottom-3 right-3 bg-[#FFDF57] hover:bg-yellow-500 text-gray-900 p-2 rounded-full transition-all shadow-lg"
+                            >
+                              <ChevronRight size={24} />
+                            </button>
+                          )}
+                        </>
+                      ) : null}
+                      {!order.items[0]?.product_images ||
+                      order.items[0].product_images.length === 0 ||
+                      (order.items[0] as any).imageError ? (
+                        <div className="flex flex-col items-center justify-center text-gray-400">
+                          <svg
+                            className="w-12 h-12 mb-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                          <span className="text-xs font-medium">No image</span>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {/* Picker Info Section */}
+                    <div className="flex items-center gap-4">
+                      <div className="relative w-16 h-16 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                        {order.picker.avatar_url ? (
+                          <img
+                            src={imageUtils.getImageUrl(
+                              order.picker.avatar_url,
+                            )}
+                            alt={order.picker.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display =
+                                "none";
+                            }}
+                          />
+                        ) : null}
+                        {!order.picker.avatar_url ||
+                        (order.picker as any).avatarError ? (
+                          <span className="text-lg font-semibold text-gray-600">
+                            {order.picker.name.charAt(0).toUpperCase()}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900">
+                          JetPicker
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-gray-900">
+                            {order.picker.name}
+                          </p>
+                          <div className="flex items-center gap-1">
+                            <Star
+                              size={16}
+                              className="fill-yellow-400 text-yellow-400"
+                            />
+                            <span className="text-sm font-semibold text-gray-900">
+                              {order.picker.rating}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-6 mb-6">
+                    {/* Product Image Carousel */}
+                    <div className="relative w-56 h-56 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
+                      {order.items[0]?.product_images &&
+                      order.items[0].product_images.length > 0 ? (
+                        <>
+                          <img
+                            src={imageUtils.getImageUrl(
+                              order.items[0].product_images[currentImageIndex],
+                            )}
+                            alt="Product"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display =
+                                "none";
+                            }}
+                          />
+                          {/* Forward Arrow Only */}
+                          {order.items[0].product_images.length > 1 && (
+                            <button
+                              onClick={() =>
+                                setCurrentImageIndex((prev) =>
+                                  prev ===
+                                  order.items[0].product_images!.length - 1
+                                    ? 0
+                                    : prev + 1,
+                                )
+                              }
+                              className="absolute bottom-3 right-3 bg-[#FFDF57] hover:bg-yellow-500 text-gray-900 p-2 rounded-full transition-all shadow-lg"
+                            >
+                              <ChevronRight size={24} />
+                            </button>
+                          )}
+                        </>
+                      ) : null}
+                      {!order.items[0]?.product_images ||
+                      order.items[0].product_images.length === 0 ||
+                      (order.items[0] as any).imageError ? (
+                        <div className="flex flex-col items-center justify-center text-gray-400">
+                          <svg
+                            className="w-12 h-12 mb-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                          <span className="text-xs font-medium">No image</span>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {/* Waiting for Picker Message */}
+                    <div className="flex items-center justify-center">
+                      <p className="text-gray-600 font-semibold text-center">
+                        Waiting for a picker to accept your order...
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Delivery Status Section - Only show when picker is assigned and order is not cancelled */}
+                {order.picker.id &&
+                  order.status.toUpperCase() !== "CANCELLED" && (
+                    <div className="mb-6">
+                      <h3 className="font-bold text-gray-900 mb-4 text-base">
+                        ORDER MARKED AS DELIVERED BY JETPICKER
+                      </h3>
+
+                      {/* Payment Not Completed Warning */}
+                      {order.payment_status !== "PAID" && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                          <p className="text-red-700 text-sm font-semibold">
+                            Please complete payment first to mark delivery
+                            status
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Status Indicators */}
+                      <div className="space-y-3 mb-6">
+                        <button
+                          onClick={async () => {
+                            try {
+                              if (!deliveryCompleted && orderId) {
+                                await ordererOrdersApi.confirmDelivery(orderId);
+                                setDeliveryCompleted(true);
+                              }
+                            } catch (err) {
+                              alert(
+                                "Failed to confirm delivery. Please try again.",
+                              );
+                            }
+                          }}
+                          disabled={
+                            order.payment_status !== "PAID" || deliveryCompleted
+                          }
+                          className={`flex items-center gap-3 ${order.payment_status === "PAID" && !deliveryCompleted ? "cursor-pointer" : "cursor-not-allowed"} ${order.payment_status !== "PAID" || deliveryCompleted ? "opacity-50" : ""}`}
+                        >
+                          <div
+                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                              deliveryCompleted
+                                ? "border-green-500 bg-white"
+                                : "border-gray-300 bg-white"
+                            }`}
+                          >
+                            {deliveryCompleted && (
+                              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                            )}
+                          </div>
+                          <p className="font-semibold text-gray-900 text-base">
+                            Delivery Completed
+                          </p>
+                        </button>
+                        <button
+                          onClick={() =>
+                            setIssueWithDelivery(!issueWithDelivery)
+                          }
+                          disabled={order.payment_status !== "PAID"}
+                          className={`flex items-center gap-3 ${order.payment_status === "PAID" ? "cursor-pointer" : "cursor-not-allowed"} ${order.payment_status !== "PAID" ? "opacity-50" : ""}`}
+                        >
+                          <div
+                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                              issueWithDelivery
+                                ? "border-red-500 bg-white"
+                                : "border-gray-300 bg-white"
+                            }`}
+                          >
+                            {issueWithDelivery && (
+                              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                            )}
+                          </div>
+                          <p className="font-semibold text-gray-900 text-base">
+                            Issue with delivery
+                          </p>
+                        </button>
+                      </div>
+
+                      {/* Remaining Time */}
+                      {order.remaining_time && (
+                        <div
+                          className="rounded-lg p-3 mb-6 text-center w-full"
+                          style={{ backgroundColor: "#FFF3BD" }}
+                        >
+                          <p className="font-semibold text-gray-900 text-sm">
+                            Remaining Time: {order.remaining_time}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Confirmation Message */}
+                      <p className="text-center text-gray-900 text-base">
+                        You have 48 hours to confirm. Otherwise money will be
+                        transferred automatically
+                      </p>
+                    </div>
+                  )}
+
+                {/* Rate and Tip Section - Only show when picker is assigned and order is not cancelled */}
+                {order.picker.id &&
+                  order.status.toUpperCase() !== "CANCELLED" && (
+                    <div
+                      className={`rounded-2xl p-8 mb-6 ${order.payment_status !== "PAID" ? "opacity-50 pointer-events-none" : ""}`}
+                      style={{ backgroundColor: "#FFFACD" }}
+                    >
+                      <h3 className="text-center font-bold text-gray-900 mb-6 text-lg">
+                        Rate your experience with {order.picker.name}
+                      </h3>
+
+                      {/* Star Rating */}
+                      <div className="flex justify-center gap-3 mb-8">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => setRating(star)}
+                            className="transition-transform hover:scale-110"
+                          >
+                            <Star
+                              size={32}
+                              className={`${
+                                star <= rating
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Comment Box */}
+                      <textarea
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        placeholder="Write your comment"
+                        className="w-full bg-white rounded-lg p-4 mb-6 text-gray-900 placeholder-gray-500 focus:outline-none resize-none h-24 border border-gray-200"
+                      />
+
+                      {/* Tip Option */}
+                      <div className="bg-white rounded-lg p-6 mb-6">
+                        <p className="font-semibold text-gray-900 mb-4">
+                          Tip Option
+                        </p>
+                        <div className="flex items-center justify-between gap-4">
+                          <button
+                            onClick={() => setSelectedTip("5")}
+                            className="flex items-center gap-3 cursor-pointer flex-1"
+                          >
+                            <div
+                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                                selectedTip === "5"
+                                  ? "border-green-500 bg-white"
+                                  : "border-gray-300 bg-white"
+                              }`}
+                            >
+                              {selectedTip === "5" && (
+                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                              )}
+                            </div>
+                            <span className="font-semibold text-gray-900">
+                              $5
+                            </span>
+                          </button>
+                          <button
+                            onClick={() => setSelectedTip("10")}
+                            className="flex items-center gap-3 cursor-pointer flex-1"
+                          >
+                            <div
+                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                                selectedTip === "10"
+                                  ? "border-green-500 bg-white"
+                                  : "border-gray-300 bg-white"
+                              }`}
+                            >
+                              {selectedTip === "10" && (
+                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                              )}
+                            </div>
+                            <span className="font-semibold text-gray-900">
+                              $10
+                            </span>
+                          </button>
+                          <button
+                            onClick={() => setSelectedTip("custom")}
+                            className="flex items-center gap-3 cursor-pointer flex-1 whitespace-nowrap"
+                          >
+                            <div
+                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                                selectedTip === "custom"
+                                  ? "border-green-500 bg-white"
+                                  : "border-gray-300 bg-white"
+                              }`}
+                            >
+                              {selectedTip === "custom" && (
+                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                              )}
+                            </div>
+                            <span className="font-semibold text-gray-900 text-sm">
+                              Custom amount
+                            </span>
+                          </button>
+                        </div>
+
+                        {/* Custom Tip Input */}
+                        {selectedTip === "custom" && (
+                          <div className="mt-4">
+                            <input
+                              type="number"
+                              value={customTipAmount}
+                              onChange={(e) =>
+                                setCustomTipAmount(e.target.value)
+                              }
+                              placeholder="Enter custom amount"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FFDF57]"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Submit Button */}
                       <button
-                        onClick={() => setCurrentImageIndex((prev) => (prev === order.items[0].product_images!.length - 1 ? 0 : prev + 1))}
-                        className="absolute bottom-3 right-3 bg-[#FFDF57] hover:bg-yellow-500 text-gray-900 p-2 rounded-full transition-all shadow-lg"
+                        onClick={handleSubmitReview}
+                        disabled={
+                          submitting ||
+                          !rating ||
+                          order.payment_status !== "PAID"
+                        }
+                        className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold text-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <ChevronRight size={24} />
+                        {submitting ? "Submitting..." : "Submit"}
                       </button>
-                    )}
-                  </>
-                ) : null}
-                {!order.items[0]?.product_images || order.items[0].product_images.length === 0 || (order.items[0] as any).imageError ? (
-                  <div className="flex flex-col items-center justify-center text-gray-400">
-                    <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span className="text-xs font-medium">No image</span>
-                  </div>
-                ) : null}
+                    </div>
+                  )}
               </div>
-
-              {/* Waiting for Picker Message */}
-              <div className="flex items-center justify-center">
-                <p className="text-gray-600 font-semibold text-center">Waiting for a picker to accept your order...</p>
-              </div>
-            </div>
-          )}
-
-          {/* Delivery Status Section - Only show when picker is assigned and order is not cancelled */}
-          {order.picker.id && order.status.toUpperCase() !== 'CANCELLED' && (
-            <div className="mb-6">
-              <h3 className="font-bold text-gray-900 mb-4 text-base">ORDER MARKED AS DELIVERED BY JETPICKER</h3>
-
-              {/* Payment Not Completed Warning */}
-              {!paymentCompleted && order.status.toUpperCase() === 'ACCEPTED' && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                  <p className="text-red-700 text-sm font-semibold">Please complete payment first to mark delivery status</p>
-                </div>
-              )}
-
-              {/* Status Indicators */}
-              <div className="space-y-3 mb-6">
-                <button
-                  onClick={async () => {
-                    try {
-                      if (!deliveryCompleted && orderId && order.status === 'delivered') {
-                        await ordererOrdersApi.confirmDelivery(orderId);
-                        setDeliveryCompleted(true);
-                      }
-                    } catch (err) {
-                      alert('Failed to confirm delivery. Please try again.');
-                    }
-                  }}
-                  disabled={order.status !== 'delivered' || deliveryCompleted}
-                  className={`flex items-center gap-3 ${order.status === 'delivered' && !deliveryCompleted ? 'cursor-pointer' : 'cursor-not-allowed'} ${order.status !== 'delivered' || deliveryCompleted ? 'opacity-50' : ''}`}
-                >
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                    deliveryCompleted
-                      ? 'border-green-500 bg-white'
-                      : 'border-gray-300 bg-white'
-                  }`}>
-                    {deliveryCompleted && <div className="w-3 h-3 rounded-full bg-green-500"></div>}
-                  </div>
-                  <p className="font-semibold text-gray-900 text-base">Delivery Completed</p>
-                </button>
-                <button
-                  onClick={() => setIssueWithDelivery(!issueWithDelivery)}
-                  disabled={order.status !== 'delivered'}
-                  className={`flex items-center gap-3 ${order.status === 'delivered' ? 'cursor-pointer' : 'cursor-not-allowed'} ${order.status !== 'delivered' ? 'opacity-50' : ''}`}
-                >
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                    issueWithDelivery
-                      ? 'border-red-500 bg-white'
-                      : 'border-gray-300 bg-white'
-                  }`}>
-                    {issueWithDelivery && <div className="w-3 h-3 rounded-full bg-red-500"></div>}
-                  </div>
-                  <p className="font-semibold text-gray-900 text-base">Issue with delivery</p>
-                </button>
-              </div>
-
-              {/* Remaining Time */}
-              {order.remaining_time && (
-                <div className="rounded-lg p-3 mb-6 text-center w-full" style={{ backgroundColor: '#FFF3BD' }}>
-                  <p className="font-semibold text-gray-900 text-sm">Remaining Time: {order.remaining_time}</p>
-                </div>
-              )}
-
-              {/* Confirmation Message */}
-              <p className="text-center text-gray-900 text-base">
-                You have 48 hours to confirm. Otherwise money will be transferred automatically
-              </p>
-            </div>
-          )}
-
-          {/* Rate and Tip Section - Only show when picker is assigned and order is not cancelled */}
-          {order.picker.id && order.status.toUpperCase() !== 'CANCELLED' && (
-            <div className="rounded-2xl p-8 mb-6" style={{ backgroundColor: '#FFFACD' }}>
-              <h3 className="text-center font-bold text-gray-900 mb-6 text-lg">Rate your experience with {order.picker.name}</h3>
-
-            {/* Star Rating */}
-            <div className="flex justify-center gap-3 mb-8">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => setRating(star)}
-                  className="transition-transform hover:scale-110"
-                >
-                  <Star
-                    size={32}
-                    className={`${
-                      star <= rating
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'text-gray-300'
-                    }`}
-                  />
-                </button>
-              ))}
-            </div>
-
-            {/* Comment Box */}
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="Write your comment"
-              className="w-full bg-white rounded-lg p-4 mb-6 text-gray-900 placeholder-gray-500 focus:outline-none resize-none h-24 border border-gray-200"
-            />
-
-            {/* Tip Option */}
-            <div className="bg-white rounded-lg p-6 mb-6">
-              <p className="font-semibold text-gray-900 mb-4">Tip Option</p>
-              <div className="flex items-center justify-between gap-4">
-                <button
-                  onClick={() => setSelectedTip('5')}
-                  className="flex items-center gap-3 cursor-pointer flex-1"
-                >
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                    selectedTip === '5'
-                      ? 'border-green-500 bg-white'
-                      : 'border-gray-300 bg-white'
-                  }`}>
-                    {selectedTip === '5' && <div className="w-3 h-3 rounded-full bg-green-500"></div>}
-                  </div>
-                  <span className="font-semibold text-gray-900">$5</span>
-                </button>
-                <button
-                  onClick={() => setSelectedTip('10')}
-                  className="flex items-center gap-3 cursor-pointer flex-1"
-                >
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                    selectedTip === '10'
-                      ? 'border-green-500 bg-white'
-                      : 'border-gray-300 bg-white'
-                  }`}>
-                    {selectedTip === '10' && <div className="w-3 h-3 rounded-full bg-green-500"></div>}
-                  </div>
-                  <span className="font-semibold text-gray-900">$10</span>
-                </button>
-                <button
-                  onClick={() => setSelectedTip('custom')}
-                  className="flex items-center gap-3 cursor-pointer flex-1 whitespace-nowrap"
-                >
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                    selectedTip === 'custom'
-                      ? 'border-green-500 bg-white'
-                      : 'border-gray-300 bg-white'
-                  }`}>
-                    {selectedTip === 'custom' && <div className="w-3 h-3 rounded-full bg-green-500"></div>}
-                  </div>
-                  <span className="font-semibold text-gray-900 text-sm">Custom amount</span>
-                </button>
-              </div>
-
-              {/* Custom Tip Input */}
-              {selectedTip === 'custom' && (
-                <div className="mt-4">
-                  <input
-                    type="number"
-                    value={customTipAmount}
-                    onChange={(e) => setCustomTipAmount(e.target.value)}
-                    placeholder="Enter custom amount"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#FFDF57]"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Submit Button */}
-            <button
-              onClick={handleSubmitReview}
-              disabled={submitting || !rating}
-              className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold text-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? 'Submitting...' : 'Submit'}
-            </button>
-            </div>
-          )}
-          </div>
             </>
           )}
         </div>
@@ -674,47 +948,30 @@ const OrdererOrderDetailsView = () => {
         <MobileFooter activeTab="home" />
       </div>
 
-      {/* Payment Modal - Inline */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-xl pointer-events-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Payment Details</h2>
-            
-            <div className="space-y-4 mb-6">
-              <div className="flex justify-between items-center pb-3 border-b border-gray-200">
-                <p className="text-gray-600">Order Amount</p>
-                <p className="font-semibold text-gray-900">${order?.total_cost || '0'}</p>
-              </div>
-              <div className="flex justify-between items-center pb-3 border-b border-gray-200">
-                <p className="text-gray-600">Delivery Fee</p>
-                <p className="font-semibold text-gray-900">$0</p>
-              </div>
-              <div className="flex justify-between items-center pt-3">
-                <p className="text-lg font-bold text-gray-900">Total</p>
-                <p className="text-lg font-bold text-gray-900">${order?.total_cost || '0'}</p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => {
-                  setShowPaymentModal(false);
-                  setShowPaymentSuccess(true);
-                  setPaymentCompleted(true);
-                }}
-                className="w-full bg-[#FFDF57] text-gray-900 py-3 rounded-lg font-bold text-lg hover:bg-yellow-500 transition-colors"
-              >
-                Confirm Payment
-              </button>
-              <button
-                onClick={() => setShowPaymentModal(false)}
-                className="w-full bg-gray-200 text-gray-900 py-3 rounded-lg font-bold text-lg hover:bg-gray-300 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Stripe Checkout Modal */}
+      {order && (
+        <CheckoutModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={() => {
+            setShowPaymentSuccess(true);
+            setShowPaymentNotice(false);
+            // Update order payment status to PAID
+            if (order) {
+              setOrder({ ...order, payment_status: "PAID" });
+            }
+          }}
+          paymentData={{
+            amount: getPayableAmountCents(),
+            currency: (order.currency || "usd").toLowerCase(),
+            description: `Payment for order #${order.id}`,
+            order_id: order.id,
+            metadata: {
+              orderId: order.id,
+              order_id: order.id,
+            },
+          }}
+        />
       )}
 
       {/* Payment Success Modal - Inline */}
@@ -723,13 +980,28 @@ const OrdererOrderDetailsView = () => {
           <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-xl text-center pointer-events-auto">
             <div className="mb-6 flex justify-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-8 h-8 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Completed</h2>
-            <p className="text-gray-600 mb-6">Your payment has been successfully processed. The picker will now proceed with buying the items for you.</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Payment Completed
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Your payment has been successfully processed. The picker will now
+              proceed with buying the items for you.
+            </p>
             <button
               onClick={() => {
                 setShowPaymentSuccess(false);

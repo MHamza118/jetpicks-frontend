@@ -31,4 +31,10 @@ export const chatApi = {
   // Mark a single message as read
   markMessageAsRead: (messageId: string) =>
     apiClient.put(`/chat-messages/${messageId}/read`, {}),
+
+  // Translate a message
+  translateMessage: (messageId: string, targetLanguageCode: string) =>
+    apiClient.post(`/chat-messages/${messageId}/translate`, {
+      target_language_code: targetLanguageCode,
+    }),
 };

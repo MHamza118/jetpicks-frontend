@@ -24,7 +24,7 @@ const SupportButton = () => {
     ];
 
     // Hide from chat pages (both orderer and picker)
-    const isChatPage = location.pathname.includes('/chat/');
+    const isChatPage = location.pathname.includes('/chat');
 
     const shouldHide = hiddenPages.includes(location.pathname) || isChatPage;
 

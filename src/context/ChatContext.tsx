@@ -64,6 +64,7 @@ interface ChatContextType {
   fetchChatRoom: (roomId: string) => Promise<void>;
   fetchMessages: (roomId: string, page?: number) => Promise<void>;
   sendMessage: (roomId: string, content: string, translate?: boolean) => Promise<void>;
+  translateMessage: (messageId: string, targetLanguageCode: string) => Promise<void>;
   markMessageAsRead: (messageId: string) => Promise<void>;
   markRoomMessagesAsRead: (roomId: string, currentUserId: string) => Promise<void>;
   setCurrentRoom: (room: ChatRoom | null) => void;
@@ -135,6 +136,20 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
+  const translateMessage = useCallback(async (messageId: string, targetLanguageCode: string) => {
+    try {
+      const response = await chatApi.translateMessage(messageId, targetLanguageCode);
+      const data = (response as any).data?.data;
+      if (data?.content_translated) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === messageId ? { ...msg, content_translated: data.content_translated, translation_enabled: true } : msg
+        ));
+      }
+    } catch (err) {
+      console.error('Error translating message:', err);
+    }
+  }, []);
+
   const fetchChatRoom = useCallback(async (roomId: string) => {
     try {
       setLoading(true);
@@ -162,7 +177,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           lastMessageIdRef.current = data[data.length - 1].id;
         }
       } else {
-        setMessages(prev => [...prev, ...data]);
+        setMessages(prev => [...data, ...prev]);
       }
       
       setError(null);
@@ -252,6 +267,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         fetchChatRoom,
         fetchMessages,
         sendMessage,
+        translateMessage,
         markMessageAsRead,
         markRoomMessagesAsRead,
         setCurrentRoom,

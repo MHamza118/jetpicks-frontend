@@ -44,6 +44,11 @@ const PickerDashboardHeader = ({
       showCounterOfferModal,
       setShowCounterOfferModal,
       handleCounterOfferClick,
+            paymentConfirmedNotification,
+            paymentConfirmedHistory,
+            showPaymentConfirmedModal,
+            setShowPaymentConfirmedModal,
+            handlePaymentConfirmedClick,
       newOrdersHistory,
       handleNewOrderClick,
     } = useGlobalNotifications();
@@ -65,7 +70,7 @@ const PickerDashboardHeader = ({
     };
 
     // Combine all notifications
-    const allNotifications = [...acceptedOrdersHistory, ...counterOffersHistory, ...newOrdersHistory];
+    const allNotifications = [...acceptedOrdersHistory, ...counterOffersHistory, ...paymentConfirmedHistory, ...newOrdersHistory];
     const unreadCount = allNotifications.filter(n => !n.isRead).length;
 
     // Handle click outside to close search results
@@ -359,6 +364,9 @@ const PickerDashboardHeader = ({
                                             if ('offerId' in notif) {
                                                 const counterNotif = notif as any;
                                                 handleCounterOfferClick(counterNotif.orderId, counterNotif.offerId);
+                                            } else if ('message' in notif && !('originCity' in notif)) {
+                                                const paymentNotif = notif as any;
+                                                handlePaymentConfirmedClick(paymentNotif.orderId, paymentNotif.id);
                                             } else if ('originCity' in notif) {
                                                 // NEW_ORDER_AVAILABLE notification
                                                 const newOrderNotif = notif as any;
@@ -373,6 +381,8 @@ const PickerDashboardHeader = ({
                                         <p className="text-sm font-semibold text-gray-900">
                                             {'offerId' in notif
                                                 ? `${(notif as any).pickerName} sent a counter offer`
+                                                : 'message' in notif && !('originCity' in notif)
+                                                ? `${(notif as any).message}`
                                                 : 'originCountry' in notif
                                                 ? `New Order: ${(notif as any).originCountry} → ${(notif as any).destinationCountry}`
                                                 : `${(notif as any).pickerName} has accepted your order`
@@ -438,6 +448,31 @@ const PickerDashboardHeader = ({
                             className="w-full bg-[#4D0013] text-white py-2 rounded-lg font-bold hover:bg-[#660019] transition-colors"
                         >
                             View Offer
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Auto-show Payment Confirmed Modal (5 seconds) */}
+            {showPaymentConfirmedModal && paymentConfirmedNotification && (
+                <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-bold text-gray-900">Payment Confirmed</h2>
+                            <button onClick={() => setShowPaymentConfirmedModal(false)}>
+                                <X size={20} className="text-gray-600" />
+                            </button>
+                        </div>
+
+                        <p className="text-gray-700 mb-4">
+                            {paymentConfirmedNotification.message}
+                        </p>
+
+                        <button
+                            onClick={() => handlePaymentConfirmedClick(paymentConfirmedNotification.orderId, paymentConfirmedNotification.id)}
+                            className="w-full bg-[#4D0013] text-white py-2 rounded-lg font-bold hover:bg-[#660019] transition-colors"
+                        >
+                            View Order
                         </button>
                     </div>
                 </div>

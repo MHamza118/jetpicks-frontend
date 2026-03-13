@@ -7,35 +7,67 @@ import PickerDashboardHeader from '../../components/layout/PickerDashboardHeader
 import MobileFooter from '../../components/layout/MobileFooter';
 import { useChat } from '../../context/ChatContext';
 import { useUser } from '../../context/UserContext';
-import { authApi } from '../../services/auth';
+import { authApi, pickerProfileApi } from '../../services';
 import type { ChatMessage } from '../../context/ChatContext';
 
 const Chat = () => {
   const { roomId } = useParams<{ roomId?: string }>();
   const navigate = useNavigate();
   const { avatarUrl, avatarError, handleAvatarError } = useUser();
-  const { chatRooms, currentRoom, messages, fetchChatRooms, fetchChatRoom, fetchMessages, sendMessage, markRoomMessagesAsRead } = useChat();
+  const { chatRooms, currentRoom, messages, fetchChatRooms, fetchChatRoom, fetchMessages, sendMessage, translateMessage, markRoomMessagesAsRead } = useChat();
 
   const [messageInput, setMessageInput] = useState('');
   const [showTranslated, setShowTranslated] = useState<{ [key: string]: boolean }>({});
   const [sending, setSending] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [userSettings, setUserSettings] = useState<any>({
+    translation_language: 'English',
+    auto_translate_messages: false,
+    show_original_and_translated: true,
+  });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchUserSettings = async () => {
+    try {
+      const settingsResponse = await pickerProfileApi.getSettings();
+      if (settingsResponse.data) {
+        setUserSettings(settingsResponse.data);
+      }
+    } catch (err) {
+      // ignore
+    }
+  };
 
   // Get current user ID on mount
   useEffect(() => {
     const getCurrentUserId = async () => {
       try {
         const response = await authApi.getCurrentUser();
-        const userId = (response as any).data?.id;
-        setCurrentUserId(userId);
+        const userData = (response as any).data || response;
+        const userId = userData.id || (userData as any).data?.id;
+        if (userId) {
+          setCurrentUserId(userId.toString().toLowerCase());
+        }
+
+        // Fetch user settings
+        await fetchUserSettings();
       } catch (error) {
-        console.error('Failed to get current user:', error);
+        console.error('Failed to get current user context:', error);
       }
     };
     getCurrentUserId();
+  }, []);
+
+  // Refresh settings whenever the window regains focus (so changes in Settings are reflected)
+  useEffect(() => {
+    const onFocus = () => {
+      fetchUserSettings();
+    };
+
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, []);
 
   // Fetch chat rooms on mount
@@ -96,22 +128,75 @@ const Chat = () => {
     return imageUtils.getImageUrl(imagePath);
   };
 
-  const toggleTranslation = (messageId: string) => {
+  const toggleTranslation = async (messageId: string) => {
+    const message = messages.find(m => m.id === messageId);
+
+    // Ensure we have the latest language settings before translating
+    await fetchUserSettings();
+
+    if (message && userSettings?.translation_language) {
+      // Always re-translate when the user requests it, so we honor their current preference.
+      await translateMessage(messageId, userSettings.translation_language);
+    }
+
     setShowTranslated(prev => ({
       ...prev,
       [messageId]: !prev[messageId],
     }));
   };
 
-  const getMessageContent = (message: ChatMessage) => {
-    if (showTranslated[message.id] && message.content_translated) {
-      return message.content_translated;
+  const isSenderMessage = (senderId?: string) => {
+    return senderId?.toLowerCase() === currentUserId;
+  };
+
+  const renderMessageContent = (message: ChatMessage) => {
+    const hasTranslation = !!message.content_translated;
+    const isAutoTranslate = userSettings?.auto_translate_messages;
+    const isShowBoth = userSettings?.show_original_and_translated;
+    const manualTranslate = showTranslated[message.id];
+
+    // Senders don't need a translation of their own message
+    const isSender = isSenderMessage(message.sender_id);
+
+    if (hasTranslation && !isSender) {
+      if (isShowBoth) {
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-xs opacity-60 italic border-b border-white/20 pb-1 mb-1">
+              {message.content_original}
+            </span>
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase font-bold tracking-wider opacity-50 mb-0.5">Translation</span>
+              <span>{message.content_translated}</span>
+            </div>
+          </div>
+        );
+      }
+
+      if (isAutoTranslate || manualTranslate) {
+        return (
+          <div className="flex flex-col">
+            {manualTranslate && !isAutoTranslate && (
+              <span className="text-[10px] uppercase font-bold tracking-wider opacity-50 mb-0.5">Translation</span>
+            )}
+            <span>{message.content_translated}</span>
+          </div>
+        );
+      }
     }
+
     return message.content_original;
   };
 
   const shouldShowTranslateButton = (message: ChatMessage) => {
-    return message.content_translated && message.sender_id !== currentRoom?.picker.id;
+    const isSender = isSenderMessage(message.sender_id);
+    if (isSender) return false;
+
+    // Show button if:
+    // 1. Not translated yet
+    // OR 2. Auto-translate is OFF and Show-Both is OFF
+    return !message.content_translated ||
+      (!userSettings?.auto_translate_messages && !userSettings?.show_original_and_translated);
   };
 
   return (
@@ -143,13 +228,13 @@ const Chat = () => {
                       fetchChatRoom(room.id);
                       fetchMessages(room.id);
                     }}
-                    className={`px-4 py-3 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 ${currentRoom?.id === room.id
-                        ? 'bg-[#4D0013] text-white'
-                        : 'hover:bg-gray-50'
+                    className={`px-4 py-3 cursor-pointer transition-all duration-200 border-b border-gray-100 last:border-b-0 ${currentRoom?.id === room.id
+                      ? 'bg-[#FDF2F4] border-l-4 border-l-[#4D0013]'
+                      : 'hover:bg-gray-50'
                       }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 ring-2 ring-transparent group-hover:ring-[#4D0013]/10 transition-all">
                         {room.other_user.avatar_url ? (
                           <img
                             src={getImageUrl(room.other_user.avatar_url)}
@@ -157,29 +242,31 @@ const Chat = () => {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-600 font-bold">
+                          <div className="w-full h-full flex items-center justify-center bg-[#4D0013]/5 text-[#4D0013] font-bold">
                             {room.other_user.full_name.charAt(0)}
                           </div>
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 py-0.5">
                         <div className="flex justify-between items-baseline gap-2">
-                          <h3 className={`font-bold text-sm truncate ${currentRoom?.id === room.id ? 'text-white' : 'text-gray-900'}`}>
+                          <h3 className={`font-bold text-sm truncate ${currentRoom?.id === room.id ? 'text-[#4D0013]' : 'text-gray-900'}`}>
                             {room.other_user.full_name}
                           </h3>
-                          <span className={`text-xs flex-shrink-0 ${currentRoom?.id === room.id ? 'text-white/70' : 'text-gray-500'}`}>
-                            {room.last_message_time ? new Date(room.last_message_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).replace(':', '.') : ''}
+                          <span className={`text-[10px] font-medium flex-shrink-0 ${currentRoom?.id === room.id ? 'text-[#4D0013]/60' : 'text-gray-500'}`}>
+                            {room.last_message_time ? new Date(room.last_message_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''}
                           </span>
                         </div>
-                        <p className={`text-xs truncate mt-1 ${currentRoom?.id === room.id ? 'text-white/70' : 'text-gray-500'}`}>
+                        <p className={`text-xs truncate mt-0.5 ${currentRoom?.id === room.id ? 'text-[#4D0013]/70 font-medium' : 'text-gray-500'}`}>
                           {room.last_message || 'No messages yet'}
                         </p>
                       </div>
                       {room.unread_count > 0 && (
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${currentRoom?.id === room.id ? 'bg-white' : 'bg-gray-900'}`}>
-                          <span className={`text-xs font-bold ${currentRoom?.id === room.id ? 'text-[#4D0013]' : 'text-white'}`}>
-                            {room.unread_count}
-                          </span>
+                        <div className="mt-1">
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center bg-[#4D0013] shadow-sm">
+                            <span className="text-[10px] text-white font-bold">
+                              {room.unread_count}
+                            </span>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -216,9 +303,10 @@ const Chat = () => {
                 </div>
 
                 {/* Transparency Notice */}
-                <div className="bg-red-50 border-b border-red-200 px-6 py-3">
-                  <p className="text-sm text-red-900 font-medium">
-                    For transparency and protection, please keep all communication and order details within the app.
+                <div className="bg-[#FFF8F0] border-b border-[#FFE5CC] px-6 py-2.5">
+                  <p className="text-[13px] text-[#994D00] font-medium flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-[#CC6600] rounded-full animate-pulse"></span>
+                    For transparency and protection, keep communication within the app.
                   </p>
                 </div>
 
@@ -230,42 +318,41 @@ const Chat = () => {
                     </div>
                   ) : (
                     messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`flex ${message.sender_id === currentRoom?.picker.id ? 'justify-end' : 'justify-start'
-                          }`}
-                      >
                         <div
-                          className={`max-w-xs px-4 py-2 rounded-lg ${message.sender_id === currentRoom?.picker.id
-                              ? 'bg-[#4D0013] text-white'
-                              : 'bg-gray-100 text-gray-900'
-                            }`}
+                          key={message.id}
+                          className={`flex ${isSenderMessage(message.sender_id) ? 'justify-end' : 'justify-start'}`}
                         >
-                          <p className="text-sm">{getMessageContent(message)}</p>
-                          <div className="flex items-center justify-between gap-2 mt-1">
-                            <span className={`text-xs ${message.sender_id === currentRoom?.picker.id ? 'text-white/70' : 'text-gray-600'}`}>
-                              {new Date(message.created_at).toLocaleTimeString('en-US', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </span>
-                            {message.sender_id === currentRoom?.picker.id && (
-                              <span className={`text-xs font-bold ${message.is_read ? 'text-blue-300' : 'text-white/50'
-                                }`}>
-                                {message.is_read ? '✓✓' : '✓'}
+                          <div
+                            className={`max-w-[80%] px-4 py-2.5 rounded-2xl shadow-sm ${
+                              isSenderMessage(message.sender_id)
+                                ? 'bg-[#4D0013] text-white rounded-tr-none'
+                                : 'bg-gray-100 text-gray-900 rounded-tl-none'
+                            }`}
+                          >
+                            <div className="text-[14px] leading-relaxed">{renderMessageContent(message)}</div>
+                            <div className="flex items-center justify-end gap-1.5 mt-1.5">
+                              <span className={`text-[10px] font-medium ${isSenderMessage(message.sender_id) ? 'text-white/60' : 'text-gray-500'}`}>
+                                {new Date(message.created_at).toLocaleTimeString('en-US', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
                               </span>
+                              {isSenderMessage(message.sender_id) && (
+                                <span className={`text-[10px] font-bold ${message.is_read ? 'text-blue-300' : 'text-white/30'}`}>
+                                  {message.is_read ? '✓✓' : '✓'}
+                                </span>
+                              )}
+                            </div>
+                            {shouldShowTranslateButton(message) && (
+                              <button
+                                onClick={() => toggleTranslation(message.id)}
+                                className="mt-2 text-[10px] bg-white/10 hover:bg-white/20 text-current border border-current/20 px-2 py-0.5 rounded-md font-bold transition-all"
+                              >
+                                {showTranslated[message.id] ? 'View Original' : 'Translate'}
+                              </button>
                             )}
                           </div>
-                          {shouldShowTranslateButton(message) && (
-                            <button
-                              onClick={() => toggleTranslation(message.id)}
-                              className="mt-2 text-xs bg-white text-[#4D0013] px-2 py-1 rounded font-semibold hover:bg-gray-100 transition-colors"
-                            >
-                              {showTranslated[message.id] ? 'Original' : 'Translate'}
-                            </button>
-                          )}
                         </div>
-                      </div>
                     ))
                   )}
                   <div ref={messagesEndRef} />

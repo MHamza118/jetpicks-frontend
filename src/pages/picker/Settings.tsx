@@ -215,10 +215,16 @@ const Settings = () => {
                         onChange={handleLanguageChange}
                         className="w-full bg-transparent border-b-2 border-gray-300 text-gray-900 font-semibold text-sm focus:outline-none focus:border-[#4D0013] pb-2"
                       >
-                        <option value="Spanish">Spanish</option>
                         <option value="English">English</option>
+                        <option value="Urdu">Urdu</option>
+                        <option value="Spanish">Spanish</option>
                         <option value="French">French</option>
                         <option value="German">German</option>
+                        <option value="Italian">Italian</option>
+                        <option value="Portuguese">Portuguese</option>
+                        <option value="Chinese">Chinese</option>
+                        <option value="Arabic">Arabic</option>
+                        <option value="Hindi">Hindi</option>
                       </select>
                     </div>
 

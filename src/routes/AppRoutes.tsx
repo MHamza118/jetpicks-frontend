@@ -30,7 +30,9 @@ import TravelDetails from '../pages/picker/TravelDetails';
 import Settings from '../pages/picker/Settings';
 import PayoutMethods from '../pages/picker/PayoutMethods';
 import JetPickerDetails from '../pages/orderer/JetPickerDetails';
+import PaymentSuccessPage from '../pages/PaymentSuccessPage';
 import ProtectedRoute from '../components/ProtectedRoute';
+import DashboardRedirect from '../components/DashboardRedirect';
 
 const AppRoutes = () => {
     return (
@@ -49,6 +51,12 @@ const AppRoutes = () => {
             <Route 
               path="/travel-availability-setup" 
               element={<TravelAvailabilitySetup />}
+            />
+            
+            {/* Generic Dashboard - Redirects to role-specific dashboard */}
+            <Route 
+              path="/dashboard" 
+              element={<DashboardRedirect />}
             />
             
             {/* Orderer Routes - Protected */}
@@ -285,6 +293,12 @@ const AppRoutes = () => {
                   <PickerChat />
                 </ProtectedRoute>
               } 
+            />
+            
+            {/* Payment Success Route (fallback for Stripe redirects) */}
+            <Route 
+              path="/payment/success" 
+              element={<PaymentSuccessPage />} 
             />
         </Routes>
     );

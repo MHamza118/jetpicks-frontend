@@ -28,6 +28,7 @@ interface OrderDetailsViewData {
   destination_country: string;
   destination_city: string;
   status: string;
+  payment_status?: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
   items_count: number;
   items_cost?: number;
   reward_amount: number | string;
@@ -79,6 +80,7 @@ const PickerOrderDetailsView = () => {
           destination_country: data.destination_country,
           destination_city: data.destination_city,
           status: data.status.toLowerCase(),
+          payment_status: data.payment_status || 'PENDING',
           items_count: data.items_count,
           items_cost: data.items_cost,
           reward_amount: data.reward_amount,
@@ -225,21 +227,42 @@ const PickerOrderDetailsView = () => {
                 </div>
               </div>
 
-              {/* Payment Notice Popup - Only for Accepted Orders */}
+              {/* Payment Status Alert - Only for Accepted Orders */}
               {order.status.toUpperCase() === 'ACCEPTED' && showPaymentNotice && (
-                <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 relative">
+                <div className={`mb-4 border rounded-lg p-4 relative ${
+                  order.payment_status === 'PAID'
+                    ? 'bg-green-50 border-green-200'
+                    : 'bg-red-50 border-red-200'
+                }`}>
                   <button
                     onClick={() => setShowPaymentNotice(false)}
-                    className="absolute top-2 right-2 text-red-400 hover:text-red-600 text-lg font-bold"
+                    className={`absolute top-2 right-2 text-lg font-bold ${
+                      order.payment_status === 'PAID'
+                        ? 'text-green-400 hover:text-green-600'
+                        : 'text-red-400 hover:text-red-600'
+                    }`}
                   >
                     ✕
                   </button>
                   <div className="pr-6">
-                    <h3 className="text-base font-semibold text-red-900 mb-1">Payment Pending</h3>
-                    <p className="text-red-800 text-xs mb-1">
-                      Please hold off on purchasing the items at this time. Once the orderer completes the payment, we'll send you a notification to proceed with buying the products.
-                    </p>
-                    <p className="text-red-700 text-xs font-medium">
+                    {order.payment_status === 'PAID' ? (
+                      <>
+                        <h3 className="text-base font-semibold text-green-900 mb-1">✓ Payment Completed</h3>
+                        <p className="text-green-800 text-xs mb-1">
+                          The orderer has successfully completed the payment. You can now proceed with purchasing the items and fulfill this order.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="text-base font-semibold text-red-900 mb-1">Payment Pending</h3>
+                        <p className="text-red-800 text-xs mb-1">
+                          Please hold off on purchasing the items at this time. Once the orderer completes the payment, we'll send you a notification to proceed with buying the products.
+                        </p>
+                      </>
+                    )}
+                    <p className={`text-xs font-medium ${
+                      order.payment_status === 'PAID' ? 'text-green-700' : 'text-red-700'
+                    }`}>
                       Auto-closes in 30 seconds.
                     </p>
                   </div>
@@ -250,6 +273,21 @@ const PickerOrderDetailsView = () => {
                 {/* Order Summary Card */}
                 <div className="bg-white border border-gray-200 rounded-2xl p-6">
                   <div className="space-y-4">
+                    {/* Payment Status Row */}
+                    <div className="flex justify-between items-center pb-4 border-b border-gray-200">
+                      <p className="text-gray-600 font-semibold">Payment Status</p>
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                        order.payment_status === 'PAID'
+                          ? 'bg-green-100 text-green-700'
+                          : order.payment_status === 'FAILED'
+                          ? 'bg-red-100 text-red-700'
+                          : order.payment_status === 'REFUNDED'
+                          ? 'bg-gray-100 text-gray-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {order.payment_status === 'PAID' ? '✓ PAID' : order.payment_status || 'PENDING'}
+                      </span>
+                    </div>
                     <div className="flex justify-between items-center">
                       <p className="text-gray-600">Item list</p>
                       <p className="font-semibold text-gray-900">{order.items[0]?.item_name || 'N/A'}</p>

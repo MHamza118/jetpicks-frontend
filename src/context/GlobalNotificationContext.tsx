@@ -20,6 +20,14 @@ export interface CounterOfferNotification {
   timestamp: number;
 }
 
+export interface PaymentConfirmedNotification {
+  id: string;
+  orderId: string;
+  message: string;
+  isRead: boolean;
+  timestamp: number;
+}
+
 interface GlobalNotificationContextType {
   newOrderNotification: NewOrderNotification | null;
   newOrdersHistory: NewOrderNotification[];
@@ -38,6 +46,12 @@ interface GlobalNotificationContextType {
   showCounterOfferModal: boolean;
   setShowCounterOfferModal: (show: boolean) => void;
   handleCounterOfferClick: (orderId: string, offerId: string) => void;
+
+  paymentConfirmedNotification: PaymentConfirmedNotification | null;
+  paymentConfirmedHistory: PaymentConfirmedNotification[];
+  showPaymentConfirmedModal: boolean;
+  setShowPaymentConfirmedModal: (show: boolean) => void;
+  handlePaymentConfirmedClick: (orderId: string, notificationId: string) => void;
 }
 
 const GlobalNotificationContext = createContext<GlobalNotificationContextType | undefined>(undefined);
@@ -59,10 +73,15 @@ export const GlobalNotificationProvider = ({ children }: { children: ReactNode }
   const [counterOffersHistory, setCounterOffersHistory] = useState<CounterOfferNotification[]>([]);
   const [showCounterOfferModal, setShowCounterOfferModal] = useState(false);
 
+  const [paymentConfirmedNotification, setPaymentConfirmedNotification] = useState<PaymentConfirmedNotification | null>(null);
+  const [paymentConfirmedHistory, setPaymentConfirmedHistory] = useState<PaymentConfirmedNotification[]>([]);
+  const [showPaymentConfirmedModal, setShowPaymentConfirmedModal] = useState(false);
+
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const shownNewOrdersRef = useRef<Set<string>>(new Set());
   const shownAcceptedOrdersRef = useRef<Set<string>>(new Set());
   const shownCounterOffersRef = useRef<Set<string>>(new Set());
+  const shownPaymentConfirmedRef = useRef<Set<string>>(new Set());
   const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -74,6 +93,20 @@ export const GlobalNotificationProvider = ({ children }: { children: ReactNode }
         if (currentRole === 'PICKER') {
           const newOrderNotifs = await fetchNewOrderNotifications(100);
           setNewOrdersHistory(newOrderNotifs);
+
+          const response = await notificationsApi.getNotifications(1, 100);
+          const notificationsData = (response as any).data || [];
+          const paymentHistory: PaymentConfirmedNotification[] = notificationsData
+            .filter((notif: any) => notif.type === 'PAYMENT_CONFIRMED')
+            .map((notif: any) => ({
+              id: notif.id,
+              orderId: notif.data?.order_id || notif.entity_id,
+              message: notif.message || 'Payment has been confirmed for your order.',
+              isRead: notif.is_read,
+              timestamp: new Date(notif.created_at).getTime(),
+            }));
+
+          setPaymentConfirmedHistory(paymentHistory);
 
           // Check if any previously shown orders have been cancelled
           const currentOrderIds = new Set(newOrderNotifs.map(n => n.id));
@@ -103,6 +136,21 @@ export const GlobalNotificationProvider = ({ children }: { children: ReactNode }
               autoCloseTimerRef.current = setTimeout(() => {
                 setShowNewOrderModal(false);
               }, 5000);
+            }
+          }
+
+          if (paymentHistory.length > 0) {
+            const newestPaymentNotif = paymentHistory[0];
+
+            if (!shownPaymentConfirmedRef.current.has(newestPaymentNotif.id)) {
+              shownPaymentConfirmedRef.current.add(newestPaymentNotif.id);
+              setPaymentConfirmedNotification(newestPaymentNotif);
+              // Don't auto-show popup modal for payment confirmation
+              // setShowPaymentConfirmedModal(true);
+              // if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+              // autoCloseTimerRef.current = setTimeout(() => {
+              //   setShowPaymentConfirmedModal(false);
+              // }, 5000);
             }
           }
         }
@@ -242,6 +290,22 @@ export const GlobalNotificationProvider = ({ children }: { children: ReactNode }
     navigate(`/orderer/counter-offer-received/${orderId}/${offerId}`);
   }, [navigate]);
 
+  const handlePaymentConfirmedClick = useCallback((orderId: string, notificationId: string) => {
+    setPaymentConfirmedHistory(prev =>
+      prev.map(n => {
+        if (n.id === notificationId && !n.isRead) {
+          notificationsApi.markAsRead(n.id).catch(() => {
+            // Silently fail
+          });
+        }
+        return n.id === notificationId ? { ...n, isRead: true } : n;
+      })
+    );
+
+    setShowPaymentConfirmedModal(false);
+    navigate(`/picker/orders/${orderId}/view`);
+  }, [navigate]);
+
   return (
     <GlobalNotificationContext.Provider
       value={{
@@ -260,6 +324,11 @@ export const GlobalNotificationProvider = ({ children }: { children: ReactNode }
         showCounterOfferModal,
         setShowCounterOfferModal,
         handleCounterOfferClick,
+        paymentConfirmedNotification,
+        paymentConfirmedHistory,
+        showPaymentConfirmedModal,
+        setShowPaymentConfirmedModal,
+        handlePaymentConfirmedClick,
       }}
     >
       {children}

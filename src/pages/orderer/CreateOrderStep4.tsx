@@ -16,7 +16,7 @@ interface OrderItem {
   quantity: number;
   store_link?: string;
   weight: string;
-  price: number;
+  price: number | string;
   currency?: string;
   product_images?: string[];
 }
@@ -65,12 +65,21 @@ const CreateOrderStep4 = () => {
     return getSymbolForCurrency(getPrimaryCurrency());
   };
 
+  const toNumber = (value: unknown): number => {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    if (typeof value === 'string') {
+      const parsed = parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+  };
+
   // Helper function to calculate items total
   const getItemsTotal = () => {
     const items = isEditMode ? editedItems : (orderDetails?.items || []);
     return items.reduce((sum, item) => {
-      const price = typeof item.price === 'number' ? item.price : 0;
-      const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
+      const price = toNumber(item.price);
+      const quantity = toNumber(item.quantity);
       return sum + (price * quantity);
     }, 0) || 0;
   };
@@ -111,7 +120,17 @@ const CreateOrderStep4 = () => {
 
       try {
         const res = await ordersApi.getOrderDetails(orderId) as { data: OrderDetailsType };
-        setOrderDetails(res.data);
+        const data = (res as any).data || res;
+        const normalizedItems = (data.items || []).map((item: OrderItem) => ({
+          ...item,
+          price: toNumber(item.price),
+          quantity: toNumber(item.quantity),
+        }));
+
+        setOrderDetails({
+          ...data,
+          items: normalizedItems,
+        });
       } catch (error) {
         console.error('Failed to fetch order:', error);
         navigate('/orderer/create-order');
