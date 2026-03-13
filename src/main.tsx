@@ -4,34 +4,26 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import "./index.css";
 import App from "./App.tsx";
 
-declare global {
-  interface Window {
-    fbAsyncInit?: () => void;
-    FB?: any;
-    fbSdkLoaded?: boolean;
-  }
-}
-
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 // Initialize Facebook SDK only when needed
 export function initializeFacebook() {
-  if (window.FB && window.fbSdkLoaded) return Promise.resolve(); // Already initialized
+  if ((window as any).FB && (window as any).fbSdkLoaded) return Promise.resolve(); // Already initialized
 
   return new Promise<void>((resolve) => {
-    if (window.fbAsyncInit) {
+    if ((window as any).fbAsyncInit) {
       resolve(); // Already initializing
       return;
     }
 
-    window.fbAsyncInit = function () {
-      if (window.FB) {
-        window.FB.init({
+    (window as any).fbAsyncInit = function () {
+      if ((window as any).FB) {
+        (window as any).FB.init({
           appId: "2350212092120889",
           xfbml: true,
           version: "v19.0",
         });
-        window.fbSdkLoaded = true;
+        (window as any).fbSdkLoaded = true;
         resolve();
       }
     };
